@@ -3,8 +3,8 @@ PYTHON := $(shell which python3)
 
 DATA_DIR := $(BASE_DIR)/data
 SRC_DIR := $(BASE_DIR)/src
-FIG_DIR := $(BASE_DIR)/fig
-TEST_DIR := $(BASE_DIR)/test
+FIG_DIR := $(BASE_DIR)/figs
+TEST_DIR := $(BASE_DIR)/tests
 
 PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
@@ -26,3 +26,6 @@ config:
 preprocess: config
 	@echo "Preprocessing data..."
 	@$(PYTHON) $(SRC_DIR)/netcdf_to_torch.py --paths $(PATHS_FILE)
+test:
+	@echo "Running tests..."
+	$(PYTHON) -m unittest discover -s $(TEST_DIR) -p "*_test.py"
