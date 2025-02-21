@@ -1,5 +1,11 @@
 # The raw data
-data/raw/
+data/
+
+# The paths json file
+src/paths.json
+
+# Exploration file
+src/explore_raw_data.py
 
 # The venv folder
 venv_inpainting/
