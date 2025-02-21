@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-def load_config(json_file: Path, categories=None):
+def load_config(json_file: Path, categories: list = None):
     """
     Loads a JSON file and returns a dictionary of the specified categories.
     
