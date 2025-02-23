@@ -1,5 +1,6 @@
 {
     "training":{
+        "train_perc": 0.8,
         "batch_size": 32,
         "epochs": 10,
         "learning_rate": 0.001,
@@ -8,6 +9,7 @@
         "model_kind": "simple_conv"
     },
     "dataset":{
+        "n_channels": 13,
         "image_width": 128,
         "image_height": 128
     },
