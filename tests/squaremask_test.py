@@ -36,15 +36,20 @@ class TestSquareMask(unittest.TestCase):
         
         self.mask_class = SquareMask(self.params_path)
         
+    def tearDown(self):
+        """Delete the temporary JSON file after tests."""
+        Path(self.temp_json.name).unlink()
+        
         
     def test_model_initialization(self):
         self.assertEqual(self.mask_class.image_width, 128)
         self.assertEqual(self.mask_class.image_height, 128)
         self.assertEqual(self.mask_class.mask_percentage, 0.5)
-        
-    # def tearDown(self):
-    #     """Delete the temporary JSON file after tests."""
-    #     Path(self.temp_json.name).unlink()
+    
+    def test_mask(self):
+        mask = self.mask_class.mask()
+        self.assertEqual(mask.shape, (128, 128))
+        self.assertAlmostEqual(mask.sum().item() / (128 * 128), 0.5, delta=0.1)
 
 if __name__ == "__main__":
     unittest.main()
