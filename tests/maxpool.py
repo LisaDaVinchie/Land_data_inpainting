@@ -17,7 +17,7 @@ class TestCNNModel(unittest.TestCase):
         """Create a temporary JSON file with reward parameters."""
         self.model_params = {
             "conv_maxpool": {
-                "middle_channels": [24, 24, 24, 24, 24],
+                "middle_channels": [64, 128, 256, 512, 1024],
                 "kernel_size": 3,
                 "stride": 1,
                 "pool_size": 2,
@@ -55,7 +55,7 @@ class TestCNNModel(unittest.TestCase):
         self.assertEqual(self.model.n_channels, 1)
         # self.assertEqual(self.model.middle_channels, [12, 12, 12, 12, 12])
         self.assertEqual(self.model.kernel_size, 3)
-        self.assertEqual(self.model.stride, 2)
+        self.assertEqual(self.model.stride, 1)
         self.assertEqual(self.model.pool_size, 2)
         self.assertEqual(self.model.up_kernel, 1)
         self.assertEqual(self.model.up_stride, 1)
