@@ -5,6 +5,10 @@ from pathlib import Path
 
 from utils.import_params_json import load_config
 
+def mask_image(image: th.tensor, mask: th.tensor, placeholder: float) -> th.tensor:
+    """Mask the image with the mask"""
+    return image * mask + placeholder * (1 - mask)
+
 class SquareMask():
     def __init__(self, params_path: Path, image_width: int = None, image_height: int = None, mask_percentage: int = None):
         """Create a square mask of n_pixels in the image"""
@@ -21,23 +25,21 @@ class SquareMask():
         square_width = int(n_pixels ** 0.5)
         self.half_square_width = square_width // 2
     
-    def mask_image(self, image: th.tensor) -> th.tensor:
+    def mask(self) -> th.tensor:
         """Mask the image with a square"""
         with th.no_grad():
-            mask = th.zeros((self.image_width, self.image_height), dtype=th.bool)
-            center_row = th.randint(self.image_height - self.half_square_width, self.half_square_width, (1,)).item()
-            center_col = th.randint(self.image_width - self.half_square_width, self.half_square_width, (1,)).item()
+            mask = th.ones((self.image_width, self.image_height), dtype=th.int)
+            center_row = th.randint(self.half_square_width, self.image_height - self.half_square_width, (1,)).item()
+            center_col = th.randint(self.half_square_width, self.image_width - self.half_square_width, (1,)).item()
         
         start_row = center_row - self.half_square_width
         end_row = center_row + self.half_square_width
         start_col = center_col - self.half_square_width
         end_col = center_col + self.half_square_width
         
-        mask[start_row:end_row, start_col:end_col] = True
+        mask[start_row:end_row, start_col:end_col] = 0
         
-        masked_image = image * mask
-        
-        return masked_image, mask
+        return mask
         
 
 # class LineMask:
