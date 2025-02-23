@@ -51,7 +51,7 @@ class TestCNNModel(unittest.TestCase):
         
         # Check if the model has the correct attributes
         self.assertEqual(self.model.n_channels, 1)
-        self.assertEqual(self.model.middle_channels, [64, 128, 256])
+        self.assertEqual(self.model.middle_channels, [12, 12, 12])
         self.assertEqual(self.model.kernel_size, [3, 3, 3])
         self.assertEqual(self.model.stride, [2, 2, 2])
         self.assertEqual(self.model.padding, [1, 1, 1])

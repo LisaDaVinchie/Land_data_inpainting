@@ -7,15 +7,15 @@ from utils.import_params_json import load_config
 class simple_conv(nn.Module):
     def __init__(self, params_path: Path, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
         super(simple_conv, self).__init__()
-        model_params = load_config(params_path, "dataset_params")
-        self.n_channels = n_channels if n_channels is not None else model_params.get("n_channels", 1)
+        model_params = load_config(params_path, ["dataset"]).get("dataset", {})
+        self.n_channels = n_channels if n_channels is not None else model_params.get("n_channels", 10)
         
-        self.model_params = load_config(params_path, "simple_conv")
-        self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [64, 128, 256])
-        self.kernel_size = kernel_size if kernel_size is not None else model_params.get("kernel_size", [3, 3, 3])
-        self.stride = stride if stride is not None else model_params.get("stride", [2, 2, 2])
-        self.padding = padding if padding is not None else model_params.get("padding", [1, 1, 1])
-        self.output_padding = output_padding if output_padding is not None else model_params.get("output_padding", [1, 1, 1])
+        model_params = load_config(params_path, ["simple_conv"]).get("simple_conv", {})
+        self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [10, 10, 10])
+        self.kernel_size = kernel_size if kernel_size is not None else model_params.get("kernel_size", [1, 1, 1])
+        self.stride = stride if stride is not None else model_params.get("stride", [7, 7, 7])
+        self.padding = padding if padding is not None else model_params.get("padding", [5, 5, 5])
+        self.output_padding = output_padding if output_padding is not None else model_params.get("output_padding", [5, 5, 5])
         
         
         # Encoder
@@ -44,15 +44,15 @@ class simple_conv(nn.Module):
 class conv_unet(nn.Module):
     def __init__(self, params_path: Path, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
         super(conv_unet, self).__init__()
-        model_params = load_config(params_path, "dataset_params")
+        model_params = load_config(params_path, ["dataset_params"]).get("dataset_params", {})
         self.n_channels = n_channels if n_channels is not None else model_params.get("n_channels", 1)
         
-        model_params = load_config(params_path, "conv_unet")
-        self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [64, 128, 256])
-        self.kernel_size = kernel_size if kernel_size is not None else model_params.get("kernel_size", [3, 3, 3])
-        self.stride = stride if stride is not None else model_params.get("stride", [2, 2, 2])
-        self.padding = padding if padding is not None else model_params.get("padding", [1, 1, 1])
-        self.output_padding = output_padding if output_padding is not None else model_params.get("output_padding", [1, 1, 1])
+        model_params = load_config(params_path, ["conv_unet"]).get("conv_unet", {})
+        self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [10, 10, 10])
+        self.kernel_size = kernel_size if kernel_size is not None else model_params.get("kernel_size", [7, 7, 7])
+        self.stride = stride if stride is not None else model_params.get("stride", [11, 11, 11])
+        self.padding = padding if padding is not None else model_params.get("padding", [3, 3, 3])
+        self.output_padding = output_padding if output_padding is not None else model_params.get("output_padding", [4, 4, 4])
         
         self.encoder1 = nn.Conv2d(self.n_channels, self.middle_channels[0], kernel_size=self.kernel_size[0], stride=self.stride[0], padding=self.padding[0])  # 64x64 -> 32x32
         self.encoder2 = nn.Conv2d(self.middle_channels[0], self.middle_channels[1], kernel_size=self.kernel_size[1], stride=self.stride[1], padding=self.padding[1])  # 32x32 -> 16x16
@@ -78,18 +78,11 @@ class conv_unet(nn.Module):
 class conv_maxpool(nn.Module):
     def __init__(self, params_path: Path, n_channels: int = None, middle_channels: list = None, kernel_size: int = None, stride: int = None, pool_size: int = None, up_kernel: int = None, up_stride: int = None, print_sizes: bool = None):
         super(conv_maxpool, self).__init__()
-        print("\n taking params from: ", params_path)
-        model_params = load_config(params_path, ["dataset_params"])
+        model_params = load_config(params_path, ["dataset"]).get("dataset", {})
         self.n_channels = n_channels if n_channels is not None else model_params.get("n_channels", 1)
         
-        # model_params = load_config(params_path, ["agent"]).get("agent", {})
-        # self.grid_size = grid_size if grid_size is not None else model_params.get("grid_size", 4)
-        # self.action_size = action_size if action_size is not None else model_params.get("action_size", 4)
-        # self.n_channels = n_channels if n_channels is not None else model_params.get("n_channels", 11)
-        
-        model_params = load_config(params_path, ["conv_maxpool"])
+        model_params = load_config(params_path, ["conv_maxpool"]).get("conv_maxpool", {})
         self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [12, 12, 12, 12, 12])
-        print(f"Middle channels is {middle_channels}, so self.middle_channels is {self.middle_channels}")
         self.kernel_size = kernel_size if kernel_size is not None else model_params.get("kernel_size", 5)
         self.stride = stride if stride is not None else model_params.get("stride", 5)
         self.pool_size = pool_size if pool_size is not None else model_params.get("pool_size", 5)

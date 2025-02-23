@@ -11,22 +11,27 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src"
 
 from src.models import simple_conv
 
-class TestCNNModel(unittest.TestCase):
+class Test_simpleconv_model(unittest.TestCase):
     
     def setUp(self):
         """Create a temporary JSON file with reward parameters."""
         self.model_params = {
             "simple_conv": {
-            "middle_channels": [64, 128, 256],
-            "kernel_size": [3, 3, 3],
-            "stride": [2, 2, 2],
-            "padding": [1, 1, 1],
-            "output_padding": [1, 1, 1]
-            },
-            "dataset_params":{
+                "middle_channels": [64, 128, 256],
+                "kernel_size": [3, 3, 3],
+                "stride": [2, 2, 2],
+                "padding": [1, 1, 1],
+                "output_padding": [1, 1, 1]
+                },  
+            "dataset":{
                 "n_channels": 1
             }      
         }
+        
+        # self.params_path = Path("tests/temp.json")
+        
+        # with self.params_path.open('w') as f:
+        #     json.dump(self.model_params, f)
         
         
         # Create a temporary file

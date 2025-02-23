@@ -1,10 +1,15 @@
 {
-    "train":{
+    "training":{
         "batch_size": 32,
         "epochs": 10,
         "learning_rate": 0.001,
-        "optimizer": "adam",
-        "loss": "mse"
+        "optimizer_kind": "adam",
+        "loss_kind": "mse",
+        "model_kind": "simple_conv"
+    },
+    "dataset":{
+        "image_width": 128,
+        "image_height": 128
     },
     "simple_conv":{
         "middle_channels": [32, 64, 128],
@@ -28,5 +33,8 @@
         "up_kernel": 3,
         "up_stride": 2,
         "print_sizes": false
+    },
+    "square_mask": {
+        "mask_percentage": 0.5
     }
 }
