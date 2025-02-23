@@ -8,7 +8,7 @@ class simple_conv(nn.Module):
     def __init__(self, params_path: Path, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
         super(simple_conv, self).__init__()
         model_params = load_config(params_path, ["dataset"]).get("dataset", {})
-        self.n_channels = n_channels if n_channels is not None else model_params.get("n_channels", 10)
+        self.n_channels = n_channels if n_channels is not None else model_params.get("n_channels", 3)
         
         model_params = load_config(params_path, ["simple_conv"]).get("simple_conv", {})
         self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [10, 10, 10])
