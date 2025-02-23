@@ -26,6 +26,9 @@ config:
 preprocess: config
 	@echo "Preprocessing data..."
 	@$(PYTHON) $(SRC_DIR)/netcdf_to_torch.py --paths $(PATHS_FILE)
+
+train: config
+	@$(PYTHON) $(SRC_DIR)/train.py --paths $(PATHS_FILE) --params $(PARAMS_FILE)
 test:
 	@echo "Running tests..."
 	$(PYTHON) -m unittest discover -s $(TEST_DIR) -p "*_test.py"
