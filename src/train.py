@@ -57,7 +57,7 @@ config = load_config(params_path, ["training"])
 locals().update(config["training"])
 
 # Import dataset
-dataset = th.rand(1000, 13, 128, 128)
+dataset = th.rand(100, 13, 10, 10)
 mask_class = SquareMask(params_path)
 masks = []
 for i in range(len(dataset)):
@@ -80,19 +80,20 @@ train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
 model = simple_conv(params_path)
-loss = th.nn.MSELoss()
+loss_function = th.nn.MSELoss()
 optimizer = th.optim.Adam(model.parameters(), lr=learning_rate)
 
 train_losses = []
 test_losses = []
 for epoch in range(epochs):
+    print(f"\nEpoch {epoch + 1}/{epochs}\n", flush=True)
     model.train()
     
     train_loss = 0
     for i, (image, mask) in enumerate(train_loader):
+        output = model(mask_image(image, mask, 0))
+        loss_val = loss_function(mask_image(output, 1 - mask, 0), mask_image(image, 1 - mask, 0)) / th.sum(1 - mask)
         optimizer.zero_grad()
-        output = model(image * mask)
-        loss_val = loss(output * mask, image * mask) / th.sum(mask)
         loss_val.backward()
         optimizer.step()
         train_loss += loss_val.item()
@@ -103,8 +104,8 @@ for epoch in range(epochs):
         model.eval()
         test_loss = 0
         for i, (image, mask) in enumerate(test_loader):
-            output = model(image * mask)
-            loss_val = loss(output * mask, image * mask) / th.sum(mask)
+            output = model(mask_image(image, mask, 0))
+            loss_val = loss_function(mask_image(output, 1 - mask, 0), mask_image(image, 1- mask, 0)) / th.sum(1 - mask)
             test_loss += loss_val.item()
         
         test_losses.append(test_loss / len(test_loader))
@@ -120,12 +121,12 @@ with open(results_path, 'w') as f:
     f.write("Elapsed time [s]:\n")
     f.write(f"{elapsed_time}\n\n")
     f.write("Train losses\n")
-    for i, loss in enumerate(train_losses):
-        f.write(f"{loss}\t")
+    for i, loss_function in enumerate(train_losses):
+        f.write(f"{loss_function}\t")
     f.write("\n\n")
     f.write("Test losses\n")
-    for i, loss in enumerate(test_losses):
-        f.write(f"{loss}\t")
+    for i, loss_function in enumerate(test_losses):
+        f.write(f"{loss_function}\t")
     f.write("\n\n")
     
         
