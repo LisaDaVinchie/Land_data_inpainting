@@ -50,15 +50,15 @@ class DINCAE_like(nn.Module):
         self.activation = nn.ReLU()
         
     
-        self.interp1 = nn.Upsample(size=(w[4], h[4]), mode='bilinear')
+        self.interp1 = nn.Upsample(size=(w[4], h[4]), mode=self.interp_mode)
         self.deconv1 = nn.Conv2d(self.middle_channels[4], self.middle_channels[3], self.kernel_sizes[4], padding='same')
-        self.interp2 = nn.Upsample(size=(w[3], h[3]), mode='bilinear')
+        self.interp2 = nn.Upsample(size=(w[3], h[3]), mode=self.interp_mode)
         self.deconv2 = nn.Conv2d(self.middle_channels[3], self.middle_channels[2], self.kernel_sizes[3], padding='same')
-        self.interp3 = nn.Upsample(size=(w[2], h[2]), mode='bilinear')
+        self.interp3 = nn.Upsample(size=(w[2], h[2]), mode=self.interp_mode)
         self.deconv3 = nn.Conv2d(self.middle_channels[2], self.middle_channels[1], self.kernel_sizes[2], padding='same')
-        self.interp4 = nn.Upsample(size=(w[1], h[1]), mode='bilinear')
+        self.interp4 = nn.Upsample(size=(w[1], h[1]), mode=self.interp_mode)
         self.deconv4 = nn.Conv2d(self.middle_channels[1], self.middle_channels[0], self.kernel_sizes[1], padding='same')
-        self.interp5 = nn.Upsample(size=(self.image_width, self.image_height), mode='bilinear')
+        self.interp5 = nn.Upsample(size=(self.image_width, self.image_height), mode=self.interp_mode)
         self.deconv5 = nn.Conv2d(self.middle_channels[0], self.output_size, self.kernel_sizes[0], padding='same')
         
     def forward(self, x: th.tensor) -> th.tensor:
@@ -68,14 +68,14 @@ class DINCAE_like(nn.Module):
         enc4 = self.pool4(self.activation(self.conv4(enc3)))
         enc5 = self.pool5(self.activation(self.conv5(enc4)))
         dec1 = self.activation(self.deconv1(self.interp1(enc5)))
-        dec1 += enc4
-        dec2 = self.activation(self.deconv2(self.interp2(dec1)))
-        dec2 += enc3
-        dec3 = self.activation(self.deconv3(self.interp3(dec2)))
-        dec3 += enc2
-        dec4 = self.activation(self.deconv4(self.interp4(dec3)))
-        dec4 += enc1
-        dec5 = self.activation(self.deconv5(self.interp5(dec4)))
+        x = dec1 + enc4
+        dec2 = self.activation(self.deconv2(self.interp2(x)))
+        x = dec2 + enc3
+        dec3 = self.activation(self.deconv3(self.interp3(x)))
+        x = dec3 + enc2
+        dec4 = self.activation(self.deconv4(self.interp4(x)))
+        x = dec4 + enc1
+        dec5 = self.activation(self.deconv5(self.interp5(x)))
         
         return dec5
         
