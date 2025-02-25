@@ -7,8 +7,7 @@ import argparse
 from models import simple_conv, conv_maxpool
 from time import time
 
-from mask_data import SquareMask, mask_image
-from mask_data import mask_image, SquareMask
+from mask_data import apply_mask_on_channel, SquareMask
 from utils.import_params_json import load_config
 
 start_time = time()
@@ -59,6 +58,7 @@ locals().update(config["training"])
 
 # Import dataset
 dataset = th.rand(100, 13, 10, 10)
+channels_to_mask = [3, 4, 5]
 mask_class = SquareMask(params_path)
 masks = []
 for i in range(len(dataset)):
@@ -92,8 +92,8 @@ for epoch in range(epochs):
     
     train_loss = 0
     for i, (image, mask) in enumerate(train_loader):
-        output = model(mask_image(image, mask, 0))
-        loss_val = loss_function(mask_image(output, 1 - mask, placeholder), mask_image(image, 1 - mask, placeholder)) / th.sum(1 - mask)
+        output = model(apply_mask_on_channel(image, channels_to_mask, mask, 0))
+        loss_val = loss_function(apply_mask_on_channel(output, channels_to_mask, 1 - mask, placeholder), apply_mask_on_channel(image, channels_to_mask, 1 - mask, placeholder)) / th.sum(1 - mask)
         optimizer.zero_grad()
         loss_val.backward()
         optimizer.step()
@@ -105,8 +105,8 @@ for epoch in range(epochs):
         model.eval()
         test_loss = 0
         for i, (image, mask) in enumerate(test_loader):
-            output = model(mask_image(image, mask, 0))
-            loss_val = loss_function(mask_image(output, 1 - mask, placeholder), mask_image(image, 1 - mask, placeholder)) / th.sum(1 - mask)
+            output = model(apply_mask_on_channel(image, mask, 0))
+            loss_val = loss_function(apply_mask_on_channel(output, channels_to_mask, 1 - mask, placeholder), apply_mask_on_channel(image, channels_to_mask, 1 - mask, placeholder)) / th.sum(1 - mask)
             test_loss += loss_val.item()
         
         test_losses.append(test_loss / len(test_loader))

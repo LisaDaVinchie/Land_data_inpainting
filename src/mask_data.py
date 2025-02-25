@@ -5,10 +5,10 @@ from pathlib import Path
 
 from utils.import_params_json import load_config
 
-def mask_image(images: th.tensor, masks: th.tensor, placeholder: float) -> th.tensor:
+def apply_mask_on_channel(images: th.tensor, channels: list, masks: th.tensor, placeholder: float) -> th.tensor:
     """Mask the image with the mask"""
     new_images = th.zeros_like(images)
-    for i in range(images.shape[0]):
+    for i in channels:
         new_images[i] = images[i] * masks[i] + placeholder * (1 - masks[i])
     return new_images
 
