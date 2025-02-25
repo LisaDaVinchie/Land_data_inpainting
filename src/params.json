@@ -4,9 +4,11 @@
         "batch_size": 15,
         "epochs": 3,
         "learning_rate": 0.001,
+        "placeholder": 0,
         "optimizer_kind": "adam",
         "loss_kind": "mse",
-        "model_kind": "simple_conv"
+        "model_kind": "DINCAE_like",
+        "_possible_model_kinds": ["simple_conv", "conv_unet", "conv_maxpool", "DINCAE_like"]
     },
     "dataset":{
         "n_channels": 13,
