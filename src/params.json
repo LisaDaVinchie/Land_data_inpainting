@@ -1,8 +1,8 @@
 {
     "training":{
         "train_perc": 0.8,
-        "batch_size": 32,
-        "epochs": 10,
+        "batch_size": 15,
+        "epochs": 3,
         "learning_rate": 0.001,
         "optimizer_kind": "adam",
         "loss_kind": "mse",
@@ -10,8 +10,16 @@
     },
     "dataset":{
         "n_channels": 13,
-        "image_width": 128,
-        "image_height": 128
+        "image_width": 10,
+        "image_height": 10
+    },
+    "DINCAE_like": {
+        "middle_channels": [16, 30, 58, 110, 209],
+        "kernel_sizes": [3, 3, 3, 3, 3],
+        "pooling_sizes": [2, 2, 2, 2, 2],
+        "output_size": 2,
+        "interp_mode": "bilinear",
+        "_possible_interpolation_modes": ["nearest", "linear", "bilinear", "bicubic", "trilinear"]
     },
     "simple_conv":{
         "middle_channels": [32, 64, 128],
