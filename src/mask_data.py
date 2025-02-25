@@ -1,16 +1,13 @@
 import torch as th
 from pathlib import Path
 import cv2
-from pathlib import Path
 
 from utils.import_params_json import load_config
 
-def apply_mask_on_channel(images: th.tensor, channels: list, masks: th.tensor, placeholder: float) -> th.tensor:
+def apply_mask_on_channel(images: th.tensor, masks: th.tensor, placeholder: float) -> th.tensor:
     """Mask the image with the mask"""
-    new_images = th.zeros_like(images)
-    for i in channels:
-        new_images[i] = images[i] * masks[i] + placeholder * (1 - masks[i])
-    return new_images
+    new_images = images.clone()
+    return new_images * masks + placeholder * (1 - masks)
 
 class SquareMask():
     def __init__(self, params_path: Path, image_width: int = None, image_height: int = None, mask_percentage: int = None):
