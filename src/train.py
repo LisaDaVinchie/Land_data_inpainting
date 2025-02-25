@@ -53,6 +53,7 @@ learning_rate: float = None
 optimizer_kind: str = None
 loss_kind: str = None
 model_kind: str = None
+placeholder: float = None
 config = load_config(params_path, ["training"])
 locals().update(config["training"])
 
@@ -92,7 +93,7 @@ for epoch in range(epochs):
     train_loss = 0
     for i, (image, mask) in enumerate(train_loader):
         output = model(mask_image(image, mask, 0))
-        loss_val = loss_function(mask_image(output, 1 - mask, 0), mask_image(image, 1 - mask, 0)) / th.sum(1 - mask)
+        loss_val = loss_function(mask_image(output, 1 - mask, placeholder), mask_image(image, 1 - mask, placeholder)) / th.sum(1 - mask)
         optimizer.zero_grad()
         loss_val.backward()
         optimizer.step()
@@ -105,7 +106,7 @@ for epoch in range(epochs):
         test_loss = 0
         for i, (image, mask) in enumerate(test_loader):
             output = model(mask_image(image, mask, 0))
-            loss_val = loss_function(mask_image(output, 1 - mask, 0), mask_image(image, 1- mask, 0)) / th.sum(1 - mask)
+            loss_val = loss_function(mask_image(output, 1 - mask, placeholder), mask_image(image, 1 - mask, placeholder)) / th.sum(1 - mask)
             test_loss += loss_val.item()
         
         test_losses.append(test_loss / len(test_loader))
