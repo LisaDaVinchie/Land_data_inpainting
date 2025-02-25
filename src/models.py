@@ -3,6 +3,90 @@ from torch import nn
 from pathlib import Path
 from typing import List
 from utils.import_params_json import load_config
+import math
+import numpy as np
+
+
+
+def conv_output_size(in_size, pool_size):
+    return  math.ceil(in_size / pool_size)
+class DINCAE_like(nn.Module):
+    def __init__(self, params_path: Path, n_channels: int = None, image_width: int = None, image_height: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None, output_size: int = None):
+        super(DINCAE_like, self).__init__()
+        
+        model_params = load_config(params_path, ["dataset"]).get("dataset", {})
+        self.n_channels = n_channels if n_channels is not None else model_params.get("n_channels", 3)
+        self.image_width = image_width if image_width is not None else model_params.get("image_width", 64)
+        self.image_height = image_height if image_height is not None else model_params.get("image_height", 64)
+        
+        model_params = load_config(params_path, ["DINCAE_like"]).get("DINCAE_like", {})
+        self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [10, 10, 10, 10, 10])
+        self.kernel_sizes = kernel_sizes if kernel_sizes is not None else model_params.get("kernel_sizes", [2, 2, 2, 2, 2])
+        self.pooling_sizes = pooling_sizes if pooling_sizes is not None else model_params.get("pooling_sizes", [7, 7, 7, 7, 7])
+        self.interp_mode = interp_mode if interp_mode is not None else model_params.get("interp_mode", "bilinear")
+        self.output_size = output_size if output_size is not None else model_params.get("output_size", 2)
+        
+        w = []
+        h = []
+        w.append(self.image_width)
+        h.append(self.image_height)
+        for i in range(1, 5):
+            w.append(conv_output_size(w[i-1], self.pooling_sizes[i-1]))
+            h.append(conv_output_size(h[i-1], self.pooling_sizes[i-1]))
+        
+        self.conv1 = nn.Conv2d(self.n_channels, self.middle_channels[0], self.kernel_sizes[0], padding = self.kernel_sizes[0] // 2)
+        self.pool1 = nn.MaxPool2d(self.pooling_sizes[0], ceil_mode=True)
+        
+        self.conv2 = nn.Conv2d(self.middle_channels[0], self.middle_channels[1], self.kernel_sizes[1], padding = 'same')
+        self.pool2 = nn.MaxPool2d(self.pooling_sizes[1], ceil_mode=True)
+        
+        self.conv3 = nn.Conv2d(self.middle_channels[1], self.middle_channels[2], self.kernel_sizes[2], padding = 'same')
+        self.pool3 = nn.MaxPool2d(self.pooling_sizes[2], ceil_mode=True)
+        
+        self.conv4 = nn.Conv2d(self.middle_channels[2], self.middle_channels[3], self.kernel_sizes[3], padding = 'same')
+        self.pool4 = nn.MaxPool2d(self.pooling_sizes[3], ceil_mode=True)
+        
+        self.conv5 = nn.Conv2d(self.middle_channels[3], self.middle_channels[4], self.kernel_sizes[4], padding = 'same')
+        self.pool5 = nn.MaxPool2d(self.pooling_sizes[4], ceil_mode=True)
+        self.activation = nn.ReLU()
+        
+    
+        self.interp1 = nn.Upsample(size=(w[4], h[4]), mode='bilinear')
+        self.deconv1 = nn.Conv2d(self.middle_channels[4], self.middle_channels[3], self.kernel_sizes[4], padding='same')
+        self.interp2 = nn.Upsample(size=(w[3], h[3]), mode='bilinear')
+        self.deconv2 = nn.Conv2d(self.middle_channels[3], self.middle_channels[2], self.kernel_sizes[3], padding='same')
+        self.interp3 = nn.Upsample(size=(w[2], h[2]), mode='bilinear')
+        self.deconv3 = nn.Conv2d(self.middle_channels[2], self.middle_channels[1], self.kernel_sizes[2], padding='same')
+        self.interp4 = nn.Upsample(size=(w[1], h[1]), mode='bilinear')
+        self.deconv4 = nn.Conv2d(self.middle_channels[1], self.middle_channels[0], self.kernel_sizes[1], padding='same')
+        self.interp5 = nn.Upsample(size=(self.image_width, self.image_height), mode='bilinear')
+        self.deconv5 = nn.Conv2d(self.middle_channels[0], 2, self.kernel_sizes[0], padding='same')
+        
+    def forward(self, x: th.tensor) -> th.tensor:
+        enc1 = self.pool1(self.activation(self.conv1(x)))
+        enc2 = self.pool2(self.activation(self.conv2(enc1)))
+        enc3 = self.pool3(self.activation(self.conv3(enc2)))
+        enc4 = self.pool4(self.activation(self.conv4(enc3)))
+        enc5 = self.pool5(self.activation(self.conv5(enc4)))
+        dec1 = self.activation(self.deconv1(self.interp1(enc5)))
+        dec1 += enc4
+        dec2 = self.activation(self.deconv2(self.interp2(dec1)))
+        dec2 += enc3
+        dec3 = self.activation(self.deconv3(self.interp3(dec2)))
+        dec3 += enc2
+        dec4 = self.activation(self.deconv4(self.interp4(dec3)))
+        dec4 += enc1
+        dec5 = self.activation(self.deconv5(self.interp5(dec4)))
+        
+        return dec5
+        
+        
+        
+    
+    
+        
+        
+        
 
 class simple_conv(nn.Module):
     def __init__(self, params_path: Path, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
