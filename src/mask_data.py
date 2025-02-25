@@ -5,9 +5,12 @@ from pathlib import Path
 
 from utils.import_params_json import load_config
 
-def mask_image(image: th.tensor, mask: th.tensor, placeholder: float) -> th.tensor:
+def mask_image(images: th.tensor, masks: th.tensor, placeholder: float) -> th.tensor:
     """Mask the image with the mask"""
-    return image * mask + placeholder * (1 - mask)
+    new_images = th.zeros_like(images)
+    for i in range(images.shape[0]):
+        new_images[i] = images[i] * masks[i] + placeholder * (1 - masks[i])
+    return new_images
 
 class SquareMask():
     def __init__(self, params_path: Path, image_width: int = None, image_height: int = None, mask_percentage: int = None):
