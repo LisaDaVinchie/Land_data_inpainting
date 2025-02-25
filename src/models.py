@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import List
 from utils.import_params_json import load_config
 import math
-import numpy as np
 
 
 
@@ -60,7 +59,7 @@ class DINCAE_like(nn.Module):
         self.interp4 = nn.Upsample(size=(w[1], h[1]), mode='bilinear')
         self.deconv4 = nn.Conv2d(self.middle_channels[1], self.middle_channels[0], self.kernel_sizes[1], padding='same')
         self.interp5 = nn.Upsample(size=(self.image_width, self.image_height), mode='bilinear')
-        self.deconv5 = nn.Conv2d(self.middle_channels[0], 2, self.kernel_sizes[0], padding='same')
+        self.deconv5 = nn.Conv2d(self.middle_channels[0], self.output_size, self.kernel_sizes[0], padding='same')
         
     def forward(self, x: th.tensor) -> th.tensor:
         enc1 = self.pool1(self.activation(self.conv1(x)))
