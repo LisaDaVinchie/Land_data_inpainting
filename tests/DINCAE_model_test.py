@@ -68,7 +68,7 @@ class Test_DINCAE_model(unittest.TestCase):
         output = self.model(self.input_tensor)
         
         # Check if the output shape is correct
-        self.assertEqual(output.shape, (self.batch_size, 2, self.width, self.height))
+        self.assertEqual(output.shape, (self.batch_size, 3, self.width, self.height))
 
 if __name__ == "__main__":
     unittest.main()
