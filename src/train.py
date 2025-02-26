@@ -1,13 +1,11 @@
 import torch as th
-from torch.utils.data import DataLoader
-from CustomDataset import CustomDataset
-from torch.utils.data import random_split
 from pathlib import Path
 import argparse
-from models import simple_conv, conv_maxpool
+from models import simple_conv, conv_maxpool, conv_unet, DINCAE_like
 from time import time
 
-from mask_data import apply_mask_on_channel, SquareMask
+from mask_data import apply_mask_on_channel
+from utils.create_dataloaders import create_dataloaders
 from utils.import_params_json import load_config
 
 start_time = time()
@@ -56,31 +54,31 @@ placeholder: float = None
 config = load_config(params_path, ["training"])
 locals().update(config["training"])
 
+if model_kind == "simple_conv":
+    model = simple_conv(params_path)
+elif model_kind == "conv_maxpool":
+    model = conv_maxpool(params_path)
+elif model_kind == "conv_unet":
+    model = conv_unet(params_path)
+elif model_kind == "DINCAE_like":
+    model = DINCAE_like(params_path)
+else:
+    raise ValueError(f"Model kind {model_kind} not recognized")
+
 # Import dataset
 dataset = th.rand(100, 13, 10, 10)
 channels_to_mask = [3, 4, 5]
-mask_class = SquareMask(params_path)
-masks = []
-for i in range(len(dataset)):
-    masks.append(mask_class.mask())
+masks = th.ones(100, 13, 10, 10)
 
-masks = th.stack(masks)
+masks[:, channels_to_mask, :2, :2] = 0
+
+
+    
 
 print(f"Dataset shape: {dataset.shape}, Masks shape: {masks.shape}\n")
 
-# Split the dataset into train and test sets
-train_size = int(train_perc * len(dataset))
-test_size = len(dataset) - train_size
-train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+train_loader, test_loader = create_dataloaders(dataset, masks, train_perc, batch_size)
 
-train_set = CustomDataset(train_dataset, masks)
-test_set = CustomDataset(test_dataset, masks)
-
-# Create DataLoader for train and test sets
-train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
-
-model = simple_conv(params_path)
 loss_function = th.nn.MSELoss()
 optimizer = th.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -92,8 +90,9 @@ for epoch in range(epochs):
     
     train_loss = 0
     for i, (image, mask) in enumerate(train_loader):
-        output = model(apply_mask_on_channel(image, channels_to_mask, mask, 0))
-        loss_val = loss_function(apply_mask_on_channel(output, channels_to_mask, 1 - mask, placeholder), apply_mask_on_channel(image, channels_to_mask, 1 - mask, placeholder)) / th.sum(1 - mask)
+        output = model(apply_mask_on_channel(image, mask, placeholder))
+        inverse_mask = 1 - mask
+        loss_val = loss_function(apply_mask_on_channel(output, inverse_mask, placeholder), apply_mask_on_channel(image, inverse_mask, placeholder)) / th.sum(inverse_mask)
         optimizer.zero_grad()
         loss_val.backward()
         optimizer.step()
@@ -105,8 +104,9 @@ for epoch in range(epochs):
         model.eval()
         test_loss = 0
         for i, (image, mask) in enumerate(test_loader):
-            output = model(apply_mask_on_channel(image, mask, 0))
-            loss_val = loss_function(apply_mask_on_channel(output, channels_to_mask, 1 - mask, placeholder), apply_mask_on_channel(image, channels_to_mask, 1 - mask, placeholder)) / th.sum(1 - mask)
+            output = model(apply_mask_on_channel(image, mask, placeholder))
+            inverse_mask = 1 - mask
+            loss_val = loss_function(apply_mask_on_channel(output, inverse_mask, placeholder), apply_mask_on_channel(image, inverse_mask, placeholder)) / th.sum(inverse_mask)
             test_loss += loss_val.item()
         
         test_losses.append(test_loss / len(test_loader))
