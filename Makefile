@@ -1,10 +1,14 @@
 BASE_DIR := $(shell pwd)
 PYTHON := $(shell which python3)
 
+DATASET_NAME := "IFREMER-GLOB-SST-L3-NRT-OBS_FULL_TIME_SERIE_202211"
+
 DATA_DIR := $(BASE_DIR)/data
 SRC_DIR := $(BASE_DIR)/src
 FIG_DIR := $(BASE_DIR)/figs
 TEST_DIR := $(BASE_DIR)/tests
+
+PREPROCESSING_DIR := $(SRC_DIR)/preprocessing
 
 RESULTS_DIR := $(DATA_DIR)/results
 RESULT_BASENAME := "result"
@@ -27,17 +31,15 @@ WEIGHTS_PATH = $(WEIGHTS_DIR)/$(WEIGHTS_BASENAME)_$(IDX)$(WEIGHTS_FILE_EXT)
 PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
-DATASET_NAME := "IFREMER-GLOB-SST-L3-NRT-OBS_FULL_TIME_SERIE_1740148697395"
 
-
-.PHONY: config preprocess train test help
+.PHONY: config preprocess dowload train test help
 
 config:
 	@echo "Storing paths to json..."
 	@echo "{" > $(PATHS_FILE)
 	@echo "    \"data\": {" >> $(PATHS_FILE)
-	@echo "        \"raw_data_path\": \"$(DATA_DIR)/raw/$(DATASET_NAME).nc\"," >> $(PATHS_FILE)
-	@echo "        \"processed_data_path\": \"$(DATA_DIR)/processed/$(DATASET_NAME).pth\"" >> $(PATHS_FILE)
+	@echo "        \"raw_data_dir\": \"$(DATA_DIR)/$(DATASET_NAME)/raw\"," >> $(PATHS_FILE)
+	@echo "        \"processed_data_dir\": \"$(DATA_DIR)/$(DATASET_NAME)/processed/\"" >> $(PATHS_FILE)
 	@echo "    }," >> $(PATHS_FILE)
 	@echo "    \"results\": {" >> $(PATHS_FILE)
 	@echo "        \"results_path\": \"$(RESULT_PATH)\", " >> $(PATHS_FILE)
@@ -45,6 +47,10 @@ config:
 	@echo "        \"weights_path\": \"$(WEIGHTS_PATH)\"" >> $(PATHS_FILE)   
 	@echo "    }" >> $(PATHS_FILE)
 	@echo "}" >> $(PATHS_FILE)
+
+download: config
+	@echo "Downloading data..."
+	@$(PYTHON) $(PREPROCESSING_DIR)/download_data.py --paths $(PATHS_FILE) --params $(PARAMS_FILE)
 
 preprocess: config
 	@echo "Preprocessing data..."
