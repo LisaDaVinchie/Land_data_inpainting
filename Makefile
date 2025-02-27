@@ -54,7 +54,7 @@ download: config
 
 preprocess: config
 	@echo "Preprocessing data..."
-	@$(PYTHON) $(SRC_DIR)/netcdf_to_torch.py --paths $(PATHS_FILE)
+	@$(PYTHON) $(PREPROCESSING_DIR)/netcdf_to_torch.py --paths $(PATHS_FILE)
 
 train: config
 	@$(PYTHON) $(SRC_DIR)/train.py --paths $(PATHS_FILE) --params $(PARAMS_FILE)
