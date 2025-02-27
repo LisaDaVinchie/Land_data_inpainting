@@ -39,34 +39,42 @@ separator = "%2F"
 copericus_products_url = "https://data.marine.copernicus.eu/product/"
 dataset_path = "SST_GLO_SST_L3S_NRT_OBSERVATIONS_010_010/files?path=SST_GLO_SST_L3S_NRT_OBSERVATIONS_010_010"
 online_file_basename = "000000-IFR-L3S_GHRSST-SSTfnd-ODYSSEA-GLOB_010-v02.1-fv01.0"
+
+base_url = "https://jimmywarting.github.io/StreamSaver.js/data.marine.copernicus.eu/171338/"
+url_time = "000000"
+dataset_name = "-IFR-L3S_GHRSST-SSTfnd-ODYSSEA-GLOB_010-v02.1-fv01.0.nc"
+
+
+# "https://jimmywarting.github.io/StreamSaver.js/data.marine.copernicus.eu/171338/20240402000000-IFR-L3S_GHRSST-SSTfnd-ODYSSEA-GLOB_010-v02.1-fv01.0.nc"
 extension = ".nc"
 
 session = requests.Session()
 i = 0
 for year in years:
     year = str(year)
-    year_url = copericus_products_url + dataset_path + separator + dataset_name + separator + year + separator
+    year_url = base_url + year
     for month in months:
         month = str(month).zfill(2)
-        month_url = year_url + month + separator
+        month_url = year_url + month
         for day in days:
             if day == 31 and month in ["04", "06", "09", "11"]:
                 continue
             if day == 30 and month == "02":
                 continue
             day = str(day).zfill(2)
-            url = month_url + year + month + day + online_file_basename + extension
-            file_name = Path(year + "_" + month + "_" + day + extension)
+            url = month_url + day + url_time + dataset_name
+            print(url)
+#             file_name = Path(year + "_" + month + "_" + day + extension)
             
-            response = session.get(url)
+#             response = session.get(url)
             
-            if response.status_code == 200:
-                with open(raw_data_dir / file_name, "wb") as f:
-                    f.write(response.content)
-                i = i + 1
+#             if response.status_code == 200:
+#                 with open(raw_data_dir / file_name, "wb") as f:
+#                     f.write(response.content)
+#                 i = i + 1
                 
-            else:
-                print(f"Could not download file {file_name}, status code: {response.status_code}")
+#             else:
+#                 print(f"Could not download file {file_name}, status code: {response.status_code}")
 
-elapsed_time = time() - start_time
-print(f"\n\nDownloaded {i} files in {elapsed_time} s.")
+# elapsed_time = time() - start_time
+# print(f"\n\nDownloaded {i} files in {elapsed_time} s.")
