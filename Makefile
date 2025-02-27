@@ -32,7 +32,7 @@ PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
 
-.PHONY: config preprocess dowload train test help
+.PHONY: config preprocess train test help
 
 config:
 	@echo "Storing paths to json..."
@@ -47,10 +47,6 @@ config:
 	@echo "        \"weights_path\": \"$(WEIGHTS_PATH)\"" >> $(PATHS_FILE)   
 	@echo "    }" >> $(PATHS_FILE)
 	@echo "}" >> $(PATHS_FILE)
-
-download: config
-	@echo "Downloading data..."
-	@$(PYTHON) $(PREPROCESSING_DIR)/download_data.py --paths $(PATHS_FILE) --params $(PARAMS_FILE)
 
 preprocess: config
 	@echo "Preprocessing data..."
