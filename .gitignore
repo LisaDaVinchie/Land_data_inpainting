@@ -7,6 +7,9 @@ src/paths.json
 # Exploration file
 src/explore_raw_data.py
 
+# Not working download file
+src/preprocessing/download_data.py
+
 # The venv folder
 venv_inpainting/
 
