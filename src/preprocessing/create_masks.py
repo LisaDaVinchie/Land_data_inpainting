@@ -36,7 +36,7 @@ image_height: int = None
 params = load_config(params_file_path, ["dataset"]).get("dataset", {})
 locals().update(params)
 
-mask_file_path = masks_dir / f"{masks_basename}_n{n_images}_c{n_channels}.{masks_file_ext}"
+mask_file_path = masks_dir / f"{masks_basename}_n{n_images}_c{n_channels}{masks_file_ext}"
 
 
 mask_percentage: float = None
