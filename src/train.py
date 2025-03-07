@@ -78,8 +78,12 @@ dataset_start_time = time()
 data_files = list(processed_data_dir.glob("*.pt"))
 mask_files = list(masks_dir.glob("*.pt"))
 
+masks_path = masks_dir / f"mask_n{len(data_files)}_c{n_channels}.pt"
+if not masks_path.exists():
+    raise FileNotFoundError(f"File {masks_path} does not exist")
+
 dataset = th.stack([th.load(file) for file in data_files])
-masks = th.load(masks_dir / f"mask_n{len(data_files)}_c{n_channels}.pt")
+masks = th.load(masks_path)
 
 print(f"Dataset created in {time() - dataset_start_time:.2f} seconds")
 
