@@ -15,7 +15,7 @@ def apply_mask_on_channel(images: th.tensor, masks: th.tensor, placeholder: floa
     return new_images * masks + means * (1 - masks)
 
 class SquareMask():
-    def __init__(self, params_path: Path, image_width: int = None, image_height: int = None, mask_percentage: int = None):
+    def __init__(self, params_path: Path, image_width: int = None, image_height: int = None, mask_percentage: float = None):
         """Create a square mask of n_pixels in the image"""
         
         params = load_config(params_path, ["dataset"]).get("dataset", {})
@@ -32,17 +32,14 @@ class SquareMask():
     
     def mask(self) -> th.tensor:
         """Mask the image with a square"""
-        with th.no_grad():
-            mask = th.ones((self.image_width, self.image_height), dtype=th.int)
-            center_row = th.randint(self.half_square_width, self.image_height - self.half_square_width, (1,)).item()
-            center_col = th.randint(self.half_square_width, self.image_width - self.half_square_width, (1,)).item()
+        mask = th.ones((self.image_width, self.image_height), dtype=th.int)
+        center_row = th.randint(self.half_square_width, self.image_height - self.half_square_width, (1,)).item()
+        center_col = th.randint(self.half_square_width, self.image_width - self.half_square_width, (1,)).item()
         
-        start_row = center_row - self.half_square_width
-        end_row = center_row + self.half_square_width
-        start_col = center_col - self.half_square_width
-        end_col = center_col + self.half_square_width
-        
-        mask[start_row:end_row, start_col:end_col] = 0
+        mask[
+            max(0, center_row - self.half_square_width): min(self.image_height, center_row + self.half_square_width),
+            max(0, center_col - self.half_square_width): min(self.image_width, center_col + self.half_square_width)
+        ] = 0
         
         return mask
         
