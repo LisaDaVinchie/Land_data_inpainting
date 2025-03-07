@@ -11,7 +11,7 @@
         "_possible_model_kinds": ["simple_conv", "conv_unet", "conv_maxpool", "DINCAE_like"]
     },
     "dataset":{
-        "n_images": 100,
+        "n_images": 31,
         "n_channels": 13,
         "image_width": 1600,
         "image_height": 3600
