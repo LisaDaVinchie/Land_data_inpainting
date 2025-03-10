@@ -11,8 +11,8 @@
         "_possible_model_kinds": ["simple_conv", "conv_unet", "conv_maxpool", "DINCAE_like"]
     },
     "dataset":{
-        "n_images": 31,
-        "n_channels": 13,
+        "n_images": 10,
+        "n_channels": 15,
         "image_width": 1600,
         "image_height": 3600
     },
@@ -20,7 +20,7 @@
         "middle_channels": [16, 30, 58, 110, 209],
         "kernel_sizes": [3, 3, 3, 3, 3],
         "pooling_sizes": [2, 2, 2, 2, 2],
-        "output_size": 13,
+        "output_size": 15,
         "interp_mode": "bilinear",
         "_possible_interpolation_modes": ["nearest", "linear", "bilinear", "bicubic", "trilinear"]
     },
