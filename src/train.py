@@ -41,6 +41,9 @@ for path in [results_path.parent, figs_path.parent, weights_path.parent, process
     if not path.exists():
         raise FileNotFoundError(f"Path {path} does not exist.")
 
+print("\nPaths imported\n", flush = True)
+
+
 # Load the train parameters
 train_perc: int = None
 epochs: int = None
@@ -52,9 +55,11 @@ model_kind: str = None
 placeholder: float = None
 
 n_channels: int = None
+n_images: int = None
 config = load_config(params_path, ["training", "dataset"])
 locals().update(config["training"])
 locals().update(config["dataset"])
+print("Parameters imported\n", flush = True)
 
 if model_kind == "simple_conv":
     model = simple_conv(params_path)
@@ -67,6 +72,8 @@ elif model_kind == "DINCAE_like":
 else:
     raise ValueError(f"Model kind {model_kind} not recognized")
 
+print("Model initialized\n", flush = True)
+
 # Import dataset
 # dataset = th.rand(100, 13, 10, 10)
 # channels_to_mask = [3, 4, 5]
@@ -75,26 +82,28 @@ else:
 # masks[:, channels_to_mask, :2, :2] = 0
 
 dataset_start_time = time()
-data_files = list(processed_data_dir.glob("*.pt"))
+data_files = list(processed_data_dir.glob("*.pt"))[:10]
 mask_files = list(masks_dir.glob("*.pt"))
 
-masks_path = masks_dir / f"mask_n{len(data_files)}_c{n_channels}.pt"
+masks_path = masks_dir / f"mask_n{n_images}_c{n_channels}.pt"
 if not masks_path.exists():
     raise FileNotFoundError(f"File {masks_path} does not exist")
 
 dataset = th.stack([th.load(file) for file in data_files])
-masks = th.load(masks_path)
+masks = th.load(masks_path)[0:10]
 
-print(f"Dataset created in {time() - dataset_start_time:.2f} seconds")
+print(f"Dataset created in {time() - dataset_start_time:.2f} seconds", flush = True)
 
 train_loader, test_loader = create_dataloaders(dataset, masks, train_perc, batch_size)
 del dataset, masks
+print("Dataloaders created\n", flush = True)
 
 loss_function = th.nn.MSELoss()
 optimizer = th.optim.Adam(model.parameters(), lr=learning_rate)
 
 train_losses = []
 test_losses = []
+
 for epoch in range(epochs):
     print(f"\nEpoch {epoch + 1}/{epochs}\n", flush=True)
     model.train()
