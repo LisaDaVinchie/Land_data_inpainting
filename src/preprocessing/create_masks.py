@@ -79,14 +79,16 @@ class SquareMask():
         return masks
 
 # Initialize the mask generator
-mask_generator = SquareMask(image_width=image_height, image_height=image_width, mask_percentage=mask_percentage)
+mask_generator = SquareMask(image_width=image_width, image_height=image_height, mask_percentage=mask_percentage)
 
 # Generate all masks at once
 n_masks = n_images * n_channels
 all_masks = mask_generator.generate_masks(n_masks=n_masks)
 
+print("All masks shape: ", all_masks.shape)
+
 # Reshape the masks to match the tensor shape (n_images, n_channels, n_lons, n_lats)
-mask_tensor = all_masks.reshape(n_images, n_channels, image_height, image_width)
+mask_tensor = all_masks.reshape(n_images, n_channels, image_width, image_height)
 
 
 
