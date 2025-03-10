@@ -6,12 +6,11 @@ from utils.import_params_json import load_config
 
 def apply_mask_on_channel(images: th.tensor, masks: th.tensor, placeholder: float = None) -> th.tensor:
     """Mask the image with the mask, using a placeholder. If the placeholder is none, use the mean of the level"""
-    with th.no_grad():
-        new_images = images.clone()
-        if placeholder is not None:
-            return new_images * masks + placeholder * (1 - masks)
-        
-        means = (images * masks).sum(dim=(2, 3), keepdim=True) / (masks.sum(dim=(2, 3), keepdim=True))
+    new_images = images.clone()
+    if placeholder is not None:
+        return new_images * masks + placeholder * (1 - masks)
+    
+    means = (images * masks).sum(dim=(2, 3), keepdim=True) / (masks.sum(dim=(2, 3), keepdim=True))
     return new_images * masks + means * (1 - masks)
 
 class SquareMask():
