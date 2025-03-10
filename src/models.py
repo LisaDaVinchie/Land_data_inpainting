@@ -23,7 +23,8 @@ class DINCAE_like(nn.Module):
         self.kernel_sizes = kernel_sizes if kernel_sizes is not None else model_params.get("kernel_sizes", [2, 2, 2, 2, 2])
         self.pooling_sizes = pooling_sizes if pooling_sizes is not None else model_params.get("pooling_sizes", [7, 7, 7, 7, 7])
         self.interp_mode = interp_mode if interp_mode is not None else model_params.get("interp_mode", "bilinear")
-        self.output_size = output_size if output_size is not None else model_params.get("output_size", 2)
+        # self.output_size = output_size if output_size is not None else model_params.get("output_size", 2)
+        self.output_size = self.n_channels
         
         w = []
         h = []
