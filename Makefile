@@ -38,7 +38,7 @@ PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
 
-.PHONY: config preprocess mask train test help
+.PHONY: config preprocess mask train bottleneck test help
 
 config:
 	@echo "Storing paths to json..."
@@ -68,6 +68,21 @@ mask: config
 
 train: config
 	@$(PYTHON) $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
+train: bottleneck
+	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
 test:
 	@echo "Running tests..."
 	$(PYTHON) -m unittest discover -s $(TEST_DIR) -p "*_test.py"
+
+help:
+	@echo "Usage: make [target]"
+	@echo "Available targets:"
+	@echo "  config: Store paths to json"
+	@echo "  preprocess: Preprocess data"
+	@echo "  mask: Create masks"
+	@echo "  train: Train the model"
+	@echo "  test: Run tests"
+	@echo "  bottleneck: Run the bottleneck profiler on the training script"
+	@echo "  help: Display this help message"
