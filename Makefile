@@ -14,6 +14,7 @@ PROCESSED_DATA_EXT := ".pt"
 
 RESULTS_DIR := $(DATA_DIR)/results
 RESULT_BASENAME := "result"
+RESULT2_BASENAME := "result2"
 RESULT_FILE_EXT := ".txt"
 
 FIGS_BASENAME := "result"
@@ -27,18 +28,29 @@ MASKS_DIR := $(DATA_DIR)/masks
 MASKS_BASENAME := "mask"
 MASKS_FILE_EXT := ".pt"
 
+RECONSTRUCTED_DIR := $(DATA_DIR)/reconstructed
+RECONSTRUCTED_BASENAME := "reconstructed"
+RECONSTRUCTED_FILE_EXT := ".pt"
+
+CUTTED_IMAGES_DIR := $(DATA_DIR)/cutted_images
+CUTTED_IMAGES_BASENAME := "cutted_images"
+CUTTED_IMAGES_FILE_EXT := ".pt"
+
 # Find the nRESULT_FILE_EXT available filename
 IDX=$(shell i=0; while [ -e "$(RESULTS_DIR)/$(RESULT_BASENAME)_$$i$(RESULT_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
 RESULT_PATH = $(RESULTS_DIR)/$(RESULT_BASENAME)_$(IDX)$(RESULT_FILE_EXT)
 FIGS_PATH = $(FIG_DIR)/$(FIGS_BASENAME)_$(IDX)$(FIG_FILE_EXT)
 WEIGHTS_PATH = $(WEIGHTS_DIR)/$(WEIGHTS_BASENAME)_$(IDX)$(WEIGHTS_FILE_EXT)
 
+IDX2 = $(shell i=0; while [ -e "$(RESULTS_DIR)/$(RESULT2_BASENAME)_$$i$(RESULT_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
+RESULT2_PATH = $(RESULTS_DIR)/$(RESULT2_BASENAME)_$(IDX2)$(RESULT_FILE_EXT)
+
 
 PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
 
-.PHONY: config preprocess mask train bottleneck test help
+.PHONY: config preprocess mask train bottleneck test help train2 mask_images
 
 config:
 	@echo "Storing paths to json..."
@@ -49,10 +61,14 @@ config:
 	@echo "		   \"processed_data_ext\": \"$(PROCESSED_DATA_EXT)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_dir\": \"$(MASKS_DIR)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_basename\": \"$(MASKS_BASENAME)\"," >> $(PATHS_FILE)
-	@echo "        \"masks_file_ext\": \"$(MASKS_FILE_EXT)\"" >> $(PATHS_FILE)
+	@echo "        \"masks_file_ext\": \"$(MASKS_FILE_EXT)\"," >> $(PATHS_FILE)
+	@echo "        \"cutted_images_dir\": \"$(CUTTED_IMAGES_DIR)\"," >> $(PATHS_FILE)
+	@echo "        \"cutted_images_basename\": \"$(CUTTED_IMAGES_BASENAME)\"," >> $(PATHS_FILE)
+	@echo "        \"cutted_images_file_ext\": \"$(CUTTED_IMAGES_FILE_EXT)\"," >> $(PATHS_FILE)
 	@echo "    }," >> $(PATHS_FILE)
 	@echo "    \"results\": {" >> $(PATHS_FILE)
 	@echo "        \"results_path\": \"$(RESULT_PATH)\", " >> $(PATHS_FILE)
+	@echo "        \"results2_path\": \"$(RESULT2_PATH)\", " >> $(PATHS_FILE)
 	@echo "        \"figs_path\": \"$(FIGS_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"weights_path\": \"$(WEIGHTS_PATH)\"" >> $(PATHS_FILE)   
 	@echo "    }" >> $(PATHS_FILE)
@@ -62,6 +78,10 @@ preprocess: config
 	@echo "Preprocessing data..."
 	@$(PYTHON) $(PREPROCESSING_DIR)/netcdf_to_torch.py --paths $(PATHS_FILE)
 
+mask_images: config
+	@echo "Creating masked images..."
+	$(PYTHON) $(PREPROCESSING_DIR)/create_masked_images.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
 mask: config
 	@echo "Creating masks..."
 	@$(PYTHON) $(PREPROCESSING_DIR)/create_masks.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
@@ -69,7 +89,13 @@ mask: config
 train: config
 	@$(PYTHON) $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
-train: bottleneck
+train2:
+	@$(PYTHON) $(SRC_DIR)/train_v2.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
+bottleneck2: config
+	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train_v2.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
+bottleneck: config
 	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 test:
