@@ -19,8 +19,7 @@ class Test_DINCAE_model(unittest.TestCase):
                 "middle_channels": [16, 30, 58, 110, 209],
                 "kernel_sizes": [3, 3, 3, 3, 3],
                 "pooling_sizes": [2, 2, 2, 2, 2],
-                "interp_mode": "bilinear",
-                "output_size": 3
+                "interp_mode": "bilinear"
                 },  
             "dataset":{
                 "n_channels": 10,
@@ -60,7 +59,6 @@ class Test_DINCAE_model(unittest.TestCase):
         self.assertEqual(self.model.image_width, 168)
         self.assertEqual(self.model.image_height, 144)
         self.assertEqual(self.model.interp_mode, "bilinear")
-        self.assertEqual(self.model.output_size, 3)
         
     def test_forward_pass(self):
         """Test if the forward pass of the model works correctly"""
@@ -68,7 +66,7 @@ class Test_DINCAE_model(unittest.TestCase):
         output = self.model(self.input_tensor)
         
         # Check if the output shape is correct
-        self.assertEqual(output.shape, (self.batch_size, 3, self.width, self.height))
+        self.assertEqual(output.shape, (self.batch_size, self.model.n_channels, self.width, self.height))
 
 if __name__ == "__main__":
     unittest.main()
