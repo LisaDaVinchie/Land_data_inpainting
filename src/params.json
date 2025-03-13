@@ -14,7 +14,10 @@
         "n_images": 10,
         "n_channels": 15,
         "image_width": 1600,
-        "image_height": 3600
+        "image_height": 3600,
+        "n_cutted_images": 10,
+        "cutted_width": 1600,
+        "cutted_height": 3600
     },
     "DINCAE_like": {
         "middle_channels": [16, 30, 58, 110, 209],
