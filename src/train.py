@@ -74,13 +74,6 @@ else:
 
 print("Model initialized\n", flush = True)
 
-# Import dataset
-# dataset = th.rand(100, 13, 10, 10)
-# channels_to_mask = [3, 4, 5]
-# masks = th.ones(100, 13, 10, 10)
-
-# masks[:, channels_to_mask, :2, :2] = 0
-
 dataset_start_time = time()
 data_files = list(processed_data_dir.glob("*.pt"))
 mask_files = list(masks_dir.glob("*.pt"))
