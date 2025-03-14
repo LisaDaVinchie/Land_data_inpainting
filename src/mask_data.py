@@ -39,6 +39,23 @@ def mask_inversemask_image(images: th.tensor, masks: th.tensor, placeholder: flo
     inverse_masked_img = new_images * inverse_masks + inv_placeholder * (1 - inverse_masks)
     return masked_img, inverse_masked_img
 
+def create_square_mask(image_width: int, image_height: int, mask_percentage: float) -> th.tensor:
+    """Create a square mask of n_pixels in the image"""
+    n_pixels = int(mask_percentage * image_width * image_height)
+    square_width = int(n_pixels ** 0.5)
+    mask = th.ones((image_width, image_height), dtype=th.int)
+    
+    # Get a random top-left corner for the square
+    row_idx = th.randint(0, image_height - square_width, (1,)).item()
+    col_idx = th.randint(0, image_width - square_width, (1,)).item()
+    
+    mask[
+        row_idx: row_idx + square_width,
+        col_idx: col_idx + square_width
+    ] = 0
+    
+    return mask
+
 class SquareMask():
     def __init__(self, params_path: Path, image_width: int = None, image_height: int = None, mask_percentage: float = None):
         """Create a square mask of n_pixels in the image"""
