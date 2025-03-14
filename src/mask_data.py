@@ -13,6 +13,32 @@ def apply_mask_on_channel(images: th.tensor, masks: th.tensor, placeholder: floa
     means = (images * masks).sum(dim=(2, 3), keepdim=True) / (masks.sum(dim=(2, 3), keepdim=True))
     return new_images * masks + means * (1 - masks)
 
+def mask_inversemask_image(images: th.tensor, masks: th.tensor, placeholder: float = None) -> th.tensor:
+    """Mask the image with the mask, using a placeholder. If the placeholder is none, use the mean of the level"""
+    new_images = images.clone()
+    
+    masks[images.isnan()] = 0
+    inverse_masks = 1 - masks
+    inverse_masks[images.isnan()] = 0
+    
+    new_images[new_images.isnan()] = 0
+    
+    if placeholder is None:
+        placeholder, inv_placeholder = 0, 0
+        
+        if masks.sum() > 0:
+            placeholder = (new_images * masks).sum(dim=(2, 3), keepdim=True) / (masks.sum(dim=(2, 3), keepdim=True))
+        
+        if inverse_masks.sum() > 0:
+            inv_placeholder = (new_images * inverse_masks).sum(dim=(2, 3), keepdim=True) / (inverse_masks.sum(dim=(2, 3), keepdim=True))
+        
+    else:
+        inv_placeholder = placeholder
+    
+    masked_img = new_images * masks + placeholder * (1 - masks)
+    inverse_masked_img = new_images * inverse_masks + inv_placeholder * (1 - inverse_masks)
+    return masked_img, inverse_masked_img
+
 class SquareMask():
     def __init__(self, params_path: Path, image_width: int = None, image_height: int = None, mask_percentage: float = None):
         """Create a square mask of n_pixels in the image"""
