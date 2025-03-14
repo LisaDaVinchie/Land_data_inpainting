@@ -64,7 +64,7 @@ config:
 	@echo "        \"masks_file_ext\": \"$(MASKS_FILE_EXT)\"," >> $(PATHS_FILE)
 	@echo "        \"cutted_images_dir\": \"$(CUTTED_IMAGES_DIR)\"," >> $(PATHS_FILE)
 	@echo "        \"cutted_images_basename\": \"$(CUTTED_IMAGES_BASENAME)\"," >> $(PATHS_FILE)
-	@echo "        \"cutted_images_file_ext\": \"$(CUTTED_IMAGES_FILE_EXT)\"," >> $(PATHS_FILE)
+	@echo "        \"cutted_images_file_ext\": \"$(CUTTED_IMAGES_FILE_EXT)\"" >> $(PATHS_FILE)
 	@echo "    }," >> $(PATHS_FILE)
 	@echo "    \"results\": {" >> $(PATHS_FILE)
 	@echo "        \"results_path\": \"$(RESULT_PATH)\", " >> $(PATHS_FILE)
