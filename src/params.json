@@ -16,8 +16,8 @@
         "image_width": 1600,
         "image_height": 3600,
         "n_cutted_images": 10,
-        "cutted_width": 1600,
-        "cutted_height": 3600
+        "cutted_width": 128,
+        "cutted_height": 128
     },
     "DINCAE_like": {
         "middle_channels": [16, 30, 58, 110, 209],
