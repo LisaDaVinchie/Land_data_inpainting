@@ -1,7 +1,7 @@
 {
     "training":{
         "train_perc": 0.8,
-        "batch_size": 10,
+        "batch_size": 64,
         "epochs": 3,
         "learning_rate": 0.001,
         "placeholder": 0,
@@ -15,7 +15,7 @@
         "n_channels": 15,
         "image_width": 1600,
         "image_height": 3600,
-        "n_cutted_images": 20,
+        "n_cutted_images": 100,
         "cutted_width": 128,
         "cutted_height": 128
     },
@@ -50,7 +50,7 @@
         "up_stride": 2,
         "print_sizes": false
     },
-    "square_mask": {
+    "mask": {
         "mask_percentage": 0.05
     }
 }
