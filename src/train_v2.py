@@ -17,7 +17,7 @@ start_time = time()
 def track_memory(stage=""):
     process = psutil.Process(os.getpid())
     mem_info = process.memory_info().rss / 1e6  # Convert to MB
-    print(f"[Memory] {stage}: {mem_info:.2f} MB")
+    print(f"[Memory] {stage}: {mem_info:.2f} MB\n", flush=True)
 
 parser = argparse.ArgumentParser(description='Train a CNN model on a dataset')
 parser.add_argument('--paths', type=Path, help='Path to the JSON file with data paths')
