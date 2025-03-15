@@ -15,7 +15,7 @@
         "n_channels": 15,
         "image_width": 1600,
         "image_height": 3600,
-        "n_cutted_images": 100,
+        "n_cutted_images": 1000,
         "cutted_width": 128,
         "cutted_height": 128
     },
