@@ -38,7 +38,9 @@ CUTTED_TXT_NAME := "explanatory"
 CUTTED_IMAGES_FILE_EXT := ".pt"
 
 IDX_CUTTED = $(shell i=0; while [ -e "$(CUTTED_IMAGES_DIR)/$(CUTTED_IMAGES_BASENAME)_$$i$(CUTTED_IMAGES_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
-CUTTED_IMAGES_PATH = $(CUTTED_IMAGES_DIR)/$(CUTTED_IMAGES_BASENAME)_$(IDX_CUTTED)$(CUTTED_IMAGES_FILE_EXT)
+IDX_CUTTED_MINUS_ONE = $(shell echo $$(($(IDX_CUTTED) - 1)))
+CURRENT_CUTTED_IMAGES_PATH = $(CUTTED_IMAGES_DIR)/$(CUTTED_IMAGES_BASENAME)_$(IDX_CUTTED_MINUS_ONE)$(CUTTED_IMAGES_FILE_EXT)
+NEXT_CUTTED_IMAGES_PATH = $(CUTTED_IMAGES_DIR)/$(CUTTED_IMAGES_BASENAME)_$(IDX_CUTTED)$(CUTTED_IMAGES_FILE_EXT)
 CUTTED_TXT_PATH = $(CUTTED_IMAGES_DIR)/$(CUTTED_TXT_NAME)_$(IDX_CUTTED).txt
 
 # Find the next RESULT_FILE_EXT available filename
@@ -66,7 +68,8 @@ config:
 	@echo "        \"masks_dir\": \"$(MASKS_DIR)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_basename\": \"$(MASKS_BASENAME)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_file_ext\": \"$(MASKS_FILE_EXT)\"," >> $(PATHS_FILE)
-	@echo "        \"cutted_images_path\": \"$(CUTTED_IMAGES_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"current_cutted_images_path\": \"$(CURRENT_CUTTED_IMAGES_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"next_cutted_images_path\": \"$(NEXT_CUTTED_IMAGES_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"cutted_txt_path\": \"$(CUTTED_TXT_PATH)\"" >> $(PATHS_FILE)
 	@echo "    }," >> $(PATHS_FILE)
 	@echo "    \"results\": {" >> $(PATHS_FILE)
@@ -91,10 +94,10 @@ mask: config
 
 cut: config
 	@echo "Cutting images..."
-	@$(PYTHON) $(SRC_DIR)/cut_images.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+	@$(PYTHON) $(SRC_DIR)/cut_images_v2.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 train: config
-	@$(PYTHON) $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+	@$(PYTHON) $(SRC_DIR)/train_v1.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 train2: config
 	@$(PYTHON) $(SRC_DIR)/train_v2.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
