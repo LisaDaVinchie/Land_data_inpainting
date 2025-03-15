@@ -22,7 +22,7 @@ params_path = args.params
 paths_path = args.paths
 
 processed_data_dir: Path = None
-cutted_images_path: Path = None
+next_cutted_images_path: Path = None
 cutted_txt_path: Path = None
 paths = load_config(paths_path, ["data", "results"])
 locals().update(paths["data"])
@@ -92,7 +92,7 @@ print(f"Cutted images in {time() - d_time} seconds\n", flush=True)
 
 # Save the cutted images
 save_time = time()
-th.save(dataset, cutted_images_path)
+th.save(dataset, next_cutted_images_path)
 
 with open(params_path, 'r') as json_file:
     data = json.load(json_file)
