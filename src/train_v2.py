@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse
 from models import simple_conv, conv_maxpool, conv_unet, DINCAE_like
 from time import time
+import json
 
 from mask_data import mask_inversemask_image
 from utils.create_dataloaders_v2 import create_dataloaders
@@ -13,6 +14,7 @@ start_time = time()
 parser = argparse.ArgumentParser(description='Train a CNN model on a dataset')
 parser.add_argument('--paths', type=Path, help='Path to the JSON file with data paths')
 parser.add_argument('--params', type=Path, help='Path to the JSON file with model parameters')
+parser.add_argument('--dataset_idx', type=int, help='Index of the dataset to use', required=False)
 
 args = parser.parse_args()
 
@@ -25,7 +27,7 @@ figs_path: Path = None
 weights_path: Path = None
 processed_data_dir: Path = None
 masks_dir: Path = None
-cutted_images_dir: Path = None
+current_cutted_images_path: Path = None
 cutted_images_basename: str = None
 cutted_images_file_ext: str = None
 
@@ -39,9 +41,9 @@ figs_path = Path(figs_path)
 weights_path = Path(weights_path)
 processed_data_dir = Path(processed_data_dir)
 masks_dir = Path(masks_dir)
-cutted_images_dir = Path(cutted_images_dir)
+current_cutted_images_path = Path(current_cutted_images_path)
 
-for path in [results2_path.parent, figs_path.parent, weights_path.parent, cutted_images_dir]:
+for path in [results2_path.parent, figs_path.parent, weights_path.parent, current_cutted_images_path]:
     if not path.exists():
         raise FileNotFoundError(f"Path {path} does not exist.")
 
@@ -67,7 +69,10 @@ locals().update(config["training"])
 locals().update(config["dataset"])
 print("Parameters imported\n", flush = True)
 
-cutted_images_path = cutted_images_dir / f"{cutted_images_basename}_n{n_cutted_images}_c{n_channels}{cutted_images_file_ext}"
+dataset_idx = None
+if args.dataset_idx is not None:
+    dataset_idx = args.dataset_idx
+    current_cutted_images_path = current_cutted_images_path.parent / f"cutted_images_{dataset_idx}.pt"
 
 if model_kind == "simple_conv":
     model = simple_conv(params_path)
@@ -83,7 +88,7 @@ else:
 print("Model initialized\n", flush = True)
 
 dataset_start_time = time()
-dataset = th.load(cutted_images_path)
+dataset = th.load(current_cutted_images_path)
 masked_images = dataset["masked_images"]
 inverse_masked_images = dataset["inverse_masked_images"]
 masks = dataset["masks"]
@@ -132,10 +137,17 @@ print(f"Elapsed time: {elapsed_time:.2f} seconds")
 # Save the model
 th.save(model.state_dict(), weights_path)
 
+with open(params_path, 'r') as f:
+    params = json.load(f)
+    
+json_str = json.dumps(params, indent=4)[1: -1]
+
 # Save the train losses to a txt file
 with open(results2_path, 'w') as f:
     f.write("Elapsed time [s]:\n")
     f.write(f"{elapsed_time}\n\n")
+    f.write("Used dataset:\n")
+    f.write(f"{current_cutted_images_path.relative_to(current_cutted_images_path.parent.parent)}\n\n")
     f.write("Train losses\n")
     for i, loss_function in enumerate(train_losses):
         f.write(f"{loss_function}\t")
@@ -144,5 +156,7 @@ with open(results2_path, 'w') as f:
     for i, loss_function in enumerate(test_losses):
         f.write(f"{loss_function}\t")
     f.write("\n\n")
+    f.write("Parameters\n")
+    f.write(json_str)
     
         
