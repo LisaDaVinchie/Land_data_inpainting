@@ -77,11 +77,21 @@ keys = ["images", "masks"]
 dataset = {cls: th.empty((n_cutted_images, n_channels, cutted_width, cutted_height), dtype=th.float32) for cls in keys}
 
 idx = 0
+n_pixels = cutted_width * cutted_height * n_channels
+threshold = 0.5 * n_pixels
 for path, indices in path_to_indices.items():
     image = th.load(path)
     
     for index in indices:
         cutted_img = image[:, index[0]:index[0] + cutted_width, index[1]:index[1] + cutted_height].unsqueeze(0)
+        nan_count = th.isnan(cutted_img).sum().item()
+        if nan_count > threshold:
+            while nan_count > threshold:
+                random_x = th.randint(0, image_width - cutted_width, (n_cutted_images,))
+                random_y = th.randint(0, image_height - cutted_height, (n_cutted_images,))
+                index = th.stack([random_x, random_y], dim = 1)[0]
+                cutted_img = image[:, index[0]:index[0] + cutted_width, index[1]:index[1] + cutted_height].unsqueeze(0)
+                nan_count = th.isnan(cutted_img).sum().item()
         masks = th.stack([create_square_mask(cutted_width, cutted_height, mask_percentage).unsqueeze(0) for _ in range(n_channels)], dim=1)
         dataset["images"][idx] = cutted_img
         dataset["masks"][idx] = masks
