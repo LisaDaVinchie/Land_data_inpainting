@@ -12,9 +12,6 @@ src/explore_dataset.py
 # Not working download file
 src/preprocessing/download_data.py
 
-# New versions
-**/**_v2.*
-
 # The venv folder
 venv_inpainting/
 
