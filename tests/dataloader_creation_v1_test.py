@@ -8,9 +8,6 @@ from utils.create_dataloaders_v1 import create_dataloaders
 
 class TestCreateDataloaders(unittest.TestCase):
     def setUp(self):
-        # np.random.seed(42)
-        # torch.manual_seed(42)
-
         # Create dummy dataset (100 samples, each with 3x64x64 shape)
         self.dataset = np.random.rand(100, 3, 64, 64).astype(np.float32)
         self.masks = np.random.randint(0, 2, (100, 64, 64), dtype=np.uint8)
