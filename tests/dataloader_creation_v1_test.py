@@ -4,7 +4,7 @@ import torch
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from utils.create_dataloaders import create_dataloaders
+from utils.create_dataloaders_v1 import create_dataloaders
 
 class TestCreateDataloaders(unittest.TestCase):
     def setUp(self):
