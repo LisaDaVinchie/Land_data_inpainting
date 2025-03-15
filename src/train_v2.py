@@ -4,12 +4,20 @@ import argparse
 from models import simple_conv, conv_maxpool, conv_unet, DINCAE_like
 from time import time
 import json
+import psutil
+import os
 
 from mask_data import mask_inversemask_image
 from utils.create_dataloaders_v2 import create_dataloaders
 from utils.import_params_json import load_config
 
 start_time = time()
+
+
+def track_memory(stage=""):
+    process = psutil.Process(os.getpid())
+    mem_info = process.memory_info().rss / 1e6  # Convert to MB
+    print(f"[Memory] {stage}: {mem_info:.2f} MB")
 
 parser = argparse.ArgumentParser(description='Train a CNN model on a dataset')
 parser.add_argument('--paths', type=Path, help='Path to the JSON file with data paths')
@@ -74,6 +82,7 @@ if args.dataset_idx is not None:
     dataset_idx = args.dataset_idx
     current_cutted_images_path = current_cutted_images_path.parent / f"cutted_images_{dataset_idx}.pt"
 
+track_memory("Before loading model")
 if model_kind == "simple_conv":
     model = simple_conv(params_path)
 elif model_kind == "conv_maxpool":
@@ -84,19 +93,22 @@ elif model_kind == "DINCAE_like":
     model = DINCAE_like(params_path, image_width=cutted_width, image_height=cutted_height, n_channels=n_channels)
 else:
     raise ValueError(f"Model kind {model_kind} not recognized")
+track_memory("After loading model")
 
 print("Model initialized\n", flush = True)
 
 dataset_start_time = time()
+track_memory("Before loading dataset")
 dataset = th.load(current_cutted_images_path)
-masked_images = dataset["masked_images"]
-inverse_masked_images = dataset["inverse_masked_images"]
-masks = dataset["masks"]
+track_memory("After loading dataset")
 
 print(f"Dataset created in {time() - dataset_start_time:.2f} seconds", flush = True)
 
-train_loader, test_loader = create_dataloaders(masked_images=masked_images, inverse_masked_images=inverse_masked_images, masks=masks, train_perc=train_perc, batch_size=batch_size)
+track_memory("Before creating dataloaders")
+train_loader, test_loader = create_dataloaders(masked_images=dataset["masked_images"], inverse_masked_images=dataset["inverse_masked_images"], masks=dataset["masks"], train_perc=train_perc, batch_size=batch_size)
+del dataset
 print("Dataloaders created\n", flush = True)
+track_memory("After creating dataloaders")
 
 loss_function = th.nn.MSELoss()
 optimizer = th.optim.Adam(model.parameters(), lr=learning_rate)
@@ -104,6 +116,7 @@ optimizer = th.optim.Adam(model.parameters(), lr=learning_rate)
 train_losses = []
 test_losses = []
 
+track_memory("Before training")
 for epoch in range(epochs):
     print(f"\nEpoch {epoch + 1}/{epochs}\n", flush=True)
     model.train()
@@ -133,6 +146,8 @@ for epoch in range(epochs):
 
 elapsed_time = time() - start_time
 print(f"Elapsed time: {elapsed_time:.2f} seconds")
+
+track_memory("After training")
 
 # Save the model
 th.save(model.state_dict(), weights_path)
