@@ -56,7 +56,7 @@ PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
 
-.PHONY: config preprocess cut train bottleneck test help train2
+.PHONY: config preprocess cut1 cut2 train bottleneck test help train2
 
 config:
 	@echo "Storing paths to json..."
@@ -84,9 +84,13 @@ preprocess: config
 	@echo "Preprocessing data..."
 	@$(PYTHON) $(PREPROCESSING_DIR)/netcdf_to_torch.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
-cut: config
+cut1: config
 	@echo "Cutting images..."
-	@$(PYTHON) $(SRC_DIR)/cut_images_v2.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+	@$(PYTHON) $(PREPROCESSING_DIR)/cut_images_v1.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
+cut2: config
+	@echo "Cutting images..."
+	@$(PYTHON) $(PREPROCESSING_DIR)/cut_images_v2.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 train: config
 	@$(PYTHON) $(SRC_DIR)/train_v1.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
