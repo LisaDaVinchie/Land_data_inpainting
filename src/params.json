@@ -65,6 +65,7 @@
         "print_sizes": false
     },
     "mask": {
-        "mask_percentage": 0.05
+        "mask_percentage": 0.05,
+        "placeholder": false
     }
 }
