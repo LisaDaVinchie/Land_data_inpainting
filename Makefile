@@ -82,7 +82,7 @@ config:
 
 preprocess: config
 	@echo "Preprocessing data..."
-	@$(PYTHON) $(PREPROCESSING_DIR)/netcdf_to_torch.py --paths $(PATHS_FILE)
+	@$(PYTHON) $(PREPROCESSING_DIR)/netcdf_to_torch.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 mask_images: config
 	@echo "Creating masked images..."
