@@ -28,16 +28,21 @@ paths = load_config(paths_path, ["data", "results"])
 locals().update(paths["data"])
 
 n_images = None
-image_width = None
-image_height = None
+x_shape_raw = None
+y_shape_raw = None
 n_cutted_images = None
 cutted_width = None
 cutted_height = None
 n_channels = None
 mask_percentage = None
+non_masked_channels = None
+placeholder = None
 params = load_config(params_path, ["dataset", "mask"])
 locals().update(params["dataset"])
 locals().update(params["mask"])
+
+if placeholder == False:
+    placeholder = None
 
 
 processed_data_dir = Path(processed_data_dir)
@@ -55,10 +60,9 @@ print(f"\nFound {len(processed_images_paths)} images in {processed_data_dir}\n",
 
 
 # Select some random points, to use as centers for the cutted images
-
 idx_time = time()
-random_x = th.randint(0, image_width - cutted_width, (n_cutted_images,))
-random_y = th.randint(0, image_height - cutted_height, (n_cutted_images,))
+random_x = th.randint(0, x_shape_raw - cutted_width, (n_cutted_images,))
+random_y = th.randint(0, y_shape_raw - cutted_height, (n_cutted_images,))
 random_points = th.stack([random_x, random_y], dim = 1)
 
 path_to_indices = {}
@@ -75,6 +79,7 @@ print(f"Selected random points for cutted images in {time() - idx_time} seconds\
 d_time = time()     
 keys = ["masked_images", "inverse_masked_images", "masks"]
 dataset = {cls: th.empty((n_cutted_images, n_channels, cutted_width, cutted_height), dtype=th.float32) for cls in keys}
+non_masked_channels = list(non_masked_channels)
 
 idx = 0
 n_pixels = cutted_width * cutted_height * n_channels
@@ -87,13 +92,17 @@ for path, indices in path_to_indices.items():
         nan_count = th.isnan(cutted_img).sum().item()
         if nan_count > threshold:
             while nan_count > threshold:
-                random_x = th.randint(0, image_width - cutted_width, (n_cutted_images,))
-                random_y = th.randint(0, image_height - cutted_height, (n_cutted_images,))
+                random_x = th.randint(0, x_shape_raw - cutted_width, (n_cutted_images,))
+                random_y = th.randint(0, y_shape_raw - cutted_height, (n_cutted_images,))
                 index = th.stack([random_x, random_y], dim = 1)[0]
                 cutted_img = image[:, index[0]:index[0] + cutted_width, index[1]:index[1] + cutted_height].unsqueeze(0)
                 nan_count = th.isnan(cutted_img).sum().item()
+                
         masks = th.stack([create_square_mask(cutted_width, cutted_height, mask_percentage).unsqueeze(0) for _ in range(n_channels)], dim=1)
-        dataset["masked_images"][idx], dataset["inverse_masked_images"][idx] = mask_inversemask_image(cutted_img, masks, 0)
+        masks[:, non_masked_channels, :, :] = th.ones((1, cutted_width, cutted_height), dtype=th.float32)
+        
+        
+        dataset["masked_images"][idx], dataset["inverse_masked_images"][idx] = mask_inversemask_image(cutted_img, masks, placeholder)
         dataset["masks"][idx] = masks
         idx += 1
 
