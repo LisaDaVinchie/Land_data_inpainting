@@ -1,7 +1,10 @@
 import torch as th
 from pathlib import Path
 import cv2
+import os
+import sys
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from utils.import_params_json import load_config
 
 def apply_mask_on_channel(images: th.tensor, masks: th.tensor, placeholder: float = None) -> th.tensor:

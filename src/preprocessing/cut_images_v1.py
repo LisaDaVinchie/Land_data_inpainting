@@ -2,12 +2,14 @@ import torch as th
 from pathlib import Path
 import argparse
 from time import time
-from utils.import_params_json import load_config
-from preprocessing.mask_data import create_square_mask
+from mask_data import create_square_mask
 import random
 import json
+import os
+import sys
 
-import matplotlib.pyplot as plt
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from utils.import_params_json import load_config
 
 
 start_time = time()
@@ -28,8 +30,8 @@ paths = load_config(paths_path, ["data", "results"])
 locals().update(paths["data"])
 
 n_images = None
-image_width = None
-image_height = None
+x_shape_raw = None
+y_shape_raw = None
 n_cutted_images = None
 cutted_width = None
 cutted_height = None
@@ -57,8 +59,8 @@ print(f"\nFound {len(processed_images_paths)} images in {processed_data_dir}\n",
 # Select some random points, to use as centers for the cutted images
 
 idx_time = time()
-random_x = th.randint(0, image_width - cutted_width, (n_cutted_images,))
-random_y = th.randint(0, image_height - cutted_height, (n_cutted_images,))
+random_x = th.randint(0, x_shape_raw - cutted_width, (n_cutted_images,))
+random_y = th.randint(0, y_shape_raw - cutted_height, (n_cutted_images,))
 random_points = th.stack([random_x, random_y], dim = 1)
 
 path_to_indices = {}
@@ -87,8 +89,8 @@ for path, indices in path_to_indices.items():
         nan_count = th.isnan(cutted_img).sum().item()
         if nan_count > threshold:
             while nan_count > threshold:
-                random_x = th.randint(0, image_width - cutted_width, (n_cutted_images,))
-                random_y = th.randint(0, image_height - cutted_height, (n_cutted_images,))
+                random_x = th.randint(0, x_shape_raw - cutted_width, (n_cutted_images,))
+                random_y = th.randint(0, y_shape_raw - cutted_height, (n_cutted_images,))
                 index = th.stack([random_x, random_y], dim = 1)[0]
                 cutted_img = image[:, index[0]:index[0] + cutted_width, index[1]:index[1] + cutted_height].unsqueeze(0)
                 nan_count = th.isnan(cutted_img).sum().item()

@@ -2,12 +2,14 @@ import torch as th
 from pathlib import Path
 import argparse
 from time import time
-from utils.import_params_json import load_config
-from preprocessing.mask_data import mask_inversemask_image, create_square_mask
+from mask_data import mask_inversemask_image, create_square_mask
 import random
 import json
+import os
+import sys
 
-import matplotlib.pyplot as plt
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from utils.import_params_json import load_config
 
 
 start_time = time()
