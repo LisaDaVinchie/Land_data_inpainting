@@ -44,17 +44,14 @@ params_path = Path(args.params)
 with open(params_path, "r") as f:
     params = json.load(f)
     
-channels_to_exclude: list = None
-channels_list: list = None
+channels_to_keep: list = None
 x_shape_raw: int = None
 y_shape_raw: int = None
 params = load_config(params_path, ["dataset"])
 locals().update(params["dataset"])
 
-channels_list = list(channels_list)
-keys_to_include = [key for key in channels_list if key not in channels_to_exclude]
-n_keys_to_include = len(keys_to_include)
-print(f"Keys to include: {keys_to_include}\n")
+n_keys_to_include = len(channels_to_keep)
+print(f"Keys to include: {channels_to_keep}\n")
 
 # Assuming all the files have the same keys and shape
 
@@ -70,7 +67,7 @@ for file in raw_data_paths:
     try:
         data = xr.open_dataset(file, engine="h5netcdf")
         
-        for i, key in enumerate(keys_to_include):
+        for i, key in enumerate(channels_to_keep):
             output_tensor[i, :, :] = th.tensor(data[key].values).unsqueeze(1)
             
         data.close()
