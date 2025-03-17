@@ -4,7 +4,7 @@ import sys
 import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from src.mask_data import mask_inversemask_image
+from src.preprocessing.mask_data import mask_inversemask_image
 
 class TestApplyMaskOnChannel(unittest.TestCase):
   def setUp(self):

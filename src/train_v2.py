@@ -7,7 +7,7 @@ import json
 import psutil
 import os
 
-from mask_data import mask_inversemask_image
+from preprocessing.mask_data import mask_inversemask_image
 from utils.create_dataloaders_v2 import create_dataloaders
 from utils.import_params_json import load_config
 

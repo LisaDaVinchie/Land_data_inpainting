@@ -3,7 +3,7 @@ import torch as th
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from mask_data import apply_mask_on_channel
+from preprocessing.mask_data import apply_mask_on_channel
 
 class TestApplyMaskOnChannel(unittest.TestCase):
     def setUp(self):

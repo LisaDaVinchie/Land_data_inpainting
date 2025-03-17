@@ -4,7 +4,7 @@ import argparse
 from models import simple_conv, conv_maxpool, conv_unet, DINCAE_like
 from time import time
 
-from mask_data import apply_mask_on_channel
+from preprocessing.mask_data import apply_mask_on_channel
 from utils.create_dataloaders_v1 import create_dataloaders
 from utils.import_params_json import load_config
 

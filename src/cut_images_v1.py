@@ -3,7 +3,7 @@ from pathlib import Path
 import argparse
 from time import time
 from utils.import_params_json import load_config
-from mask_data import mask_inversemask_image, create_square_mask
+from preprocessing.mask_data import create_square_mask
 import random
 import json
 
