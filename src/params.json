@@ -13,11 +13,19 @@
     "dataset":{
         "n_images": 20,
         "n_channels": 15,
-        "image_width": 1600,
-        "image_height": 3600,
+        "x_shape_raw": 1600,
+        "y_shape_raw": 3600,
         "n_cutted_images": 1000,
         "cutted_width": 128,
-        "cutted_height": 128
+        "cutted_height": 128,
+        "channels_to_exclude": ["crs", "bias_to_reference_sst", "sources_of_sst", "sst_dtime"],
+        "channels_list": [
+            "crs", "sea_surface_temperature", "or_number_of_pixels",
+            "sea_surface_temperature_stddev", "quality_level", "sses_bias",
+            "sses_standard_deviation", "satellite_zenith_angle", "or_latitude",
+            "or_longitude", "adjusted_sea_surface_temperature", "solar_zenith_angle",
+            "bias_to_reference_sst", "sources_of_sst", "sst_dtime"
+            ]
     },
     "DINCAE_like": {
         "middle_channels": [16, 30, 58, 110, 209],
