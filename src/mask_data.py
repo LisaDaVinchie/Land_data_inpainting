@@ -43,7 +43,7 @@ def create_square_mask(image_width: int, image_height: int, mask_percentage: flo
     """Create a square mask of n_pixels in the image"""
     n_pixels = int(mask_percentage * image_width * image_height)
     square_width = int(n_pixels ** 0.5)
-    mask = th.ones((image_width, image_height), dtype=th.int)
+    mask = th.ones((image_width, image_height), dtype=th.float32)
     
     # Get a random top-left corner for the square
     row_idx = th.randint(0, image_height - square_width, (1,)).item()
