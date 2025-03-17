@@ -7,8 +7,7 @@ src/PartialConv2D_nvidia.py
 tests/PartialConvNvidia_test.py
 
 # Exploration file
-src/explore_raw_data.py
-src/explore_dataset.py
+src/explore_*
 
 # Not working download file
 src/preprocessing/download_data.py
