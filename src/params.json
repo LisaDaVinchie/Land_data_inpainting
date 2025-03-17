@@ -12,7 +12,7 @@
     },
     "dataset":{
         "n_images": 20,
-        "n_channels": 15,
+        "n_channels": 11,
         "x_shape_raw": 1600,
         "y_shape_raw": 3600,
         "n_cutted_images": 1000,
