@@ -11,9 +11,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from PartialConv import PartialConv2d
 
-# Assuming the PartialConv2d class is defined in the same file or imported
-# from your_module import PartialConv2d
-
 class TestPartialConv2dOutput(unittest.TestCase):
     def setUp(self):
         # Set up fixed input, mask, weights, and biases
