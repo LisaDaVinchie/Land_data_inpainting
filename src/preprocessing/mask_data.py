@@ -17,7 +17,17 @@ def apply_mask_on_channel(images: th.tensor, masks: th.tensor, placeholder: floa
     return new_images * masks + means * (1 - masks)
 
 def mask_inversemask_image(images: th.tensor, masks: th.tensor, placeholder: float = None) -> th.tensor:
-    """Mask the image with the mask, using a placeholder. If the placeholder is none, use the mean of the level"""
+    """Mask the image with a placeholder value.
+    If the placeholder is none, use the mean of the level and, if there are nans, mask them as well.
+
+    Args:
+        images (th.tensor): images to mask, of shape (batch_size, channels, height, width)
+        masks (th.tensor): masks to apply, of shape (batch_size, channels, height, width)
+        placeholder (float, optional): number to use for masked pixels. Defaults to None.
+
+    Returns:
+        th.tensor: _description_
+    """
     new_images = images.clone()
     
     masks[images.isnan()] = 0
