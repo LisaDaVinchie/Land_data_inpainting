@@ -8,7 +8,6 @@ from tempfile import NamedTemporaryFile
 
 # Add the parent directory to the path so that we can import the game module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-
 from src.models import simple_conv
 
 class Test_simpleconv_model(unittest.TestCase):
