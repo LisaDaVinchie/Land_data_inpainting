@@ -2,10 +2,12 @@ import torch as th
 from pathlib import Path
 import argparse
 from time import time
+from datetime import date, datetime
 import random
 import json
 import os
 import sys
+import math
 
 path_to_append = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(path_to_append)
@@ -51,7 +53,7 @@ def map_random_points_to_images(image_file_paths: list, selected_random_points: 
         path_to_indices[path].append(point)
     return path_to_indices
     
-def generate_masked_image_dataset(original_width: int, original_height: int, n_images: int, final_width: int, final_height: int, n_channels: int, masked_fraction: float, non_masked_channels_list: list, path_to_indices_map: dict, placeholder: float = None) -> dict:
+def generate_masked_image_dataset(original_width: int, original_height: int, n_images: int, final_width: int, final_height: int, n_channels: int, masked_fraction: float, non_masked_channels_list: list, path_to_indices_map: dict, nans_threshold: float, placeholder: float = None) -> dict:
     """Generate a dataset of masked images, inverse masked images and masks
 
     Args:
@@ -70,15 +72,28 @@ def generate_masked_image_dataset(original_width: int, original_height: int, n_i
         dict: dictionary with the masked images, inverse masked images and masks as keys and the corresponding tensors as values
     """
     keys = ["masked_images", "inverse_masked_images", "masks"]
-    dataset = {cls: th.empty((n_images, n_channels, final_width, final_height), dtype=th.float32) for cls in keys}
+    dataset = {cls: th.empty((n_images, n_channels + 1, final_width, final_height), dtype=th.float32) for cls in keys}
     non_masked_channels_list = list(non_masked_channels_list)
+    
+    selected_dates = [Path(path).stem for path in path_to_indices_map.keys()]
+    dates_parsed = [datetime.strptime(d, "%Y_%m_%d").date() for d in selected_dates]
+    oldest_date = min(dates_parsed)
+    newest_date = max(dates_parsed)
+    
+    interval = (newest_date - oldest_date).days
 
     idx = 0
     n_pixels = final_width * final_height * n_channels
-    threshold = 0.5 * n_pixels
+    threshold = nans_threshold * n_pixels
     for path, indices in path_to_indices_map.items():
         image = th.load(path)
-    
+        
+        days_from_inital_date = (datetime.strptime(Path(path).stem, "%Y_%m_%d").date() - oldest_date).days
+        
+        encoded_time = math.cos(math.pi * days_from_inital_date / interval)
+        time_layer = th.ones((1, 1, final_width, final_height), dtype=th.float32) * encoded_time
+        
+        
         for index in indices:
             cutted_img = image[:, index[0]:index[0] + final_width, index[1]:index[1] + final_height].unsqueeze(0)
             nan_count = th.isnan(cutted_img).sum().item()
@@ -92,8 +107,15 @@ def generate_masked_image_dataset(original_width: int, original_height: int, n_i
             masks[:, non_masked_channels_list, :, :] = th.ones((1, final_width, final_height), dtype=th.float32)
         
         
-            dataset["masked_images"][idx], dataset["inverse_masked_images"][idx] = mask_inversemask_image(cutted_img, masks, placeholder)
-            dataset["masks"][idx] = masks
+            masked_images, inverse_masked_images = mask_inversemask_image(cutted_img, masks, placeholder)
+            
+            masked_images = th.cat((masked_images, time_layer), dim=1)
+            inverse_masked_images = th.cat((inverse_masked_images, time_layer), dim=1)
+            masks = th.cat((masks, th.ones((1, final_width, final_height), dtype=th.float32).unsqueeze(0)), dim=1)
+            
+            dataset[keys[0]][idx] = masked_images
+            dataset[keys[1]][idx] = inverse_masked_images
+            dataset[keys[2]][idx] = masks
             idx += 1
     return dataset
 
@@ -114,9 +136,6 @@ def main():
     processed_data_dir = paths["data"]["processed_data_dir"]
     next_cutted_images_path = paths["data"]["next_cutted_images_path"]
     cutted_txt_path = paths["data"]["cutted_txt_path"]
-    
-    
-    
     print(f"Found paths: {processed_data_dir}, {next_cutted_images_path}, {cutted_txt_path}\n", flush=True)
 
     with open(params_path, 'r') as json_file:
@@ -129,6 +148,7 @@ def main():
     cutted_height = params["dataset"]["cutted_height"]
     n_channels = params["dataset"]["n_channels"]
     non_masked_channels = params["dataset"]["non_masked_channels"]
+    nans_threshold = params["dataset"]["nans_threshold"]
     
     mask_percentage = params["mask"]["mask_percentage"]
     placeholder = params["mask"]["placeholder"]
@@ -164,7 +184,7 @@ def main():
                                             n_images=n_cutted_images, final_width=cutted_width,
                                             final_height=cutted_height, n_channels=n_channels,
                                             masked_fraction=mask_percentage, non_masked_channels_list=non_masked_channels,
-                                            path_to_indices_map=path_to_indices, placeholder=placeholder)
+                                            path_to_indices_map=path_to_indices, placeholder=placeholder, nans_threshold=nans_threshold)
 
     print(f"Cutted images in {time() - d_time} seconds\n", flush=True)
 

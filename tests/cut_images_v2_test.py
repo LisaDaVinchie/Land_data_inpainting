@@ -23,7 +23,11 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         self.n_channels = 3
         for i in range(self.n_images):
             dummy_image = th.rand(self.n_channels, self.x_shape_raw, self.y_shape_raw)
-            th.save(dummy_image, self.processed_data_dir / f"image_{i}.pt")
+            years = th.randint(2000, 2020, (1,))
+            months = th.randint(1, 13, (1,))
+            days = th.randint(1, 29, (1,))
+            dummy_date = f"{years.item()}_{months.item()}_{days.item()}"
+            th.save(dummy_image, self.processed_data_dir / f"{dummy_date}.pt")
 
         # Test parameters
         self.n_cutted_images = 3
@@ -62,6 +66,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             non_masked_channels_list=self.non_masked_channels,
             path_to_indices_map=path_to_indices,
             placeholder=self.placeholder,
+            nans_threshold=0.5
         )
 
         # Check that the output is a dictionary with the correct keys
@@ -69,7 +74,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         self.assertSetEqual(set(dataset.keys()), {"masked_images", "inverse_masked_images", "masks"})
 
         # Check that each tensor has the correct shape and dtype
-        expected_shape = (self.n_cutted_images, self.n_channels, self.cutted_width, self.cutted_height)
+        expected_shape = (self.n_cutted_images, self.n_channels + 1, self.cutted_width, self.cutted_height)
         expected_dtype = th.float32
 
         for key in dataset.keys():
