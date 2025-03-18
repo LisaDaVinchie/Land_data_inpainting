@@ -131,12 +131,11 @@ def main():
     paths_path = args.paths
     
     with open(paths_path, 'r') as json_file:
-        paths = json.load(json_file)
+        json_paths = json.load(json_file)
         
-    processed_data_dir = paths["data"]["processed_data_dir"]
-    next_cutted_images_path = paths["data"]["next_cutted_images_path"]
-    cutted_txt_path = paths["data"]["cutted_txt_path"]
-    print(f"Found paths: {processed_data_dir}, {next_cutted_images_path}, {cutted_txt_path}\n", flush=True)
+    processed_data_dir = json_paths["data"]["processed_data_dir"]
+    next_cutted_images_path = json_paths["data"]["next_cutted_images_path"]
+    cutted_txt_path = json_paths["data"]["cutted_txt_path"]
 
     with open(params_path, 'r') as json_file:
         params = json.load(json_file)
@@ -192,12 +191,9 @@ def main():
     save_time = time()
     th.save(dataset, next_cutted_images_path)
 
-    with open(params_path, 'r') as json_file:
-        paths = json.load(json_file)
-
     # Extract the "dataset" and "mask" sections
-    dataset_section = paths.get('dataset', {})
-    mask_section = paths.get('mask', {})
+    dataset_section = json_paths.get('dataset', {})
+    mask_section = json_paths.get('mask', {})
 
     # Combine the sections into a single dictionary
     sections_to_save = {
