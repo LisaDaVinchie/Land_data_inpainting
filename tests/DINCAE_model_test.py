@@ -23,8 +23,8 @@ class Test_DINCAE_model(unittest.TestCase):
                 },  
             "dataset":{
                 "n_channels": 10,
-                "image_width": 168,
-                "image_height": 144
+                "cutted_width": 168,
+                "cutted_height": 144
             }      
         }
         
