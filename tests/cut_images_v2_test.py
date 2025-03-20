@@ -6,7 +6,7 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from preprocessing.cut_images_v2 import generate_masked_image_dataset, select_random_points, map_random_points_to_images
+from preprocessing.cut_images_v2 import generate_image_dataset, select_random_points, map_random_points_to_images
 
 
 class TestGenerateMaskedImageDataset(unittest.TestCase):
@@ -55,7 +55,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         path_to_indices = map_random_points_to_images(processed_images_paths, random_points)
 
         # Generate the dataset
-        dataset = generate_masked_image_dataset(
+        dataset = generate_image_dataset(
             original_width=self.x_shape_raw,
             original_height=self.y_shape_raw,
             n_images=self.n_cutted_images,

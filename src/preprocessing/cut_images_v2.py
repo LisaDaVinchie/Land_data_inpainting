@@ -11,7 +11,6 @@ import math
 
 path_to_append = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(path_to_append)
-print("appended path in cut images: ", path_to_append)
 from preprocessing.mask_data import mask_inversemask_image, create_square_mask
 
 
@@ -53,7 +52,7 @@ def map_random_points_to_images(image_file_paths: list, selected_random_points: 
         path_to_indices[path].append(point)
     return path_to_indices
     
-def generate_masked_image_dataset(original_width: int, original_height: int, n_images: int, final_width: int, final_height: int, n_channels: int, masked_fraction: float, non_masked_channels_list: list, path_to_indices_map: dict, nans_threshold: float, placeholder: float = None) -> dict:
+def generate_image_dataset(original_width: int, original_height: int, n_images: int, final_width: int, final_height: int, n_channels: int, masked_fraction: float, non_masked_channels_list: list, path_to_indices_map: dict, nans_threshold: float, placeholder: float = None) -> dict:
     """Generate a dataset of masked images, inverse masked images and masks
 
     Args:
@@ -179,7 +178,7 @@ def main():
     path_to_indices = map_random_points_to_images(processed_images_paths, random_points)
 
     d_time = time() 
-    dataset = generate_masked_image_dataset(original_width=x_shape_raw, original_height=y_shape_raw,
+    dataset = generate_image_dataset(original_width=x_shape_raw, original_height=y_shape_raw,
                                             n_images=n_cutted_images, final_width=cutted_width,
                                             final_height=cutted_height, n_channels=n_channels,
                                             masked_fraction=mask_percentage, non_masked_channels_list=non_masked_channels,
