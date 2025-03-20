@@ -32,10 +32,29 @@ RECONSTRUCTED_DIR := $(DATA_DIR)/reconstructed
 RECONSTRUCTED_BASENAME := "reconstructed"
 RECONSTRUCTED_FILE_EXT := ".pt"
 
+MINIMAL_DATASETS_DIR := $(DATA_DIR)/minimal_datasets
+EXTENDED_DATASETS_DIR := $(DATA_DIR)/extended_datasets
+DATASET_BASENAME := "dataset"
+DATASET_FILE_EXT := ".pt"
+
+DATASET_SPECS_DIR := $(DATA_DIR)/datasets_specs
+DATASET_SPECS_BASENAME := "dataset_specs"
+DATASET_SPECS_FILE_EXT := ".txt"
+
 CUTTED_IMAGES_DIR := $(DATA_DIR)/cutted_images
 CUTTED_IMAGES_BASENAME := "cutted_images"
 CUTTED_TXT_NAME := "explanatory"
 CUTTED_IMAGES_FILE_EXT := ".pt"
+
+# Find the next available dataset index
+IDX_DATASET = $(shell i=0; while [ -e "$(MINIMAL_DATASETS_DIR)/$(DATASET_BASENAME)_$$i$(DATASET_FILE_EXT)" ] || [ -e "$(EXTENDED_DATASETS_DIR)/$(DATASET_BASENAME)_$$i$(DATASET_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
+IDX_DATASET_MINUS_ONE = $(shell echo $$(($(IDX_DATASET) - 1)))
+NEXT_MINIMAL_DATASET_PATH = $(MINIMAL_DATASETS_DIR)/$(DATASET_BASENAME)_$(IDX_DATASET)$(DATASET_FILE_EXT)
+NEXT_EXTENDED_DATASET_PATH = $(EXTENDED_DATASETS_DIR)/$(DATASET_BASENAME)_$(IDX_DATASET)$(DATASET_FILE_EXT)
+CURRENT_MINIMAL_DATASET_PATH = $(MINIMAL_DATASETS_DIR)/$(DATASET_BASENAME)_$(IDX_DATASET_MINUS_ONE)$(DATASET_FILE_EXT)
+CURRENT_EXTENDED_DATASET_PATH = $(EXTENDED_DATASETS_DIR)/$(DATASET_BASENAME)_$(IDX_DATASET_MINUS_ONE)$(DATASET_FILE_EXT)
+DATASET_SPECS_PATH = $(DATASET_SPECS_DIR)/$(DATASET_SPECS_BASENAME)_$(IDX_DATASET)$(DATASET_SPECS_FILE_EXT)
+
 
 IDX_CUTTED = $(shell i=0; while [ -e "$(CUTTED_IMAGES_DIR)/$(CUTTED_IMAGES_BASENAME)_$$i$(CUTTED_IMAGES_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
 IDX_CUTTED_MINUS_ONE = $(shell echo $$(($(IDX_CUTTED) - 1)))
@@ -56,7 +75,7 @@ PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
 
-.PHONY: config preprocess cut1 cut2 train bottleneck test help train2
+.PHONY: config preprocess cut cut1 cut2 train bottleneck test help train2
 
 config:
 	@echo "Storing paths to json..."
@@ -69,6 +88,11 @@ config:
 	@echo "        \"masks_basename\": \"$(MASKS_BASENAME)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_file_ext\": \"$(MASKS_FILE_EXT)\"," >> $(PATHS_FILE)
 	@echo "        \"current_cutted_images_path\": \"$(CURRENT_CUTTED_IMAGES_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"next_extended_dataset_path\": \"$(NEXT_EXTENDED_DATASET_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"current_extended_dataset_path\": \"$(CURRENT_EXTENDED_DATASET_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"current_minimal_dataset_path\": \"$(CURRENT_MINIMAL_DATASET_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"dataset_specs_path\": \"$(DATASET_SPECS_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"next_minimal_dataset_path\": \"$(NEXT_MINIMAL_DATASET_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"next_cutted_images_path\": \"$(NEXT_CUTTED_IMAGES_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"cutted_txt_path\": \"$(CUTTED_TXT_PATH)\"" >> $(PATHS_FILE)
 	@echo "    }," >> $(PATHS_FILE)
@@ -83,6 +107,10 @@ config:
 preprocess: config
 	@echo "Preprocessing data..."
 	@$(PYTHON) $(PREPROCESSING_DIR)/netcdf_to_torch.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
+cut: config
+	@echo "Cutting images..."
+	@$(PYTHON) $(PREPROCESSING_DIR)/cut_images.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 cut1: config
 	@echo "Cutting images..."
