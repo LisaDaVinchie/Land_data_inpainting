@@ -16,7 +16,7 @@ def apply_mask_on_channel(images: th.tensor, masks: th.tensor, placeholder: floa
     means = (images * masks).sum(dim=(2, 3), keepdim=True) / (masks.sum(dim=(2, 3), keepdim=True))
     return new_images * masks + means * (1 - masks)
 
-def mask_inversemask_image(images: th.tensor, masks: th.tensor, placeholder: float = None) -> th.tensor:
+def mask_inversemask_image(images: th.tensor, masks: th.tensor, placeholder: float = None) -> tuple:
     """Mask the image with a placeholder value.
     If the placeholder is none, use the mean of the level and, if there are nans, mask them as well.
 
@@ -26,7 +26,7 @@ def mask_inversemask_image(images: th.tensor, masks: th.tensor, placeholder: flo
         placeholder (float, optional): number to use for masked pixels. Defaults to None.
 
     Returns:
-        th.tensor: _description_
+        tuple: masked_images, inverse masked images
     """
     new_images = images.clone()
     
@@ -51,6 +51,7 @@ def mask_inversemask_image(images: th.tensor, masks: th.tensor, placeholder: flo
     masked_img = new_images * masks + placeholder * (1 - masks)
     inverse_masked_img = new_images * inverse_masks + inv_placeholder * (1 - inverse_masks)
     return masked_img, inverse_masked_img
+
 
 def create_square_mask(image_width: int, image_height: int, mask_percentage: float) -> th.tensor:
     """Create a square mask of n_pixels in the image"""
