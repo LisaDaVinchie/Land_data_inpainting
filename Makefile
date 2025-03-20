@@ -87,14 +87,11 @@ config:
 	@echo "        \"masks_dir\": \"$(MASKS_DIR)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_basename\": \"$(MASKS_BASENAME)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_file_ext\": \"$(MASKS_FILE_EXT)\"," >> $(PATHS_FILE)
-	@echo "        \"current_cutted_images_path\": \"$(CURRENT_CUTTED_IMAGES_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"next_extended_dataset_path\": \"$(NEXT_EXTENDED_DATASET_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"current_extended_dataset_path\": \"$(CURRENT_EXTENDED_DATASET_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"current_minimal_dataset_path\": \"$(CURRENT_MINIMAL_DATASET_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"dataset_specs_path\": \"$(DATASET_SPECS_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"next_minimal_dataset_path\": \"$(NEXT_MINIMAL_DATASET_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"next_cutted_images_path\": \"$(NEXT_CUTTED_IMAGES_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"cutted_txt_path\": \"$(CUTTED_TXT_PATH)\"" >> $(PATHS_FILE)
+	@echo "        \"dataset_specs_path\": \"$(DATASET_SPECS_PATH)\"" >> $(PATHS_FILE)
 	@echo "    }," >> $(PATHS_FILE)
 	@echo "    \"results\": {" >> $(PATHS_FILE)
 	@echo "        \"results_path\": \"$(RESULT_PATH)\", " >> $(PATHS_FILE)
@@ -111,14 +108,6 @@ preprocess: config
 cut: config
 	@echo "Cutting images..."
 	@$(PYTHON) $(PREPROCESSING_DIR)/cut_images.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
-
-cut1: config
-	@echo "Cutting images..."
-	@$(PYTHON) $(PREPROCESSING_DIR)/cut_images_v1.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
-
-cut2: config
-	@echo "Cutting images..."
-	@$(PYTHON) $(PREPROCESSING_DIR)/cut_images_v2.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 train: config
 	@$(PYTHON) $(SRC_DIR)/train_v1.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
