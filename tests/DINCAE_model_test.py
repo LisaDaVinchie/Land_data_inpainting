@@ -13,7 +13,7 @@ from src.models import DINCAE_like
 class Test_DINCAE_model(unittest.TestCase):
     
     def setUp(self):
-        """Create a temporary JSON file with reward parameters."""
+        """Create a temporary JSON file with parameters."""
         self.model_params = {
             "DINCAE_like": {
                 "middle_channels": [16, 30, 58, 110, 209],
