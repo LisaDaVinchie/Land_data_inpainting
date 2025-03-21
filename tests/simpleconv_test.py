@@ -27,11 +27,6 @@ class Test_simpleconv_model(unittest.TestCase):
             }      
         }
         
-        # self.params_path = Path("tests/temp.json")
-        
-        # with self.params_path.open('w') as f:
-        #     json.dump(self.model_params, f)
-        
         
         # Create a temporary file
         self.temp_json = NamedTemporaryFile(delete=False, mode='w')
