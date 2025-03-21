@@ -16,6 +16,27 @@ def conv_output_size(in_size, kernel, padding, stride):
 n_channels_string = "n_channels"
 image_width_string = "cutted_width"
 image_height_string = "cutted_height"
+
+def initialize_model_and_dataset_kind(params_path, model_kind):
+    if model_kind == "simple_conv":
+        model = simple_conv(params_path)
+        dataset_kind = "extended"
+    elif model_kind == "conv_maxpool":
+        model = conv_maxpool(params_path)
+        dataset_kind = "extended"
+    elif model_kind == "conv_unet":
+        model = conv_unet(params_path)
+        dataset_kind = "extended"
+    elif model_kind == "DINCAE_like":
+        model = DINCAE_like(params_path)
+        dataset_kind = "minimal"
+    elif model_kind == "DINCAE_pconvs":
+        model = DINCAE_pconvs(params_path)
+        dataset_kind = "minimal"
+    else:
+        raise ValueError(f"Model kind {model_kind} not recognized")
+    
+    return model, dataset_kind
 class DINCAE_like(nn.Module):
     def __init__(self, params_path: Path, n_channels: int = None, image_width: int = None, image_height: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None, output_size: int = None):
         super(DINCAE_like, self).__init__()
