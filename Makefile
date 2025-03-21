@@ -75,7 +75,7 @@ PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
 
-.PHONY: config preprocess cut cut1 cut2 train bottleneck test help train2
+.PHONY: config preprocess cut train bottleneck test help
 
 config:
 	@echo "Storing paths to json..."
@@ -110,13 +110,7 @@ cut: config
 	@$(PYTHON) $(PREPROCESSING_DIR)/cut_images.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 train: config
-	@$(PYTHON) $(SRC_DIR)/train_v1.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
-
-train2: config
-	@$(PYTHON) $(SRC_DIR)/train_v2.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
-
-bottleneck2: config
-	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train_v2.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+	@$(PYTHON) $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 bottleneck: config
 	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
@@ -130,6 +124,7 @@ help:
 	@echo "Available targets:"
 	@echo "  config: Store paths to json"
 	@echo "  preprocess: Preprocess data"
+	@echo "  cut: create a dataset of images"
 	@echo "  mask: Create masks"
 	@echo "  train: Train the model"
 	@echo "  test: Run tests"
