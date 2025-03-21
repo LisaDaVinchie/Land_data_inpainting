@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import torch as th
 from pathlib import Path
 from models import DINCAE_pconvs, simple_conv
