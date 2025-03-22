@@ -25,7 +25,7 @@ class TestTrainingFunctions(unittest.TestCase):
         
         self.extended_model_params = {
             "simple_conv": {
-                "middle_channels": [64, 128, 256],
+                "middle_channels": [12, 24, 36],
                 "kernel_size": [3, 3, 3],
                 "stride": [2, 2, 2],
                 "padding": [1, 1, 1],
@@ -91,21 +91,23 @@ class TestTrainingFunctions(unittest.TestCase):
         with patch("pathlib.Path.exists") as mock_exists:
             mock_exists.return_value = False
             with self.assertRaises(FileNotFoundError):
-                validate_paths(Path("/fake/path"))
+                validate_paths([Path("/fake/path")])
             
             mock_exists.return_value = True
             try:
-                validate_paths(Path("/real/path"))
+                validate_paths([Path("/real/path")])
             except FileNotFoundError:
                 self.fail("validate_paths raised FileNotFoundError unexpectedly")
 
     def test_train_loop_extended(self):
         """Test that train_loop_extended trains the model and returns losses."""
         # Mock the model and dataloader
+        masks = th.ones(self.dataset_len, self.n_channels, self.width, self.height)
+        masks[th.randint(0, 2, (self.dataset_len, self.n_channels, self.width, self.height)) == 0] = 0
         test_dataset = {
             "masked_images": th.randn(self.dataset_len, self.n_channels, self.width, self.height),
             "inverse_masked_images": th.randn(self.dataset_len, self.n_channels, self.width, self.height),
-            "masks": th.ones(self.dataset_len, self.n_channels, self.width, self.height)}
+            "masks": masks}
         
         train_loader, test_loader = create_dataloaders(test_dataset, 0.8, batch_size=self.batch_size)
 
@@ -113,7 +115,7 @@ class TestTrainingFunctions(unittest.TestCase):
         loss_function = th.nn.MSELoss()
         optimizer = th.optim.Adam(self.extended_model.parameters())
         
-        initial_weights = self.extended_model.state_dict().copy()
+        initial_weights = {k: v.clone() for k, v in self.extended_model.state_dict().items()}
 
         # Call the function
         model, train_losses, test_losses = train_loop_extended(
@@ -128,7 +130,7 @@ class TestTrainingFunctions(unittest.TestCase):
         )
         
         model.eval()
-        final_weights = model.state_dict().copy()
+        final_weights = {k: v.clone() for k, v in model.state_dict().items()}
 
         # Check the outputs
         for i in range(len(train_losses)):
@@ -140,18 +142,19 @@ class TestTrainingFunctions(unittest.TestCase):
         
         
         # Check that the model has been trained
-        differences = 0
-        for key in initial_weights:
-            if not th.equal(initial_weights[key], final_weights[key]):
-                differences += 1
-        self.assertGreaterEqual(differences, 1, "Less than two weight tensors were updated during training")
+        updated = any(not th.equal(initial_weights[k], final_weights[k]) for k in initial_weights)
+        self.assertTrue(updated, "Weights did not update after training!")
+
         
     def test_train_loop_minimal(self):
         """Test that train_loop_extended trains the model and returns losses."""
-        # Mock the model and dataloader
+        # Create a test dataset
+        images = th.randn(self.dataset_len, self.n_channels, self.width, self.height)
+        masks = th.ones(self.dataset_len, self.n_channels, self.width, self.height)
+        masks[th.randint(0, 2, (self.dataset_len, self.n_channels, self.width, self.height)) == 0] = 0
         test_dataset = {
-            "images": th.randn(self.dataset_len, self.n_channels, self.width, self.height),
-            "masks": th.ones(self.dataset_len, self.n_channels, self.width, self.height)
+            "images": images,
+            "masks": masks
             }
         
         train_loader, test_loader = create_dataloaders(test_dataset, 0.8, batch_size=self.batch_size)
@@ -159,6 +162,8 @@ class TestTrainingFunctions(unittest.TestCase):
         # Use a real loss function and optimizer
         loss_function = per_pixel_loss
         optimizer = th.optim.Adam(self.reduced_model.parameters())
+        
+        initial_weights = {k: v.clone() for k, v in self.reduced_model.state_dict().items()}
 
         # Call the function
         model, train_losses, test_losses = train_loop_minimal(
@@ -179,6 +184,11 @@ class TestTrainingFunctions(unittest.TestCase):
         self.assertEqual(len(train_losses), self.epochs)  # 2 epochs
         self.assertEqual(len(test_losses), self.epochs)  # 2 epochs
         self.assertIsInstance(model, th.nn.Module)
+        
+        final_weights = {k: v.clone() for k, v in model.state_dict().items()}
+        # Check that the model has been trained
+        updated = any(not th.equal(initial_weights[k], final_weights[k]) for k in initial_weights)
+        self.assertTrue(updated, "Weights did not update after training!")
 
 if __name__ == "__main__":
     unittest.main()
