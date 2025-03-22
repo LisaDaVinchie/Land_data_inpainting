@@ -14,7 +14,7 @@ def per_pixel_loss(prediction: th.tensor, target: th.tensor, masks: th.tensor) -
     
     n_valid_pixels = (~masks.bool()).sum().float()
     if n_valid_pixels == 0:
-        return 0
+        return th.tensor(0.0, requires_grad=True)
     
     diff = th.abs(prediction - target)
     masked_diff = diff.masked_fill(masks.bool(), 0.0)
