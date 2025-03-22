@@ -11,6 +11,7 @@ from tempfile import NamedTemporaryFile
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from train import track_memory, change_dataset_idx, validate_paths, train_loop_extended, train_loop_minimal
 from CustomDataset import create_dataloaders
+from losses import per_pixel_loss
 
 class TestTrainingFunctions(unittest.TestCase):
     def setUp(self):
@@ -156,7 +157,7 @@ class TestTrainingFunctions(unittest.TestCase):
         train_loader, test_loader = create_dataloaders(test_dataset, 0.8, batch_size=self.batch_size)
 
         # Use a real loss function and optimizer
-        loss_function = th.nn.MSELoss()
+        loss_function = per_pixel_loss
         optimizer = th.optim.Adam(self.reduced_model.parameters())
 
         # Call the function
