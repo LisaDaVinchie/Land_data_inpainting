@@ -168,7 +168,6 @@ class TestTrainingFunctions(unittest.TestCase):
         # Call the function
         model, train_losses, test_losses = train_loop_minimal(
             epochs=self.epochs,
-            placeholder=0.0,
             model=self.reduced_model,
             device = th.device("cpu"),
             train_loader=train_loader,

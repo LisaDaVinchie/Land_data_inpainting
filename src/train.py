@@ -96,7 +96,7 @@ def main():
     if dataset_kind == "extended":
         model, train_losses, test_losses = train_loop_extended(epochs, placeholder, model, device, train_loader, test_loader, loss_function, optimizer)
     elif dataset_kind == "minimal":
-        model, train_losses, test_losses = train_loop_minimal(epochs, placeholder, model, device, train_loader, test_loader, loss_function, optimizer)
+        model, train_losses, test_losses = train_loop_minimal(epochs, model, device, train_loader, test_loader, loss_function, optimizer)
     else:
         raise ValueError(f"Dataset kind {dataset_kind} not recognized")
     track_memory("After training")
@@ -201,7 +201,7 @@ def train_loop_extended(epochs: int, placeholder: float, model: th.nn.Module, de
             test_losses.append(test_loss / len(test_loader))
     return model, train_losses, test_losses
 
-def train_loop_minimal(epochs: int, placeholder: float, model: th.nn.Module, device, train_loader: DataLoader, test_loader: DataLoader, loss_function: nn.Module, optimizer: optim.Optimizer):
+def train_loop_minimal(epochs: int, model: th.nn.Module, device, train_loader: DataLoader, test_loader: DataLoader, loss_function: nn.Module, optimizer: optim.Optimizer):
     train_losses = []
     test_losses = []
 
