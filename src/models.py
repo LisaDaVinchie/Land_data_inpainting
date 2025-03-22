@@ -230,7 +230,6 @@ class DINCAE_pconvs(nn.Module):
         
         return dec5, dmask5
 
-
 class simple_PartialConv(nn.Module):
     def __init__(self, params_path: Path, n_channels: int = None, image_width: int = None, image_height: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
         super(simple_PartialConv, self).__init__()
