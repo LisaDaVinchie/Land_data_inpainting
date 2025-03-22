@@ -20,9 +20,9 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         self.n_images = 5
         self.x_shape_raw = 100
         self.y_shape_raw = 100
-        self.n_channels = 3
+        self.n_channels = 4
         for i in range(self.n_images):
-            dummy_image = th.rand(self.n_channels, self.x_shape_raw, self.y_shape_raw)
+            dummy_image = th.rand(self.n_channels - 1, self.x_shape_raw, self.y_shape_raw)
             years = th.randint(2000, 2020, (1,))
             months = th.randint(1, 13, (1,))
             days = th.randint(1, 29, (1,))
@@ -77,7 +77,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         self.assertSetEqual(set(dataset_min.keys()), {"images", "masks"})
 
         # Check that each tensor has the correct shape and dtype
-        expected_shape = (self.n_cutted_images, self.n_channels + 1, self.cutted_width, self.cutted_height)
+        expected_shape = (self.n_cutted_images, self.n_channels, self.cutted_width, self.cutted_height)
         expected_dtype = th.float32
 
         for key in dataset_ext.keys():

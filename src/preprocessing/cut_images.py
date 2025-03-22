@@ -62,7 +62,7 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
         n_images (int): number of images to generate
         final_width (int): x shape of the cutted image
         final_height (int): y shape of the cutted image
-        n_channels (int): total number of channels in the image
+        n_channels (int): final number of channels in the image
         masked_fraction (float): percentage of masked pixels in each channel
         non_masked_channels_list (list): list of channels that should not be masked
         path_to_indices_map (dict): dictionary with the paths to the images as keys and the points as values
@@ -80,10 +80,10 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
     dataset_ext, dataset_min = None, None
     if extended_data:
         keys_ext = ["masked_images", "inverse_masked_images", "masks"]
-        dataset_ext = {cls: th.empty((n_images, n_channels + 1, final_width, final_height), dtype=th.float32) for cls in keys_ext}
+        dataset_ext = {cls: th.empty((n_images, n_channels, final_width, final_height), dtype=th.float32) for cls in keys_ext}
     if minimal_data:
         keys_min = ["images", "masks"]
-        dataset_min = {cls: th.empty((n_images, n_channels + 1, final_width, final_height), dtype=th.float32) for cls in keys_min}
+        dataset_min = {cls: th.empty((n_images, n_channels, final_width, final_height), dtype=th.float32) for cls in keys_min}
     
     non_masked_channels_list = list(non_masked_channels_list)
     
@@ -95,7 +95,8 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
     interval = (newest_date - oldest_date).days
 
     idx = 0
-    n_pixels = final_width * final_height * n_channels
+    n_original_channels = n_channels - 1
+    n_pixels = final_width * final_height * n_original_channels
     threshold = nans_threshold * n_pixels
     for path, indices in path_to_indices_map.items():
         image = th.load(path)
@@ -112,8 +113,8 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
         
         # Create masks, adding the time layer
         masks = th.stack(
-            [create_square_mask(final_width, final_height, masked_fraction) for _ in range(n_indices * n_channels)], dim=0
-            ).view(n_indices, n_channels, final_width, final_height)
+            [create_square_mask(final_width, final_height, masked_fraction) for _ in range(n_indices * n_original_channels)], dim=0
+            ).view(n_indices, n_original_channels, final_width, final_height)
         masks[:, non_masked_channels_list, :, :] = 1
         masks = th.cat((masks, th.ones((n_indices, 1, final_width, final_height), dtype=th.float32)), dim=1)
         
@@ -192,6 +193,7 @@ def main():
     cutted_width = int(params["dataset"]["cutted_width"])
     cutted_height = int(params["dataset"]["cutted_height"])
     n_channels = int(params["dataset"]["n_channels"])
+    channels_to_keep = list(params["dataset"]["channels_to_keep"])
     non_masked_channels = list(params["dataset"]["non_masked_channels"])
     nans_threshold = float(params["dataset"]["nans_threshold"])
     minimal_dataset = bool(params["dataset"]["minimal_dataset"])
