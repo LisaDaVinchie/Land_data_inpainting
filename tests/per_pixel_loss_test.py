@@ -47,6 +47,15 @@ class TestPerPixelLoss(unittest.TestCase):
         self.assertEqual(loss.shape, ())
         # Ensure the loss is non-negative
         self.assertTrue(loss >= 0.0)
+        
+    def test_requires_grad(self):
+        """Test that the loss requires gradients."""
+        prediction = th.tensor([[[[1.0, 2.0], [3.0, 4.0]]]], requires_grad=True)
+        target = th.tensor([[[[1.0, 2.0], [3.0, 4.0]]]])
+        mask = th.tensor([[[[0.0, 0.0], [0.0, 0.0]]]])
+        loss = per_pixel_loss(prediction, target, mask)
+        # Ensure the loss requires gradients
+        self.assertTrue(loss.requires_grad)
 
 if __name__ == "__main__":
     unittest.main()
