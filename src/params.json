@@ -7,14 +7,14 @@
         "placeholder": 0,
         "optimizer_kind": "adam",
         "loss_kind": "mse",
-        "model_kind": "DINCAE_like",
-        "_possible_model_kinds": ["simple_conv", "conv_unet", "conv_maxpool", "DINCAE_like"]
+        "model_kind": "DINCAE_pconvs",
+        "_possible_model_kinds": ["simple_conv", "conv_unet", "conv_maxpool", "DINCAE_like", "DINCAE_pconvs"]
     },
     "dataset":{
         "minimal_dataset": true,
         "extended_dataset": true,
         "n_images": 20,
-        "n_channels": 11,
+        "n_channels": 12,
         "x_shape_raw": 1600,
         "y_shape_raw": 3600,
         "n_cutted_images": 1000,
@@ -35,6 +35,13 @@
             "or_longitude", "adjusted_sea_surface_temperature", "solar_zenith_angle",
             "bias_to_reference_sst", "sources_of_sst", "sst_dtime"
             ]
+    },
+    "DINCAE_pconvs": {
+        "middle_channels": [16, 30, 58, 110, 209],
+        "kernel_sizes": [3, 3, 3, 3, 3],
+        "pooling_sizes": [2, 2, 2, 2, 2],
+        "interp_mode": "bilinear",
+        "_possible_interpolation_modes": ["nearest", "linear", "bilinear", "bicubic", "trilinear"]
     },
     "DINCAE_like": {
         "middle_channels": [16, 30, 58, 110, 209],
