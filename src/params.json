@@ -15,19 +15,18 @@
         "minimal_dataset": true,
         "extended_dataset": true,
         "n_images": 20,
-        "n_channels": 12,
+        "n_channels": 10,
         "x_shape_raw": 1600,
         "y_shape_raw": 3600,
         "n_cutted_images": 1000,
         "cutted_width": 128,
         "cutted_height": 128,
         "nans_threshold": 0.5,
-        "non_masked_channels": [7, 8],
+        "masked_channels": [0, 1],
         "channels_to_keep": [
-            "sea_surface_temperature", "or_number_of_pixels", "sea_surface_temperature_stddev",
-            "quality_level", "sses_bias", "sses_standard_deviation",
-            "satellite_zenith_angle", "or_latitude", "or_longitude",
-            "adjusted_sea_surface_temperature", "solar_zenith_angle"
+            "sea_surface_temperature", "sea_surface_temperature_stddev", "or_number_of_pixels",
+            "sses_bias", "sses_standard_deviation", "satellite_zenith_angle",
+            "or_latitude", "or_longitude", "solar_zenith_angle"
             ],
         "channels_list": [
             "crs", "sea_surface_temperature", "or_number_of_pixels",

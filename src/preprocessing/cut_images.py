@@ -53,7 +53,7 @@ def map_random_points_to_images(image_file_paths: list, selected_random_points: 
         path_to_indices[path].append(point)
     return path_to_indices
 
-def generate_image_dataset(original_width: int, original_height: int, n_images: int, final_width: int, final_height: int, n_channels: int, masked_fraction: float, non_masked_channels_list: list, path_to_indices_map: dict, nans_threshold: float, extended_data: bool, minimal_data: bool, placeholder: float = None) -> tuple[dict, dict]:
+def generate_image_dataset(original_width: int, original_height: int, n_images: int, final_width: int, final_height: int, n_channels: int, masked_fraction: float, masked_channels_list: list, path_to_indices_map: dict, nans_threshold: float, extended_data: bool, minimal_data: bool, placeholder: float = None) -> tuple[dict, dict]:
     """Generate a dataset of masked images, inverse masked images and masks
 
     Args:
@@ -64,7 +64,7 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
         final_height (int): y shape of the cutted image
         n_channels (int): final number of channels in the image
         masked_fraction (float): percentage of masked pixels in each channel
-        non_masked_channels_list (list): list of channels that should not be masked
+        masked_channels_list (list): list of channels that should not be masked
         path_to_indices_map (dict): dictionary with the paths to the images as keys and the points as values
         nans_threshold (float): threshold of nans in the image
         extended_data (bool): True if the extended dataset should be generated
@@ -85,7 +85,7 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
         keys_min = ["images", "masks"]
         dataset_min = {cls: th.empty((n_images, n_channels, final_width, final_height), dtype=th.float32) for cls in keys_min}
     
-    non_masked_channels_list = list(non_masked_channels_list)
+    masked_channels_list = list(masked_channels_list)
     
     # Calculate the interval between the oldest and newest date, in days
     selected_dates = [Path(path).stem for path in path_to_indices_map.keys()]
@@ -112,11 +112,16 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
         cutted_imgs = th.cat((cutted_imgs, time_layers), dim=1) # Add the time layer to the images
         
         # Create masks, adding the time layer
-        masks = th.stack(
-            [create_square_mask(final_width, final_height, masked_fraction) for _ in range(n_indices * n_original_channels)], dim=0
-            ).view(n_indices, n_original_channels, final_width, final_height)
-        masks[:, non_masked_channels_list, :, :] = 1
-        masks = th.cat((masks, th.ones((n_indices, 1, final_width, final_height), dtype=th.float32)), dim=1)
+        # masks = th.stack(
+        #     [create_square_mask(final_width, final_height, masked_fraction) for _ in range(n_indices * n_original_channels)], dim=0
+        #     ).view(n_indices, n_original_channels, final_width, final_height)
+        # masks[:, non_masked_channels_list, :, :] = 1
+        # masks = th.cat((masks, th.ones((n_indices, 1, final_width, final_height), dtype=th.float32)), dim=1)
+        
+        masks = th.ones((n_indices, n_channels, final_width, final_height), dtype=th.float32)
+        
+        for mc in masked_channels_list:
+            masks[:, mc, :, :] = create_square_mask(final_width, final_height, masked_fraction)
         
         if minimal_data:
             # Save the images to the minimal dataset
@@ -158,6 +163,14 @@ def cut_valid_image(original_width: int, original_height: int, final_width: int,
     return cutted_img
 
 def check_dirs_existance(dirs: list[Path]):
+    """Check if the directories exist
+
+    Args:
+        dirs (list[Path]): list of directories to check
+
+    Raises:
+        FileNotFoundError: if a directory does not exist
+    """
     for dir in dirs:
         if not dir.exists():
             raise FileNotFoundError(f"Folder {dir} does not exist.")
@@ -193,8 +206,8 @@ def main():
     cutted_width = int(params["dataset"]["cutted_width"])
     cutted_height = int(params["dataset"]["cutted_height"])
     n_channels = int(params["dataset"]["n_channels"])
-    channels_to_keep = list(params["dataset"]["channels_to_keep"])
-    non_masked_channels = list(params["dataset"]["non_masked_channels"])
+    # non_masked_channels = list(params["dataset"]["non_masked_channels"])
+    masked_channels = list(params["dataset"]["masked_channels"])
     nans_threshold = float(params["dataset"]["nans_threshold"])
     minimal_dataset = bool(params["dataset"]["minimal_dataset"])
     extended_dataset = bool(params["dataset"]["extended_dataset"])
@@ -231,7 +244,7 @@ def main():
     dataset_ext, dataset_min = generate_image_dataset(original_width=x_shape_raw, original_height=y_shape_raw,
                                                     n_images=n_cutted_images, final_width=cutted_width,
                                                     final_height=cutted_height, n_channels=n_channels,
-                                                    masked_fraction=mask_percentage, non_masked_channels_list=non_masked_channels,
+                                                    masked_fraction=mask_percentage, masked_channels_list=masked_channels,
                                                     path_to_indices_map=path_to_indices, nans_threshold=nans_threshold,
                                                     minimal_data=minimal_dataset, extended_data=extended_dataset,
                                                     placeholder=placeholder)
