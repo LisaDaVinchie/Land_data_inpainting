@@ -53,7 +53,7 @@ def map_random_points_to_images(image_file_paths: list, selected_random_points: 
         path_to_indices[path].append(point)
     return path_to_indices
 
-def generate_image_dataset(original_width: int, original_height: int, n_images: int, final_width: int, final_height: int, n_channels: int, masked_fraction: float, masked_channels_list: list, path_to_indices_map: dict, nans_threshold: float, extended_data: bool, minimal_data: bool, placeholder: float = None) -> tuple[dict, dict]:
+def generate_image_dataset(original_width: int, original_height: int, n_images: int, final_width: int, final_height: int, n_channels: int, masked_fraction: float, masked_channels_list: list, path_to_indices_map: dict, nans_threshold: float, extended_data: bool, minimal_data: bool, placeholder: float = None) -> tuple[dict, dict, th.Tensor]:
     """Generate a dataset of masked images, inverse masked images and masks
 
     Args:
@@ -84,6 +84,8 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
     if minimal_data:
         keys_min = ["images", "masks"]
         dataset_min = {cls: th.empty((n_images, n_channels, final_width, final_height), dtype=th.float32) for cls in keys_min}
+        
+    nans_masks = th.ones((n_images, n_channels, final_width, final_height), dtype=th.float32)
     
     masked_channels_list = list(masked_channels_list)
     
@@ -110,13 +112,7 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
         # Generate the cutted images, adding the time layer
         cutted_imgs = th.stack([cut_valid_image(original_width, original_height, final_width, final_height, threshold, image, index) for index in indices], dim=0)
         cutted_imgs = th.cat((cutted_imgs, time_layers), dim=1) # Add the time layer to the images
-        
-        # Create masks, adding the time layer
-        # masks = th.stack(
-        #     [create_square_mask(final_width, final_height, masked_fraction) for _ in range(n_indices * n_original_channels)], dim=0
-        #     ).view(n_indices, n_original_channels, final_width, final_height)
-        # masks[:, non_masked_channels_list, :, :] = 1
-        # masks = th.cat((masks, th.ones((n_indices, 1, final_width, final_height), dtype=th.float32)), dim=1)
+        nans_masks = th.isnan(cutted_imgs)
         
         masks = th.ones((n_indices, n_channels, final_width, final_height), dtype=th.float32)
         
@@ -136,7 +132,7 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
             dataset_ext[keys_ext[1]][idx:idx + n_indices] = inverse_masked_images
             dataset_ext[keys_ext[2]][idx:idx + n_indices] = masks
         
-    return dataset_ext, dataset_min
+    return dataset_ext, dataset_min, nans_masks
 
 def cut_valid_image(original_width: int, original_height: int, final_width: int, final_height: int, threshold: float, image: th.tensor, index: int):
     """Cut a valid image from the original image
@@ -193,6 +189,7 @@ def main():
     next_extended_dataset_path = Path(json_paths["data"]["next_extended_dataset_path"])
     next_minimal_dataset_path = Path(json_paths["data"]["next_minimal_dataset_path"])
     dataset_specs_path = Path(json_paths["data"]["dataset_specs_path"])
+    next_nans_masks_path = Path(json_paths["data"]["next_nans_masks_path"])
     
     # Check if the directories exist
     check_dirs_existance([processed_data_dir, next_extended_dataset_path.parent, next_minimal_dataset_path.parent, dataset_specs_path.parent])
@@ -206,7 +203,6 @@ def main():
     cutted_width = int(params["dataset"]["cutted_width"])
     cutted_height = int(params["dataset"]["cutted_height"])
     n_channels = int(params["dataset"]["n_channels"])
-    # non_masked_channels = list(params["dataset"]["non_masked_channels"])
     masked_channels = list(params["dataset"]["masked_channels"])
     nans_threshold = float(params["dataset"]["nans_threshold"])
     minimal_dataset = bool(params["dataset"]["minimal_dataset"])
@@ -241,7 +237,7 @@ def main():
     d_time = time() 
     
     # Generate the dataset
-    dataset_ext, dataset_min = generate_image_dataset(original_width=x_shape_raw, original_height=y_shape_raw,
+    dataset_ext, dataset_min, nans_masks = generate_image_dataset(original_width=x_shape_raw, original_height=y_shape_raw,
                                                     n_images=n_cutted_images, final_width=cutted_width,
                                                     final_height=cutted_height, n_channels=n_channels,
                                                     masked_fraction=mask_percentage, masked_channels_list=masked_channels,
@@ -256,6 +252,9 @@ def main():
     if dataset_min is not None:
         th.save(dataset_min, next_minimal_dataset_path)
         print(f"Saved the minimal dataset to {next_minimal_dataset_path}\n", flush=True)
+        
+    th.save(nans_masks, next_nans_masks_path)
+    print(f"Saved the nans masks to {next_nans_masks_path}\n", flush=True)
 
     # Extract the "dataset" and "mask" sections
     dataset_section = json_paths.get('dataset', {})

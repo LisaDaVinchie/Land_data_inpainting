@@ -49,7 +49,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         self.path_to_indices = map_random_points_to_images(processed_images_paths, random_points)
 
         # Generate the dataset
-        self.dataset_ext, self.dataset_min = generate_image_dataset(
+        self.dataset_ext, self.dataset_min, _ = generate_image_dataset(
             original_width=self.x_shape_raw,
             original_height=self.y_shape_raw,
             n_images=self.n_cutted_images,
@@ -111,7 +111,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
     def test_dataset_kind_switch_extended_data_false(self):
         """Test that the dataset kind switch works correctly. In this case, the extended dataset should be None."""
         
-        dataset_ext, dataset_min = generate_image_dataset(
+        dataset_ext, dataset_min, _ = generate_image_dataset(
             original_width=self.x_shape_raw,
             original_height=self.y_shape_raw,
             n_images=self.n_cutted_images,
@@ -133,7 +133,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
     def test_dataset_kind_switch_minimal_data_false(self):
         """Test that the dataset kind switch works correctly. In this case, the minimal dataset should be None."""
         
-        dataset_ext, dataset_min = generate_image_dataset(
+        dataset_ext, dataset_min, _ = generate_image_dataset(
             original_width=self.x_shape_raw,
             original_height=self.y_shape_raw,
             n_images=self.n_cutted_images,
@@ -154,7 +154,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
     def test_dataset_kind_switch_both_false(self):
         """Test that the dataset kind switch works correctly. In this case, both datasets should be None."""
         
-        dataset_ext, dataset_min = generate_image_dataset(
+        dataset_ext, dataset_min, _ = generate_image_dataset(
             original_width=self.x_shape_raw,
             original_height=self.y_shape_raw,
             n_images=self.n_cutted_images,

@@ -46,6 +46,10 @@ CUTTED_IMAGES_BASENAME := "cutted_images"
 CUTTED_TXT_NAME := "explanatory"
 CUTTED_IMAGES_FILE_EXT := ".pt"
 
+NANS_MASKS_DIR := $(DATA_DIR)/nans_masks
+NANS_MASKS_BASENAME := "nans_mask"
+NANS_MASKS_FILE_EXT := ".pt"
+
 # Find the next available dataset index
 IDX_DATASET = $(shell i=0; while [ -e "$(MINIMAL_DATASETS_DIR)/$(DATASET_BASENAME)_$$i$(DATASET_FILE_EXT)" ] || [ -e "$(EXTENDED_DATASETS_DIR)/$(DATASET_BASENAME)_$$i$(DATASET_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
 IDX_DATASET_MINUS_ONE = $(shell echo $$(($(IDX_DATASET) - 1)))
@@ -61,6 +65,8 @@ IDX_CUTTED_MINUS_ONE = $(shell echo $$(($(IDX_CUTTED) - 1)))
 CURRENT_CUTTED_IMAGES_PATH = $(CUTTED_IMAGES_DIR)/$(CUTTED_IMAGES_BASENAME)_$(IDX_CUTTED_MINUS_ONE)$(CUTTED_IMAGES_FILE_EXT)
 NEXT_CUTTED_IMAGES_PATH = $(CUTTED_IMAGES_DIR)/$(CUTTED_IMAGES_BASENAME)_$(IDX_CUTTED)$(CUTTED_IMAGES_FILE_EXT)
 CUTTED_TXT_PATH = $(CUTTED_IMAGES_DIR)/$(CUTTED_TXT_NAME)_$(IDX_CUTTED).txt
+CURRENT_NANS_MASKS_PATH = $(NANS_MASKS_DIR)/$(NANS_MASKS_BASENAME)_$(IDX_CUTTED_MINUS_ONE)$(NANS_MASKS_FILE_EXT)
+NEXT_NANS_MASKS_PATH = $(NANS_MASKS_DIR)/$(NANS_MASKS_BASENAME)_$(IDX_CUTTED)$(NANS_MASKS_FILE_EXT)
 
 # Find the next RESULT_FILE_EXT available filename
 IDX=$(shell i=0; while [ -e "$(RESULTS_DIR)/$(RESULT_BASENAME)_$$i$(RESULT_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
@@ -91,7 +97,9 @@ config:
 	@echo "        \"current_extended_dataset_path\": \"$(CURRENT_EXTENDED_DATASET_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"current_minimal_dataset_path\": \"$(CURRENT_MINIMAL_DATASET_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"next_minimal_dataset_path\": \"$(NEXT_MINIMAL_DATASET_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"dataset_specs_path\": \"$(DATASET_SPECS_PATH)\"" >> $(PATHS_FILE)
+	@echo "        \"dataset_specs_path\": \"$(DATASET_SPECS_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"current_nans_masks_path\": \"$(CURRENT_NANS_MASKS_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"next_nans_masks_path\": \"$(NEXT_NANS_MASKS_PATH)\"" >> $(PATHS_FILE)
 	@echo "    }," >> $(PATHS_FILE)
 	@echo "    \"results\": {" >> $(PATHS_FILE)
 	@echo "        \"results_path\": \"$(RESULT_PATH)\", " >> $(PATHS_FILE)
