@@ -2,7 +2,6 @@ import unittest
 import torch as th
 import torch.nn.functional as F
 from torch import nn
-from torch.autograd import Variable
 
 import sys
 import os
@@ -24,8 +23,8 @@ class TestPartialConv2dOutput(unittest.TestCase):
         # Fixed input tensor
         self.input_tensor = th.tensor([[
             [[1, 2, 3, 4],
-             [5, 6, 7, 8],
-             [9, 10, 11, 12],
+             [5, th.nan, 7, 8],
+             [9, 10, th.nan, 12],
              [13, 14, 15, 16]]
         ]], dtype=th.float32)
 
@@ -83,8 +82,19 @@ class TestPartialConv2dOutput(unittest.TestCase):
 
         # Step 4: Apply the mask ratio to the output
         expected_output = expected_output * mask_ratio
+        
+        
         # Compare the output of PartialConv2d with the manually computed output
-        self.assertTrue(th.allclose(output, expected_output, atol=1e-6))
+        
+        # Check that nans are where they should be
+        nan_mask_expected = th.isnan(expected_output)
+        nan_mask_output = th.isnan(output)
+        self.assertTrue(th.equal(nan_mask_expected, nan_mask_output), "NaN masks do not match.")
+
+        # Check that non-NaN values match
+        non_nan_mask = ~nan_mask_expected
+        self.assertTrue(th.allclose(output[non_nan_mask], expected_output[non_nan_mask], atol=1e-6), "Non-NaN values do not match.")
+
 
 if __name__ == '__main__':
     unittest.main()
