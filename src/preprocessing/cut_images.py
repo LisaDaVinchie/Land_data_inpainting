@@ -96,41 +96,49 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
     
     interval = (newest_date - oldest_date).days
 
-    idx = 0
+    idx_start = 0
+    idx_end = 0
     n_original_channels = n_channels - 1
     n_pixels = final_width * final_height * n_original_channels
     threshold = nans_threshold * n_pixels
     for path, indices in path_to_indices_map.items():
         image = th.load(path)
         n_indices = len(indices)
+        idx_end = idx_start + n_indices
         
         # Add the time layer to the images
         days_from_inital_date = (datetime.strptime(Path(path).stem, "%Y_%m_%d").date() - oldest_date).days
         encoded_time = math.cos(math.pi * days_from_inital_date / interval)
-        time_layers = th.ones((n_indices, 1, final_width, final_height), dtype=th.float32) * encoded_time
         
         # Generate the cutted images, adding the time layer
         cutted_imgs = th.stack([cut_valid_image(original_width, original_height, final_width, final_height, threshold, image, index) for index in indices], dim=0)
+        time_layers = th.ones((n_indices, 1, final_width, final_height), dtype=th.float32) * encoded_time
         cutted_imgs = th.cat((cutted_imgs, time_layers), dim=1) # Add the time layer to the images
-        nans_masks = th.isnan(cutted_imgs)
         
+        nans_masks[idx_start:idx_end, :, :, :] = th.isnan(cutted_imgs)
         masks = th.ones((n_indices, n_channels, final_width, final_height), dtype=th.float32)
         
         for mc in masked_channels_list:
             masks[:, mc, :, :] = create_square_mask(final_width, final_height, masked_fraction)
+        # masks[idx_start:idx_end, nans_masks] = 0
+        
+        # Set masks to 0 where the nan mask is 0 between idx_start and idx_end
+        masks = th.where(nans_masks[idx_start:idx_end] == 0, th.tensor(0, dtype=masks.dtype), masks)
         
         if minimal_data:
             # Save the images to the minimal dataset
-            dataset_min[keys_min[0]][idx:idx + n_indices] = cutted_imgs
-            dataset_min[keys_min[1]][idx:idx + n_indices] = masks
+            dataset_min[keys_min[0]][idx_start:idx_end] = cutted_imgs
+            dataset_min[keys_min[1]][idx_start:idx_end] = masks
         
         if extended_data:
             masked_images, inverse_masked_images = mask_inversemask_image(cutted_imgs, masks, placeholder)
             
             # Save the images to the extended dataset
-            dataset_ext[keys_ext[0]][idx:idx + n_indices] = masked_images
-            dataset_ext[keys_ext[1]][idx:idx + n_indices] = inverse_masked_images
-            dataset_ext[keys_ext[2]][idx:idx + n_indices] = masks
+            dataset_ext[keys_ext[0]][idx_start:idx_end] = masked_images
+            dataset_ext[keys_ext[1]][idx_start:idx_end] = inverse_masked_images
+            dataset_ext[keys_ext[2]][idx_start:idx_end] = masks
+        
+        idx_start = idx_end
         
     return dataset_ext, dataset_min, nans_masks
 

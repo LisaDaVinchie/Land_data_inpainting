@@ -18,24 +18,39 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
 
         # Create dummy processed images
         self.n_images = 5
-        self.x_shape_raw = 100
-        self.y_shape_raw = 100
+        self.x_shape_raw = 30
+        self.y_shape_raw = 30
         self.n_channels = 4
+        # Test parameters
+        self.n_cutted_images = 8
+        self.cutted_width = 10
+        self.cutted_height = 10
+        self.mask_percentage = 0.5
+        self.masked_channels = [0, 2]
+        self.placeholder = -1.0
+        
+        # Create dummy input with nans
         for i in range(self.n_images):
+            # Create a random image
             dummy_image = th.rand(self.n_channels - 1, self.x_shape_raw, self.y_shape_raw)
+            
+            # Select random points to mark as nan
+            random_x = th.randint(0, self.x_shape_raw, (1,))
+            random_y = th.randint(0, self.y_shape_raw, (1,))
+            
+            # Create a mask with 0s in the selected points
+            nan_mask = th.ones(self.n_channels - 1, self.x_shape_raw, self.y_shape_raw)
+            nan_mask[self.masked_channels, random_x, random_y] = 0
+            
+            # Set the selected points to nan
+            dummy_image[nan_mask == 0] = th.nan
+            
+            # Save the image with the correct
             years = th.randint(2000, 2020, (1,))
             months = th.randint(1, 13, (1,))
             days = th.randint(1, 29, (1,))
             dummy_date = f"{years.item()}_{months.item()}_{days.item()}"
             th.save(dummy_image, self.processed_data_dir / f"{dummy_date}.pt")
-
-        # Test parameters
-        self.n_cutted_images = 8
-        self.cutted_width = 32
-        self.cutted_height = 32
-        self.mask_percentage = 0.5
-        self.masked_channels = [0, 2]
-        self.placeholder = -1.0
         
         # Select random points and map them to images
         random_points = select_random_points(
@@ -49,7 +64,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         self.path_to_indices = map_random_points_to_images(processed_images_paths, random_points)
 
         # Generate the dataset
-        self.dataset_ext, self.dataset_min, _ = generate_image_dataset(
+        self.dataset_ext, self.dataset_min, self.nans_mask = generate_image_dataset(
             original_width=self.x_shape_raw,
             original_height=self.y_shape_raw,
             n_images=self.n_cutted_images,
@@ -102,11 +117,32 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             for j in self.masked_channels:
                 self.assertTrue((self.dataset_ext[keys[0]][:, j, :, :] == self.placeholder).any())
         
+        # Check that there are no NaNs in dataset_ext
+        for key in self.dataset_ext.keys():
+            self.assertFalse(th.isnan(self.dataset_ext[key]).any(), f"NaNs found in dataset_ext[{key}]")
+        
         # Check that the masked channels have 0's and the other channels have all 1's
         keys = list(self.dataset_min.keys())
         for i in range(self.n_cutted_images):
             for j in self.masked_channels:
                 self.assertTrue((self.dataset_min[keys[1]][:, j, :, :] == 0).any())
+        
+        # Check that the mask has no nan
+        mask_key = list(self.dataset_min.keys())[1]
+        self.assertFalse(th.isnan(self.dataset_min[mask_key]).any(), f"NaNs found in dataset_min[{mask_key}]")
+        
+    def test_nans_coverage(self):
+        """Test that the masks cover all the nans in the images."""
+        # Check that the 0s in the masks of dataset_min[keys[1]] cover all the nans in dataset_min[keys[0]]
+        
+        keys = list(self.dataset_min.keys())
+        for i in range(self.n_cutted_images):
+            nan_mask = self.nans_mask[i]
+            mask = self.dataset_min[keys[1]][i]
+            
+            # Check that the mask covers all the nans
+            self.assertTrue(th.all(mask[nan_mask == 0] == 0), "Mask does not cover all nans")
+        
             
     def test_dataset_kind_switch_extended_data_false(self):
         """Test that the dataset kind switch works correctly. In this case, the extended dataset should be None."""
