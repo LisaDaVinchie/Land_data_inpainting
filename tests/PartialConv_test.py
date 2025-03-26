@@ -1,5 +1,5 @@
 import unittest
-import torch
+import torch as th
 import torch.nn.functional as F
 from torch import nn
 from torch.autograd import Variable
@@ -22,28 +22,28 @@ class TestPartialConv2dOutput(unittest.TestCase):
         self.mask_size = (self.batch_size, 1, 4, 4)
 
         # Fixed input tensor
-        self.input_tensor = torch.tensor([[
+        self.input_tensor = th.tensor([[
             [[1, 2, 3, 4],
              [5, 6, 7, 8],
              [9, 10, 11, 12],
              [13, 14, 15, 16]]
-        ]], dtype=torch.float32)
+        ]], dtype=th.float32)
 
         # Fixed mask tensor (1s for valid pixels, 0s for holes)
-        self.mask_tensor = torch.tensor([[
+        self.mask_tensor = th.tensor([[
             [[1, 1, 1, 1],
              [1, 0, 0, 1],
              [1, 0, 0, 1],
              [1, 1, 1, 1]]
-        ]], dtype=torch.float32)
+        ]], dtype=th.float32)
 
         # Fixed weights and bias
-        self.weight = torch.tensor([[
+        self.weight = th.tensor([[
             [[1, 0, -1],
              [1, 0, -1],
              [1, 0, -1]]
-        ]], dtype=torch.float32)
-        self.bias = torch.tensor([0.0], dtype=torch.float32)
+        ]], dtype=th.float32)
+        self.bias = th.tensor([0.0], dtype=th.float32)
 
     def test_partial_conv2d_output(self):
         # Initialize PartialConv2d layer with fixed weights and bias
@@ -73,19 +73,18 @@ class TestPartialConv2dOutput(unittest.TestCase):
         )
 
         # Step 3: Compute the mask ratio
-        weight_mask_updater = torch.ones(1, 1, 3, 3)
+        weight_mask_updater = th.ones(1, 1, 3, 3)
         update_mask = F.conv2d(
             self.mask_tensor, weight_mask_updater,
             stride=1, padding=1
         )
         mask_ratio = 9 / (update_mask + 1e-8)  # slide_winsize = 9 (3x3 kernel)
-        mask_ratio = mask_ratio * torch.clamp(update_mask, 0, 1)
+        mask_ratio = mask_ratio * th.clamp(update_mask, 0, 1)
 
         # Step 4: Apply the mask ratio to the output
         expected_output = expected_output * mask_ratio
-
         # Compare the output of PartialConv2d with the manually computed output
-        self.assertTrue(torch.allclose(output, expected_output, atol=1e-6))
+        self.assertTrue(th.allclose(output, expected_output, atol=1e-6))
 
 if __name__ == '__main__':
     unittest.main()
