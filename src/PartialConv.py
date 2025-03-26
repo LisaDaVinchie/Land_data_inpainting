@@ -41,6 +41,3 @@ class PartialConv2d(nn.Conv2d):
             output = th.mul(raw_out, self.mask_ratio)
         
         return output, self.update_mask
-            
-        
-        
