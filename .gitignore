@@ -3,8 +3,10 @@ data/
 
 # The paths json file
 src/paths.json
-src/PartialConv2D_nvidia.py
-tests/PartialConvNvidia_test.py
+
+# Pconvs not done by me
+**/*nvidia*
+**/*Nvidia*
 
 # Exploration file
 src/explore_*
