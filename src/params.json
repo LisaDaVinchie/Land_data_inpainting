@@ -6,7 +6,7 @@
         "learning_rate": 0.001,
         "placeholder": 0,
         "optimizer_kind": "adam",
-        "loss_kind": "mse",
+        "loss_kind": "per_pixel_mse",
         "_possible_losses": ["mse", "per_pixel", "per_pixel_mse"],
         "model_kind": "DINCAE_pconvs",
         "_possible_model_kinds": ["simple_conv", "conv_unet", "conv_maxpool", "DINCAE_like", "DINCAE_pconvs"]
@@ -18,7 +18,7 @@
         "n_channels": 10,
         "x_shape_raw": 1600,
         "y_shape_raw": 3600,
-        "n_cutted_images": 1000,
+        "n_cutted_images": 100,
         "cutted_width": 128,
         "cutted_height": 128,
         "nans_threshold": 0.5,
