@@ -17,24 +17,15 @@ class TestPartialConv2dOutput(unittest.TestCase):
         self.in_channels = 1
         self.out_channels = 1
         self.kernel_size = (3, 3)
-        self.input_size = (self.batch_size, self.in_channels, 4, 4)
-        self.mask_size = (self.batch_size, 1, 4, 4)
-
-        # Fixed input tensor
-        self.input_tensor = th.tensor([[
-            [[1, 2, 3, 4],
-             [5, th.nan, 7, 8],
-             [9, 10, th.nan, 12],
-             [13, 14, 15, 16]]
-        ]], dtype=th.float32)
-
-        # Fixed mask tensor (1s for valid pixels, 0s for holes)
-        self.mask_tensor = th.tensor([[
-            [[1, 1, 1, 1],
-             [1, 0, 0, 1],
-             [1, 0, 0, 1],
-             [1, 1, 1, 1]]
-        ]], dtype=th.float32)
+        self.width = 6
+        self.height = 6
+        self.input_size = (self.batch_size, self.in_channels, self.width , self.height)
+        self.mask_size = (self.batch_size, 1, self.width , self.height)
+        
+        self.input_tensor = th.rand(self.input_size)
+        self.input_tensor[:, :, 0:2, 0:2] = th.nan
+        self.mask_tensor = th.ones_like(self.input_tensor)
+        self.mask_tensor[th.isnan(self.input_tensor)] = 0
 
         # Fixed weights and bias
         self.weight = th.tensor([[
@@ -43,6 +34,19 @@ class TestPartialConv2dOutput(unittest.TestCase):
              [1, 0, -1]]
         ]], dtype=th.float32)
         self.bias = th.tensor([0.0], dtype=th.float32)
+        
+    def test_weight_initialization(self):
+        partial_conv = PartialConv2d(
+            in_channels=self.in_channels,
+            out_channels=self.out_channels,
+            kernel_size=self.kernel_size,
+            padding=1,
+            bias=True
+        )
+        
+        # Check that the weights do not contain nans
+        weights = partial_conv.weight
+        self.assertFalse(th.isnan(weights).any(), "Weights contain NaN values.")
 
     def test_partial_conv2d_output(self):
         # Initialize PartialConv2d layer with fixed weights and bias
@@ -60,6 +64,9 @@ class TestPartialConv2dOutput(unittest.TestCase):
 
         # Forward pass with fixed input and mask
         output, updated_mask = partial_conv(self.input_tensor, self.mask_tensor)
+        # print("Initial nan mask:\n", th.isnan(self.input_tensor))
+        # print("updated mask:\n", updated_mask)
+        # print("nan mask:\n", th.isnan(output))
 
         # Manually compute the expected output
         # Step 1: Apply the mask to the input
