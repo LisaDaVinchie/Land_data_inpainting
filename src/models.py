@@ -17,7 +17,19 @@ n_channels_string = "n_channels"
 image_width_string = "cutted_width"
 image_height_string = "cutted_height"
 
-def initialize_model_and_dataset_kind(params_path, model_kind):
+def initialize_model_and_dataset_kind(params_path: Path, model_kind: str) -> tuple[nn.Module, str]:
+    """Initialize the model and dataset kind from the json file.
+
+    Args:
+        params_path (Path): path to the json file containing the parameters
+        model_kind (str): kind of model to initialize
+
+    Raises:
+        ValueError: if the model kind is not recognized
+
+    Returns:
+        tuple[nn.Module, str]: model and dataset kind
+    """
     if model_kind == "simple_conv":
         model = simple_conv(params_path)
         dataset_kind = "extended"
@@ -95,6 +107,14 @@ class DINCAE_like(nn.Module):
         return w,h
         
     def forward(self, x: th.tensor) -> th.tensor:
+        """Forward pass
+
+        Args:
+            x (th.tensor): tensor of shape (batch_size, n_channels, image_width, image_height), not containing NaNs
+
+        Returns:
+            th.tensor: output image
+        """
         enc1 = self.pool1(self.activation(self.conv1(x)))
         enc2 = self.pool2(self.activation(self.conv2(enc1)))
         enc3 = self.pool3(self.activation(self.conv3(enc2)))
@@ -174,7 +194,16 @@ class DINCAE_pconvs(nn.Module):
             h.append(conv_output_size_same_padding(h[i - 1], self.pooling_sizes[i - 1]))
         return w, h
     
-    def forward(self, x: th.tensor, mask: th.tensor) -> th.tensor:
+    def forward(self, x: th.tensor, mask: th.tensor) -> tuple[th.tensor, th.tensor]:
+        """Forward pass
+
+        Args:
+            x (th.tensor): tensor of shape (batch_size, n_channels, image_width, image_height), can contain NaNs
+            mask (th.tensor): tensor of shape (batch_size, n_channels, image_width, image_height), 1 where x is valid, 0 where x is masked
+
+        Returns:
+            th.tensor: output image and mask
+        """
         x1, mask1 = self.pconv1(x, mask)
         x1 = self.activation(x1)
         x1 = self.pool1(x1)
