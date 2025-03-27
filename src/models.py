@@ -106,14 +106,14 @@ class DINCAE_like(nn.Module):
             h.append(conv_output_size_same_padding(h[i-1], self.pooling_sizes[i-1]))
         return w,h
         
-    def forward(self, x: th.tensor) -> th.tensor:
+    def forward(self, x: th.Tensor) -> th.Tensor:
         """Forward pass
 
         Args:
-            x (th.tensor): tensor of shape (batch_size, n_channels, image_width, image_height), not containing NaNs
+            x (th.Tensor): tensor of shape (batch_size, n_channels, image_width, image_height), not containing NaNs
 
         Returns:
-            th.tensor: output image
+            th.Tensor: output image
         """
         enc1 = self.pool1(self.activation(self.conv1(x)))
         enc2 = self.pool2(self.activation(self.conv2(enc1)))
@@ -194,15 +194,15 @@ class DINCAE_pconvs(nn.Module):
             h.append(conv_output_size_same_padding(h[i - 1], self.pooling_sizes[i - 1]))
         return w, h
     
-    def forward(self, x: th.tensor, mask: th.tensor) -> tuple[th.tensor, th.tensor]:
+    def forward(self, x: th.Tensor, mask: th.Tensor) -> tuple[th.Tensor, th.Tensor]:
         """Forward pass
 
         Args:
-            x (th.tensor): tensor of shape (batch_size, n_channels, image_width, image_height), can contain NaNs
-            mask (th.tensor): tensor of shape (batch_size, n_channels, image_width, image_height), 1 where x is valid, 0 where x is masked
+            x (th.Tensor): tensor of shape (batch_size, n_channels, image_width, image_height), can contain NaNs
+            mask (th.Tensor): tensor of shape (batch_size, n_channels, image_width, image_height), 1 where x is valid, 0 where x is masked
 
         Returns:
-            th.tensor: output image and mask
+            th.Tensor: output image and mask
         """
         x1, mask1 = self.pconv1(x, mask)
         x1 = self.activation(x1)
@@ -286,7 +286,7 @@ class simple_PartialConv(nn.Module):
         self.linear3 = nn.Linear(self.middle_channels[1] * w2 * h2, self.n_channels)
         self.relu = nn.ReLU()
         
-    def forward(self, x: th.tensor, mask: th.tensor):
+    def forward(self, x: th.Tensor, mask: th.Tensor):
         x, mask = self.conv1(x, mask)
         x = self.relu(x)
         x, _ = self.conv2(x, mask)
@@ -328,7 +328,7 @@ class simple_conv(nn.Module):
             nn.Sigmoid()  # Output between 0 and 1
         )
 
-    def forward(self, x: th.tensor):
+    def forward(self, x: th.Tensor):
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
         return decoded
@@ -355,7 +355,7 @@ class conv_unet(nn.Module):
         
         self.relu = nn.ReLU()
 
-    def forward(self, x: th.tensor):
+    def forward(self, x: th.Tensor):
         enc1 = self.relu(self.encoder1(x))
         enc2 = self.relu(self.encoder2(enc1))
         enc3 = self.relu(self.encoder3(enc2))
@@ -430,7 +430,7 @@ class conv_maxpool(nn.Module):
             activation,
         )
     
-    def forward(self, x: th.tensor) -> th.Tensor:
+    def forward(self, x: th.Tensor) -> th.Tensor:
         
         encodings = []
         

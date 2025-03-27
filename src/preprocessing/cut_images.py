@@ -142,7 +142,7 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
         
     return dataset_ext, dataset_min, nans_masks
 
-def cut_valid_image(original_width: int, original_height: int, final_width: int, final_height: int, threshold: float, image: th.tensor, index: int):
+def cut_valid_image(original_width: int, original_height: int, final_width: int, final_height: int, threshold: float, image: th.Tensor, index: int):
     """Cut a valid image from the original image
 
     Args:
@@ -151,7 +151,7 @@ def cut_valid_image(original_width: int, original_height: int, final_width: int,
         final_width (int): _description_
         final_height (int): _description_
         threshold (float): _description_
-        image (th.tensor): _description_
+        image (th.Tensor): _description_
         index (int): _description_
 
     Returns:

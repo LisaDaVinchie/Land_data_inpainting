@@ -12,7 +12,7 @@ class PartialConv2d(nn.Conv2d):
         self.slide_winsize = self.weight_maskUpdater.shape[1] * self.weight_maskUpdater.shape[2] * self.weight_maskUpdater.shape[3]
         
     
-    def forward(self, x: th.tensor, mask = None):
+    def forward(self, x: th.Tensor, mask = None):
         if mask is None:
             mask = th.ones_like(x)
             

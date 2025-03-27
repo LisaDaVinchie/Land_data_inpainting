@@ -7,7 +7,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from utils.import_params_json import load_config
 
-def apply_mask_on_channel(images: th.tensor, masks: th.tensor, placeholder: float = None) -> th.tensor:
+def apply_mask_on_channel(images: th.Tensor, masks: th.Tensor, placeholder: float = None) -> th.Tensor:
     """Mask the image with the mask, using a placeholder. If the placeholder is none, use the mean of the level"""
     new_images = images.clone()
     if placeholder is not None:
@@ -16,13 +16,13 @@ def apply_mask_on_channel(images: th.tensor, masks: th.tensor, placeholder: floa
     means = (images * masks).sum(dim=(2, 3), keepdim=True) / (masks.sum(dim=(2, 3), keepdim=True))
     return new_images * masks + means * (1 - masks)
 
-def mask_inversemask_image(images: th.tensor, masks: th.tensor, placeholder: float = None) -> tuple:
+def mask_inversemask_image(images: th.Tensor, masks: th.Tensor, placeholder: float = None) -> tuple:
     """Mask the image with a placeholder value.
     If the placeholder is none, use the mean of the level and, if there are nans, mask them as well.
 
     Args:
-        images (th.tensor): images to mask, of shape (batch_size, channels, height, width)
-        masks (th.tensor): masks to apply, of shape (batch_size, channels, height, width)
+        images (th.Tensor): images to mask, of shape (batch_size, channels, height, width)
+        masks (th.Tensor): masks to apply, of shape (batch_size, channels, height, width)
         placeholder (float, optional): number to use for masked pixels. Defaults to None.
 
     Returns:
@@ -53,7 +53,7 @@ def mask_inversemask_image(images: th.tensor, masks: th.tensor, placeholder: flo
     return masked_img, inverse_masked_img
 
 
-def create_square_mask(image_width: int, image_height: int, mask_percentage: float) -> th.tensor:
+def create_square_mask(image_width: int, image_height: int, mask_percentage: float) -> th.Tensor:
     """Create a square mask of n_pixels in the image"""
     n_pixels = int(mask_percentage * image_width * image_height)
     square_width = int(n_pixels ** 0.5)
@@ -70,7 +70,7 @@ def create_square_mask(image_width: int, image_height: int, mask_percentage: flo
     
     return mask
 
-# def create_lines_mask(image_width: int, image_height: int, min_thickness: int, max_thickness: int, n_lines: int) -> th.tensor:
+# def create_lines_mask(image_width: int, image_height: int, min_thickness: int, max_thickness: int, n_lines: int) -> th.Tensor:
 #     """Create a mask with lines of random thickness"""
     
 #     mask = th.ones((image_width, image_height), dtype=th.float32)
@@ -90,4 +90,4 @@ def create_square_mask(image_width: int, image_height: int, mask_percentage: flo
         
 #         cv2.line(mask.numpy(), (x1, y1), (x2, y2), (0, 0, 0), thickness)
         
-#     return th.tensor(mask)
+#     return th.Tensor(mask)
