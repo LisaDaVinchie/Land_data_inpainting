@@ -54,13 +54,7 @@ class DINCAE_like(nn.Module):
         # self.output_size = output_size if output_size is not None else model_params.get("output_size", 2)
         self.output_size = self.n_channels
         
-        w = []
-        h = []
-        w.append(self.image_width)
-        h.append(self.image_height)
-        for i in range(1, 5):
-            w.append(conv_output_size_same_padding(w[i-1], self.pooling_sizes[i-1]))
-            h.append(conv_output_size_same_padding(h[i-1], self.pooling_sizes[i-1]))
+        w, h = self._calculate_sizes()
         
         self.conv1 = nn.Conv2d(self.n_channels, self.middle_channels[0], self.kernel_sizes[0], padding = self.kernel_sizes[0] // 2)
         self.pool1 = nn.MaxPool2d(self.pooling_sizes[0], ceil_mode=True)
@@ -89,6 +83,16 @@ class DINCAE_like(nn.Module):
         self.deconv4 = nn.Conv2d(self.middle_channels[1], self.middle_channels[0], self.kernel_sizes[1], padding='same')
         self.interp5 = nn.Upsample(size=(self.image_width, self.image_height), mode=self.interp_mode)
         self.deconv5 = nn.Conv2d(self.middle_channels[0], self.output_size, self.kernel_sizes[0], padding='same')
+
+    def _calculate_sizes(self):
+        w = []
+        h = []
+        w.append(self.image_width)
+        h.append(self.image_height)
+        for i in range(1, 5):
+            w.append(conv_output_size_same_padding(w[i-1], self.pooling_sizes[i-1]))
+            h.append(conv_output_size_same_padding(h[i-1], self.pooling_sizes[i-1]))
+        return w,h
         
     def forward(self, x: th.tensor) -> th.tensor:
         enc1 = self.pool1(self.activation(self.conv1(x)))
@@ -107,7 +111,6 @@ class DINCAE_like(nn.Module):
         dec5 = self.activation(self.deconv5(self.interp5(x)))
         
         return dec5
-    
 class DINCAE_pconvs(nn.Module):
     def __init__(self, params_path: Path, n_channels: int = None, image_width: int = None, image_height: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None, output_size: int = None):
         super(DINCAE_pconvs, self).__init__()
@@ -124,58 +127,55 @@ class DINCAE_pconvs(nn.Module):
         self.interp_mode = interp_mode if interp_mode is not None else model_params.get("interp_mode", "bilinear")
         self.output_size = self.n_channels
         
+        self.n_layers = len(self.middle_channels)
+        self.w, self.h = self._calculate_sizes()
+        
+        self.pconv1 = PartialConv2d(self.n_channels, self.middle_channels[0], kernel_size=self.kernel_sizes[0], padding=self.kernel_sizes[0] // 2)
+        self.pool1 = nn.MaxPool2d(self.pooling_sizes[0], ceil_mode=True)
+        
+        self.pconv2 = PartialConv2d(self.middle_channels[0], self.middle_channels[1], kernel_size=self.kernel_sizes[1], padding='same')
+        self.pool2 = nn.MaxPool2d(self.pooling_sizes[1], ceil_mode=True)
+        
+        self.pconv3 = PartialConv2d(self.middle_channels[1], self.middle_channels[2], kernel_size=self.kernel_sizes[2], padding='same')
+        self.pool3 = nn.MaxPool2d(self.pooling_sizes[2], ceil_mode=True)
+        
+        self.pconv4 = PartialConv2d(self.middle_channels[2], self.middle_channels[3], kernel_size=self.kernel_sizes[3], padding='same')
+        self.pool4 = nn.MaxPool2d(self.pooling_sizes[3], ceil_mode=True)
+        
+        self.pconv5 = PartialConv2d(self.middle_channels[3], self.middle_channels[4], kernel_size=self.kernel_sizes[4], padding='same')
+        self.pool5 = nn.MaxPool2d(self.pooling_sizes[4], ceil_mode=True)
+        
+        self.activation = nn.ReLU()
+        
+    
+        self.interp1 = nn.Upsample(size=(self.w[4], self.h[4]), mode=self.interp_mode)
+        self.pdeconv1 = PartialConv2d(self.middle_channels[4], self.middle_channels[3], kernel_size=self.kernel_sizes[4], padding='same')
+        
+        self.interp2 = nn.Upsample(size=(self.w[3], self.h[3]), mode=self.interp_mode)
+        self.pdeconv2 = PartialConv2d(self.middle_channels[3], self.middle_channels[2], kernel_size=self.kernel_sizes[3], padding='same')
+        
+        self.interp3 = nn.Upsample(size=(self.w[2], self.h[2]), mode=self.interp_mode)
+        self.pdeconv3 = PartialConv2d(self.middle_channels[2], self.middle_channels[1], kernel_size=self.kernel_sizes[2], padding='same')
+        
+        self.interp4 = nn.Upsample(size=(self.w[1], self.h[1]), mode=self.interp_mode)
+        self.pdeconv4 = PartialConv2d(self.middle_channels[1], self.middle_channels[0], kernel_size=self.kernel_sizes[1], padding='same')
+        
+        self.interp5 = nn.Upsample(size=(self.image_width, self.image_height), mode=self.interp_mode)
+        self.pdeconv5 = PartialConv2d(self.middle_channels[0], self.output_size, kernel_size=self.kernel_sizes[0], padding='same')
+        
+    def _calculate_sizes(self):
+        """Calculate the output sizes of the convolutions and the downsampling and upsampling layers."""
         w = []
         h = []
         w.append(self.image_width)
         h.append(self.image_height)
-        for i in range(1, 5):
-            w.append(conv_output_size_same_padding(w[i-1], self.pooling_sizes[i-1]))
-            h.append(conv_output_size_same_padding(h[i-1], self.pooling_sizes[i-1]))
-        
-        # self.conv1 = nn.Conv2d(self.n_channels, self.middle_channels[0], self.kernel_sizes[0], padding = self.kernel_sizes[0] // 2)
-        self.pconv1 = PartialConv2d(self.n_channels, self.middle_channels[0], kernel_size=self.kernel_sizes[0], padding=self.kernel_sizes[0] // 2)
-        self.pool1 = nn.MaxPool2d(self.pooling_sizes[0], ceil_mode=True)
-        
-        # self.conv2 = nn.Conv2d(self.middle_channels[0], self.middle_channels[1], self.kernel_sizes[1], padding = 'same')
-        self.pconv2 = PartialConv2d(self.middle_channels[0], self.middle_channels[1], kernel_size=self.kernel_sizes[1], padding='same')
-        self.pool2 = nn.MaxPool2d(self.pooling_sizes[1], ceil_mode=True)
-        
-        # self.conv3 = nn.Conv2d(self.middle_channels[1], self.middle_channels[2], self.kernel_sizes[2], padding = 'same')
-        self.pconv3 = PartialConv2d(self.middle_channels[1], self.middle_channels[2], kernel_size=self.kernel_sizes[2], padding='same')
-        self.pool3 = nn.MaxPool2d(self.pooling_sizes[2], ceil_mode=True)
-        
-        # self.conv4 = nn.Conv2d(self.middle_channels[2], self.middle_channels[3], self.kernel_sizes[3], padding = 'same')
-        self.pconv4 = PartialConv2d(self.middle_channels[2], self.middle_channels[3], kernel_size=self.kernel_sizes[3], padding='same')
-        self.pool4 = nn.MaxPool2d(self.pooling_sizes[3], ceil_mode=True)
-        
-        # self.conv5 = nn.Conv2d(self.middle_channels[3], self.middle_channels[4], self.kernel_sizes[4], padding = 'same')
-        self.pconv5 = PartialConv2d(self.middle_channels[3], self.middle_channels[4], kernel_size=self.kernel_sizes[4], padding='same')
-        self.pool5 = nn.MaxPool2d(self.pooling_sizes[4], ceil_mode=True)
-        self.activation = nn.ReLU()
-        
-    
-        self.interp1 = nn.Upsample(size=(w[4], h[4]), mode=self.interp_mode)
-        # self.deconv1 = nn.Conv2d(self.middle_channels[4], self.middle_channels[3], self.kernel_sizes[4], padding='same')
-        self.pdeconv1 = PartialConv2d(self.middle_channels[4], self.middle_channels[3], kernel_size=self.kernel_sizes[4], padding='same')
-        
-        self.interp2 = nn.Upsample(size=(w[3], h[3]), mode=self.interp_mode)
-        # self.deconv2 = nn.Conv2d(self.middle_channels[3], self.middle_channels[2], self.kernel_sizes[3], padding='same')
-        self.pdeconv2 = PartialConv2d(self.middle_channels[3], self.middle_channels[2], kernel_size=self.kernel_sizes[3], padding='same')
-        
-        self.interp3 = nn.Upsample(size=(w[2], h[2]), mode=self.interp_mode)
-        # self.deconv3 = nn.Conv2d(self.middle_channels[2], self.middle_channels[1], self.kernel_sizes[2], padding='same')
-        self.pdeconv3 = PartialConv2d(self.middle_channels[2], self.middle_channels[1], kernel_size=self.kernel_sizes[2], padding='same')
-        
-        self.interp4 = nn.Upsample(size=(w[1], h[1]), mode=self.interp_mode)
-        # self.deconv4 = nn.Conv2d(self.middle_channels[1], self.middle_channels[0], self.kernel_sizes[1], padding='same')
-        self.pdeconv4 = PartialConv2d(self.middle_channels[1], self.middle_channels[0], kernel_size=self.kernel_sizes[1], padding='same')
-        
-        self.interp5 = nn.Upsample(size=(self.image_width, self.image_height), mode=self.interp_mode)
-        # self.deconv5 = nn.Conv2d(self.middle_channels[0], self.output_size, self.kernel_sizes[0], padding='same')
-        self.pdeconv5 = PartialConv2d(self.middle_channels[0], self.output_size, kernel_size=self.kernel_sizes[0], padding='same')
+        for i in range(1, self.n_layers):
+            w.append(conv_output_size_same_padding(w[i - 1], self.pooling_sizes[i - 1]))
+            h.append(conv_output_size_same_padding(h[i - 1], self.pooling_sizes[i - 1]))
+        return w, h
     
     def forward(self, x: th.tensor, mask: th.tensor) -> th.tensor:
-        x1, mask1 = self.pconv1(x)
+        x1, mask1 = self.pconv1(x, mask)
         x1 = self.activation(x1)
         x1 = self.pool1(x1)
         mask1 = self.pool1(mask1)
