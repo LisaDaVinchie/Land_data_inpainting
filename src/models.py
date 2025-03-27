@@ -258,42 +258,6 @@ class DINCAE_pconvs(nn.Module):
         dec5 = self.activation(dec5)
         
         return dec5, dmask5
-
-class simple_PartialConv(nn.Module):
-    def __init__(self, params_path: Path, n_channels: int = None, image_width: int = None, image_height: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
-        super(simple_PartialConv, self).__init__()
-        model_params = load_config(params_path, ["dataset"]).get("dataset", {})
-        self.n_channels = n_channels if n_channels is not None else model_params.get(n_channels_string, 3)
-        self.image_width = image_width if image_width is not None else model_params.get(image_width_string, 64)
-        self.image_height = image_height if image_height is not None else model_params.get(image_height_string, 64)
-        
-        model_params = load_config(params_path, ["simple_PartialConv"]).get("simple_PartialConv", {})
-        self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [10, 10, 10])
-        self.kernel_size = kernel_size if kernel_size is not None else model_params.get("kernel_size", [1, 1, 1])
-        self.stride = stride if stride is not None else model_params.get("stride", [7, 7, 7])
-        self.padding = padding if padding is not None else model_params.get("padding", [5, 5, 5])
-        self.output_padding = output_padding if output_padding is not None else model_params.get("output_padding", [5, 5, 5])
-        
-        
-        w1 = math.floor((self.image_width - self.kernel_size[0] + 2 * self.padding[0]) / self.stride[0] + 1)
-        w2 = math.floor((w1 - self.kernel_size[1] + 2 * self.padding[1]) / self.stride[1] + 1)
-        
-        h1 = math.floor((self.image_height - self.kernel_size[0] + 2 * self.padding[0]) / self.stride[0] + 1)
-        h2 = math.floor((h1 - self.kernel_size[1] + 2 * self.padding[1]) / self.stride[1] + 1)
-        
-        self.conv1 = PartialConv2d(self.n_channels, self.middle_channels[0], kernel_size=self.kernel_size[0], stride=self.stride[0], padding=self.padding[0])  # 64x64 -> 32x32
-        self.conv2 = PartialConv2d(self.middle_channels[0], self.middle_channels[1], kernel_size=self.kernel_size[1], stride=self.stride[1], padding=self.padding[1])  # 32x32 -> 16x16
-        self.linear3 = nn.Linear(self.middle_channels[1] * w2 * h2, self.n_channels)
-        self.relu = nn.ReLU()
-        
-    def forward(self, x: th.Tensor, mask: th.Tensor):
-        x, mask = self.conv1(x, mask)
-        x = self.relu(x)
-        x, _ = self.conv2(x, mask)
-        x = self.relu(x)
-        x = x.view(x.size(0), -1)
-        x = self.linear3(x)
-        return x
         
 class simple_conv(nn.Module):
     def __init__(self, params_path: Path, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
