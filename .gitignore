@@ -8,6 +8,9 @@ src/paths.json
 **/*nvidia*
 **/*Nvidia*
 
+# Refactored versions of the code
+src/model
+
 # Exploration file
 src/explore_*
 
