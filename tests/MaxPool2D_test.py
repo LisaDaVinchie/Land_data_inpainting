@@ -84,6 +84,39 @@ class TestPartialMaxPool2D(unittest.TestCase):
 
         self.assertTrue(th.allclose(pooled_x, expected_x, equal_nan=True))
         self.assertTrue(th.allclose(pooled_mask, expected_mask))
+        
+    def test_masked_input_invariance(self):
+        """Test that the output is invariant to the input values in the masked regions."""
+        input_tensor1 = th.tensor([[[1, 2, 3],
+                                  [4, 5, 6],
+                                  [7, 8, 9]],
+                                  
+                                  [[10, 11, 12],
+                                  [13, 14, 15],
+                                  [16, 17, 18]]], dtype=th.float32).unsqueeze(0)
+        mask_tensor = th.tensor([[[1, 0, 1],
+                                [1, 0, 1],
+                                [1, 1, 1]],
+                                 
+                                [[1, 1, 1],
+                                [1, 1, 0],
+                                [1, 1, 0]]
+                                 ], dtype=th.float32).unsqueeze(0)
+        
+        input_tensor2 = th.tensor([[[1, 20, 3],
+                                  [4, 50, 6],
+                                  [7, 8, 9]],
+                                  
+                                  [[10, 11, 12],
+                                  [13, 14, 150],
+                                  [16, 17, 180]]], dtype=th.float32).unsqueeze(0)
+        
+        output1, output_mask1 = self.pool(input_tensor1, mask_tensor)
+        output2, output_mask2 = self.pool(input_tensor2, mask_tensor)
+        # Check that the outputs are the same
+        self.assertTrue(th.allclose(output1, output2, atol=1e-6), "Output does not match expected output.")
+        # Check that the masks are the same
+        self.assertTrue(th.allclose(output_mask1, output_mask2, atol=1e-6), "Mask does not match expected mask.")
 
 if __name__ == "__main__":
     unittest.main()
