@@ -11,6 +11,9 @@ src/paths.json
 # Refactored versions of the code
 src/model
 
+# Jupyter notebooks
+src/*.ipynb
+
 # Exploration file
 src/explore_*
 
