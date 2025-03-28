@@ -93,14 +93,13 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
     selected_dates = [Path(path).stem for path in path_to_indices_map.keys()]
     dates_parsed = [datetime.strptime(d, "%Y_%m_%d").date() for d in selected_dates]
     oldest_date, newest_date = min(dates_parsed), max(dates_parsed)
-    
     interval = (newest_date - oldest_date).days
 
-    idx_start = 0
-    idx_end = 0
-    n_original_channels = n_channels - 1
-    n_pixels = final_width * final_height * n_original_channels
-    threshold = nans_threshold * n_pixels
+    idx_start = 0 # index of the first cutted image of this raw image
+    idx_end = 0 # index of the last cutted image of this raw image
+    n_original_channels = n_channels - 1 # The last channel is the time layer
+    n_pixels = final_width * final_height * n_original_channels # number of pixels in the raw image
+    threshold = nans_threshold * n_pixels # threshold of nans in the image
     for path, indices in path_to_indices_map.items():
         image = th.load(path)
         n_indices = len(indices)
@@ -113,27 +112,28 @@ def generate_image_dataset(original_width: int, original_height: int, n_images: 
         # Generate the cutted images, adding the time layer
         cutted_imgs = th.stack([cut_valid_image(original_width, original_height, final_width, final_height, threshold, image, index) for index in indices], dim=0)
         time_layers = th.ones((n_indices, 1, final_width, final_height), dtype=th.float32) * encoded_time
-        cutted_imgs = th.cat((cutted_imgs, time_layers), dim=1) # Add the time layer to the images
+        cutted_imgs = th.cat((cutted_imgs, time_layers), dim=1)
         
-        nans_masks[idx_start:idx_end, :, :, :] = th.isnan(cutted_imgs)
+        # Find where the nans are in the cutted images
+        cutted_img_nans = ~th.isnan(cutted_imgs)
+        nans_masks[idx_start:idx_end, :, :, :] = cutted_img_nans.float()
+        
+        # Create square masks. 0 where the values are masked, 1 where the values are not masked
         masks = th.ones((n_indices, n_channels, final_width, final_height), dtype=th.float32)
-        
         for mc in masked_channels_list:
             masks[:, mc, :, :] = create_square_mask(final_width, final_height, masked_fraction)
-        # masks[idx_start:idx_end, nans_masks] = 0
         
-        # Set masks to 0 where the nan mask is 0 between idx_start and idx_end
-        masks = th.where(nans_masks[idx_start:idx_end] == 0, th.tensor(0, dtype=masks.dtype), masks)
+        # Set masks to 0 where the nan mask is 0
+        masks = th.where(cutted_img_nans == 0, th.tensor(0, dtype=masks.dtype), masks)
         
+        # Save the images to the minimal dataset, substituting the nans with the placeholder
         if minimal_data:
-            # Save the images to the minimal dataset
-            dataset_min[keys_min[0]][idx_start:idx_end] = cutted_imgs
+            dataset_min[keys_min[0]][idx_start:idx_end] = th.nan_to_num(cutted_imgs, nan=placeholder)
             dataset_min[keys_min[1]][idx_start:idx_end] = masks
         
+        # Save the images to the extended dataset
         if extended_data:
             masked_images, inverse_masked_images = mask_inversemask_image(cutted_imgs, masks, placeholder)
-            
-            # Save the images to the extended dataset
             dataset_ext[keys_ext[0]][idx_start:idx_end] = masked_images
             dataset_ext[keys_ext[1]][idx_start:idx_end] = inverse_masked_images
             dataset_ext[keys_ext[2]][idx_start:idx_end] = masks
