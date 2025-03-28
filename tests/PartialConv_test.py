@@ -48,6 +48,7 @@ class TestPartialConv2dOutput(unittest.TestCase):
         self.assertFalse(th.isnan(weights).any(), "Weights contain NaN values.")
         
     def test_masked_input_invariance(self):
+        """Test that the output is invariant to the input values in the masked regions."""
         input_tensor1 = th.tensor([[[1, 2, 3],
                                   [4, 5, 6],
                                   [7, 8, 9]],
