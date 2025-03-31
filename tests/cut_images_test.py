@@ -6,7 +6,7 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from preprocessing.cut_images import generate_image_dataset, select_random_points, map_random_points_to_images
+from preprocessing.cut_images import CutAndMaskImage
 
 
 class TestGenerateMaskedImageDataset(unittest.TestCase):
@@ -51,33 +51,30 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             days = th.randint(1, 29, (1,))
             dummy_date = f"{years.item()}_{months.item()}_{days.item()}"
             th.save(dummy_image, self.processed_data_dir / f"{dummy_date}.pt")
+            
+        self.cut_class = CutAndMaskImage(
+            original_width=self.x_shape_raw,
+            original_height=self.y_shape_raw,
+            final_width=self.cutted_width,
+            final_height=self.cutted_height,
+            nans_threshold=0.5,
+            n_images=self.n_cutted_images,
+            n_cutted_images=self.n_cutted_images)
         
         # Select random points and map them to images
-        random_points = select_random_points(
-            original_width=self.x_shape_raw,
-            original_height=self.y_shape_raw,
-            n_points=self.n_cutted_images,
-            final_width=self.cutted_width,
-            final_height=self.cutted_height,
-        )
+        random_points = self.cut_class.select_random_points(n_points=self.n_cutted_images)
+        
         processed_images_paths = list(self.processed_data_dir.glob("*.pt"))
-        self.path_to_indices = map_random_points_to_images(processed_images_paths, random_points)
+        self.path_to_indices = self.cut_class.map_random_points_to_images(processed_images_paths, random_points)
 
         # Generate the dataset
-        self.dataset_ext, self.dataset_min, self.nans_mask = generate_image_dataset(
-            original_width=self.x_shape_raw,
-            original_height=self.y_shape_raw,
-            n_images=self.n_cutted_images,
-            final_width=self.cutted_width,
-            final_height=self.cutted_height,
-            n_channels=self.n_channels,
-            masked_fraction=self.mask_percentage,
-            masked_channels_list=self.masked_channels,
-            path_to_indices_map=self.path_to_indices,
-            minimal_data=True, extended_data=True,
-            placeholder=self.placeholder,
-            nans_threshold=0.5
-        )
+        self.dataset_ext, self.dataset_min, self.nans_mask = self.cut_class.generate_image_dataset(
+                        n_channels=self.n_channels,
+                        masked_fraction=self.mask_percentage,
+                        masked_channels_list=self.masked_channels,
+                        path_to_indices_map=self.path_to_indices,
+                        minimal_data=True, extended_data=True,
+                        placeholder=self.placeholder)
 
     def tearDown(self):
         """Clean up temporary directory after tests."""
@@ -147,20 +144,13 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
     def test_dataset_kind_switch_extended_data_false(self):
         """Test that the dataset kind switch works correctly. In this case, the extended dataset should be None."""
         
-        dataset_ext, dataset_min, _ = generate_image_dataset(
-            original_width=self.x_shape_raw,
-            original_height=self.y_shape_raw,
-            n_images=self.n_cutted_images,
-            final_width=self.cutted_width,
-            final_height=self.cutted_height,
-            n_channels=self.n_channels,
-            masked_fraction=self.mask_percentage,
-            masked_channels_list=self.masked_channels,
-            path_to_indices_map=self.path_to_indices,
-            minimal_data=True, extended_data=False,
-            placeholder=self.placeholder,
-            nans_threshold=0.5
-        )
+        dataset_ext, dataset_min, nans_mask = self.cut_class.generate_image_dataset(
+                        n_channels=self.n_channels,
+                        masked_fraction=self.mask_percentage,
+                        masked_channels_list=self.masked_channels,
+                        path_to_indices_map=self.path_to_indices,
+                        minimal_data=True, extended_data=False,
+                        placeholder=self.placeholder)
         
         # Check that dataset_ext is None and dataset_min is not None
         self.assertIsNone(dataset_ext)
@@ -169,20 +159,13 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
     def test_dataset_kind_switch_minimal_data_false(self):
         """Test that the dataset kind switch works correctly. In this case, the minimal dataset should be None."""
         
-        dataset_ext, dataset_min, _ = generate_image_dataset(
-            original_width=self.x_shape_raw,
-            original_height=self.y_shape_raw,
-            n_images=self.n_cutted_images,
-            final_width=self.cutted_width,
-            final_height=self.cutted_height,
-            n_channels=self.n_channels,
-            masked_fraction=self.mask_percentage,
-            masked_channels_list=self.masked_channels,
-            path_to_indices_map=self.path_to_indices,
-            minimal_data=False, extended_data=True,
-            placeholder=self.placeholder,
-            nans_threshold=0.5
-        )
+        dataset_ext, dataset_min, nans_mask = self.cut_class.generate_image_dataset(
+                        n_channels=self.n_channels,
+                        masked_fraction=self.mask_percentage,
+                        masked_channels_list=self.masked_channels,
+                        path_to_indices_map=self.path_to_indices,
+                        minimal_data=False, extended_data=True,
+                        placeholder=self.placeholder)
         
         self.assertIsNotNone(dataset_ext)
         self.assertIsNone(dataset_min)
@@ -190,20 +173,13 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
     def test_dataset_kind_switch_both_false(self):
         """Test that the dataset kind switch works correctly. In this case, both datasets should be None."""
         
-        dataset_ext, dataset_min, _ = generate_image_dataset(
-            original_width=self.x_shape_raw,
-            original_height=self.y_shape_raw,
-            n_images=self.n_cutted_images,
-            final_width=self.cutted_width,
-            final_height=self.cutted_height,
-            n_channels=self.n_channels,
-            masked_fraction=self.mask_percentage,
-            masked_channels_list=self.masked_channels,
-            path_to_indices_map=self.path_to_indices,
-            minimal_data=False, extended_data=False,
-            placeholder=self.placeholder,
-            nans_threshold=0.5
-        )
+        dataset_ext, dataset_min, nans_mask = self.cut_class.generate_image_dataset(
+                        n_channels=self.n_channels,
+                        masked_fraction=self.mask_percentage,
+                        masked_channels_list=self.masked_channels,
+                        path_to_indices_map=self.path_to_indices,
+                        minimal_data=False, extended_data=False,
+                        placeholder=self.placeholder)
         
         self.assertIsNone(dataset_ext)
         self.assertIsNone(dataset_min)
