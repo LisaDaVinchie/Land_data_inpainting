@@ -58,7 +58,6 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             final_width=self.cutted_width,
             final_height=self.cutted_height,
             nans_threshold=0.5,
-            n_images=self.n_cutted_images,
             n_cutted_images=self.n_cutted_images)
         
         # Select random points and map them to images
