@@ -196,18 +196,19 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         
         # Create a mask with 0s in the selected points
         masks = th.ones_like(dataset)
-        masks[0, 0, 0, 0] = 0
-        masks[1, 1, 1, 1] = 0
-        masks[2, 2, 2, 2] = 0
-        masks[3, 3, 3, 3] = 0
         
-        dataset[masks == 0] = th.nan
+        # Set some points to NaN and some to the placeholder value, masking them as 0 in the mask
+        nans_idxs = [[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]]
+        for idx in nans_idxs:
+            masks[idx[0], idx[1], idx[2], idx[3]] = 0
+            dataset[idx[0], idx[1], idx[2], idx[3]] = th.nan
         
-        masks[0, 1, 0, 0] = 0
-        masks[1, 2, 1, 1] = 0
+        placeholder_idxs = [[0, 1, 0, 0], [1, 2, 1, 1], [2, 3, 2, 2]]
+        for idx in placeholder_idxs:
+            masks[idx[0], idx[1], idx[2], idx[3]] = 0
+            dataset[idx[0], idx[1], idx[2], idx[3]] = -1
         
-        non_nan_mask = ~th.isnan(dataset)
-        
+        # Calculate min and max only for the non-masked values
         min_value = dataset[masks == 1].min()
         max_value = dataset[masks == 1].max()
         
@@ -220,7 +221,13 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         self.assertEqual(normalized_dataset.dtype, dataset.dtype)
         
         # Check that the NaN values are still NaN
-        self.assertTrue(th.equal(norm_non_nan_mask, non_nan_mask), "NaN values are not preserved in the normalized dataset")
+        
+        for idx in nans_idxs:
+            self.assertTrue(th.isnan(normalized_dataset[idx[0], idx[1], idx[2], idx[3]]))
+        
+        # Check that the masked values are replaced with the placeholder value
+        for idx in placeholder_idxs:
+            self.assertEqual(normalized_dataset[idx[0], idx[1], idx[2], idx[3]], self.placeholder)
         
         # Check that the minimum and maximum values are 0 and 1, respectively
         self.assertAlmostEqual(normalized_dataset[masks == 1].min().item(), 0.0, places=5)

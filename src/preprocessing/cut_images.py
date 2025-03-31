@@ -198,7 +198,10 @@ def normalize_dataset_minmax(images: th.Tensor, masks: th.Tensor) -> tuple[th.Te
     min_val = th.min(images[masks == 1])
     max_val = th.max(images[masks == 1])
     
-    return (images - min_val) / (max_val - min_val), [min_val, max_val]
+    # Normalize where the mask is 1, keep the original values where the mask is 0
+    norm_images = th.where(masks == 1, (images - min_val) / (max_val - min_val), images)
+    
+    return norm_images, [min_val, max_val]
 
 def main():
     start_time = time()
