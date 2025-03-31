@@ -84,8 +84,6 @@ def main():
         loss_function = per_pixel_loss
     elif loss_kind == "per_pixel_mse":
         loss_function = per_pixel_mse
-    elif loss_kind == "mse":
-        loss_function = nn.MSELoss()
     else:
         raise ValueError(f"Loss kind {loss_kind} not recognized")
     
@@ -163,7 +161,7 @@ def validate_paths(paths: list):
     for path in paths:
         if not path.exists():
             raise FileNotFoundError(f"Path {path} does not exist.")
-
+        
 def train_loop_extended(epochs: int, placeholder: float, model: th.nn.Module, device, train_loader: DataLoader, test_loader: DataLoader, loss_function: nn.Module, optimizer: optim.Optimizer):
     """Training loop for the extended dataset."""
     train_losses = []
@@ -174,13 +172,11 @@ def train_loop_extended(epochs: int, placeholder: float, model: th.nn.Module, de
         model.train()
         
         train_loss = 0
-        for i, (masked_image, inverse_masked_image, mask) in enumerate(train_loader):
+        for i, (image, mask) in enumerate(train_loader):
+            masked_image, _ = mask_inversemask_image(image, mask, placeholder)
             masked_image = masked_image.to(device)
-            inverse_masked_image = inverse_masked_image.to(device)
-            mask = mask.to(device)
             output = model(masked_image)
-            _, inverse_masked_output = mask_inversemask_image(output, mask, placeholder)
-            loss_val = loss_function(inverse_masked_output, inverse_masked_image) / (th.sum(mask) + 1e-8)
+            loss_val = loss_function(output, image, mask)
             train_loss += loss_val.item()
             
             optimizer.zero_grad()
@@ -192,14 +188,51 @@ def train_loop_extended(epochs: int, placeholder: float, model: th.nn.Module, de
         with th.no_grad():
             model.eval()
             test_loss = 0
-            for i, (masked_image, inverse_masked_image, mask) in enumerate(test_loader):
+            for i, (image, mask) in enumerate(test_loader):
+                masked_image, _ = mask_inversemask_image(image, mask, placeholder)
                 output = model(masked_image)
-                _, inverse_masked_output = mask_inversemask_image(output, mask, placeholder)
-                loss_val = loss_function(inverse_masked_output, inverse_masked_image) / (th.sum(mask) + 1e-8)
+                loss_val = loss_function(output, image, mask)
                 test_loss += loss_val.item()
             
             test_losses.append(test_loss / len(test_loader))
     return model, train_losses, test_losses
+
+# def train_loop_extended(epochs: int, placeholder: float, model: th.nn.Module, device, train_loader: DataLoader, test_loader: DataLoader, loss_function: nn.Module, optimizer: optim.Optimizer):
+#     """Training loop for the extended dataset."""
+#     train_losses = []
+#     test_losses = []
+
+#     for epoch in range(epochs):
+#         print(f"\nEpoch {epoch + 1}/{epochs}\n", flush=True)
+#         model.train()
+        
+#         train_loss = 0
+#         for i, (masked_image, inverse_masked_image, mask) in enumerate(train_loader):
+#             masked_image = masked_image.to(device)
+#             inverse_masked_image = inverse_masked_image.to(device)
+#             mask = mask.to(device)
+#             output = model(masked_image)
+#             _, inverse_masked_output = mask_inversemask_image(output, mask, placeholder)
+#             loss_val = loss_function(inverse_masked_output, inverse_masked_image) / (th.sum(mask) + 1e-8)
+#             train_loss += loss_val.item()
+            
+#             optimizer.zero_grad()
+#             loss_val.backward()
+#             optimizer.step()
+        
+#         train_losses.append(train_loss / len(train_loader))
+        
+#         with th.no_grad():
+#             model.eval()
+#             test_loss = 0
+#             for i, (masked_image, inverse_masked_image, mask) in enumerate(test_loader):
+#                 output = model(masked_image)
+#                 _, inverse_masked_output = mask_inversemask_image(output, mask, placeholder)
+#                 loss_val = loss_function(inverse_masked_output, inverse_masked_image) / (th.sum(mask) + 1e-8)
+#                 test_loss += loss_val.item()
+            
+#             test_losses.append(test_loss / len(test_loader))
+#     return model, train_losses, test_losses
 
 def train_loop_minimal(epochs: int, model: th.nn.Module, device, train_loader: DataLoader, test_loader: DataLoader, loss_function: nn.Module, optimizer: optim.Optimizer):
     train_losses = []
