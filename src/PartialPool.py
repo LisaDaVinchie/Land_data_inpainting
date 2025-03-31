@@ -16,8 +16,8 @@ class PartialMaxPool2D(nn.Module):
         """Forward pass.
 
         Args:
-            x (th.Tensor): tensor of shape (batch_size, n_channels, image_width, image_height), can contain NaNs
-            mask (th.Tensor): tensor of shape (batch_size, n_channels, image_width, image_height), 1 where x is valid, 0 where x is masked
+            x (th.Tensor): tensor of shape (batch_size, n_channels, image_nrows, image_ncols), can contain NaNs
+            mask (th.Tensor): tensor of shape (batch_size, n_channels, image_nrows, image_ncols), 1 where x is valid, 0 where x is masked
 
         Returns:
             pooled_x (th.Tensor): Max-pooled output, masked regions set to NaN.

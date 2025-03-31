@@ -23,8 +23,8 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         self.n_channels = 4
         # Test parameters
         self.n_cutted_images = 8
-        self.cutted_width = 10
-        self.cutted_height = 10
+        self.cutted_nrows = 10
+        self.cutted_ncols = 10
         self.mask_percentage = 0.5
         self.masked_channels = [0, 2]
         self.placeholder = -1.0
@@ -53,10 +53,10 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             th.save(dummy_image, self.processed_data_dir / f"{dummy_date}.pt")
             
         self.cut_class = CutAndMaskImage(
-            original_width=self.x_shape_raw,
-            original_height=self.y_shape_raw,
-            final_width=self.cutted_width,
-            final_height=self.cutted_height,
+            original_nrows=self.x_shape_raw,
+            original_ncols=self.y_shape_raw,
+            final_nrows=self.cutted_nrows,
+            final_ncols=self.cutted_ncols,
             nans_threshold=0.5,
             n_cutted_images=self.n_cutted_images)
         
@@ -91,7 +91,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         """Test that generate_masked_image_dataset returns tensors with the correct shapes and dtypes."""
         
         # Check that each tensor has the correct shape and dtype
-        expected_shape = (self.n_cutted_images, self.n_channels, self.cutted_width, self.cutted_height)
+        expected_shape = (self.n_cutted_images, self.n_channels, self.cutted_nrows, self.cutted_ncols)
         expected_dtype = th.float32
 
         for key in self.dataset_ext.keys():
@@ -192,7 +192,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
     def test_normalize_dataset_minmax(self):
         """Test that the normalize_dataset_minmax function works correctly."""
         # Create a dummy dataset
-        dataset = th.rand(self.n_cutted_images, self.n_channels, self.cutted_width, self.cutted_height)
+        dataset = th.rand(self.n_cutted_images, self.n_channels, self.cutted_nrows, self.cutted_ncols)
         
         # Create a mask with 0s in the selected points
         masks = th.ones_like(dataset)

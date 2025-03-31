@@ -19,8 +19,8 @@
         "x_shape_raw": 1600,
         "y_shape_raw": 3600,
         "n_cutted_images": 100,
-        "cutted_width": 128,
-        "cutted_height": 128,
+        "cutted_nrows": 128,
+        "cutted_ncols": 128,
         "nans_threshold": 0.5,
         "masked_channels": [0, 1],
         "channels_to_keep": [

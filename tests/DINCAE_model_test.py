@@ -23,8 +23,8 @@ class Test_DINCAE_model(unittest.TestCase):
                 },  
             "dataset":{
                 "n_channels": 10,
-                "cutted_width": 168,
-                "cutted_height": 144
+                "cutted_nrows": 168,
+                "cutted_ncols": 144
             }      
         }
         
@@ -38,9 +38,9 @@ class Test_DINCAE_model(unittest.TestCase):
         self.model = DINCAE_like(params_path=self.params_path)
         
         self.batch_size = 32
-        self.width = 168
-        self.height = 144
-        self.input_tensor = th.rand(self.batch_size, self.model.n_channels, self.width, self.height)
+        self.nrows = 168
+        self.ncols = 144
+        self.input_tensor = th.rand(self.batch_size, self.model.n_channels, self.nrows, self.ncols)
         
     
     def tearDown(self):
@@ -56,8 +56,8 @@ class Test_DINCAE_model(unittest.TestCase):
         self.assertEqual(self.model.middle_channels, [16, 30, 58, 110, 209])
         self.assertEqual(self.model.kernel_sizes, [3, 3, 3, 3, 3])
         self.assertEqual(self.model.pooling_sizes, [2, 2, 2, 2, 2])
-        self.assertEqual(self.model.image_width, 168)
-        self.assertEqual(self.model.image_height, 144)
+        self.assertEqual(self.model.image_nrows, 168)
+        self.assertEqual(self.model.image_ncols, 144)
         self.assertEqual(self.model.interp_mode, "bilinear")
         
     def test_forward_pass(self):
@@ -66,7 +66,7 @@ class Test_DINCAE_model(unittest.TestCase):
         output = self.model(self.input_tensor)
         
         # Check if the output shape is correct
-        self.assertEqual(output.shape, (self.batch_size, self.model.n_channels, self.width, self.height))
+        self.assertEqual(output.shape, (self.batch_size, self.model.n_channels, self.nrows, self.ncols))
 
 if __name__ == "__main__":
     unittest.main()

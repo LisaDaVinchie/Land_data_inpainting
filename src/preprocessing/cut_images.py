@@ -21,11 +21,21 @@ class CutAndMaskImage:
         - save the dataset and masks
         - save info regarding the dataset, such as the number of images, the size of the images, etc.
     """
-    def __init__(self, original_width: int, original_height: int, final_width: int, final_height: int, nans_threshold: float, n_cutted_images: int):
-        self.original_width = original_width
-        self.original_height = original_height
-        self.final_width = final_width
-        self.final_height = final_height
+    def __init__(self, original_nrows: int, original_ncols: int, final_nrows: int, final_ncols: int, nans_threshold: float, n_cutted_images: int):
+        """Initalize the class with the parameters needed to cut the images and generate the dataset
+
+        Args:
+            original_nrows (int): number of rows in the original image
+            original_ncols (int): number of columns in the original image
+            final_nrows (int): number of rows in the cutted image
+            final_ncols (int): number of columns in the cutted image
+            nans_threshold (float): maximum fraction of nans allowed in the cutted image. Must be between 0 and 1
+            n_cutted_images (int): number of cutted images to generate
+        """
+        self.original_nrows = original_nrows
+        self.original_ncols = original_ncols
+        self.final_nrows = final_nrows
+        self.final_ncols = final_ncols
         self.nans_threshold = nans_threshold
         self.n_cutted_images = n_cutted_images
 
@@ -39,8 +49,8 @@ class CutAndMaskImage:
         Returns:
             th.Tensor: tensor with the selected random points, as (x, y) coordinates
         """
-        random_x = th.randint(0, self.original_width - self.final_width, (n_points,))
-        random_y = th.randint(0, self.original_height - self.final_height, (n_points,))
+        random_x = th.randint(0, self.original_nrows - self.final_nrows, (n_points,))
+        random_y = th.randint(0, self.original_ncols - self.final_ncols, (n_points,))
         random_points = th.stack([random_x, random_y], dim = 1)
         return random_points
 
@@ -74,14 +84,14 @@ class CutAndMaskImage:
             n_pixel_threshold (int): maximum number of nans allowed in the cutted image. If the number of nans is greater than this threshold, the function will select a new random point
 
         Returns:
-            th.Tensor: cutted image, of shape (n_channels, final_width, final_height)
+            th.Tensor: cutted image, of shape (n_channels, final_nrows, final_ncols)
         """
-        cutted_img = image[:, index[0]:index[0] + self.final_width, index[1]:index[1] + self.final_height]
+        cutted_img = image[:, index[0]:index[0] + self.final_nrows, index[1]:index[1] + self.final_ncols]
         nan_count = th.isnan(cutted_img).sum().item()
         if nan_count > n_pixel_threshold:
             while nan_count > n_pixel_threshold:
                 index = self.select_random_points(1)[0]
-                cutted_img = image[:, index[0]:index[0] + self.final_width, index[1]:index[1] + self.final_height]
+                cutted_img = image[:, index[0]:index[0] + self.final_nrows, index[1]:index[1] + self.final_ncols]
                 nan_count = th.isnan(cutted_img).sum().item()
         return cutted_img
 
@@ -106,12 +116,12 @@ class CutAndMaskImage:
         dataset_ext, dataset_min = None, None
         if extended_data:
             keys_ext = ["masked_images", "inverse_masked_images", "masks"]
-            dataset_ext = {cls: th.empty((self.n_cutted_images, n_channels, self.final_width, self.final_height), dtype=th.float32) for cls in keys_ext}
+            dataset_ext = {cls: th.empty((self.n_cutted_images, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32) for cls in keys_ext}
         if minimal_data:
             keys_min = ["images", "masks"]
-            dataset_min = {cls: th.empty((self.n_cutted_images, n_channels, self.final_width, self.final_height), dtype=th.float32) for cls in keys_min}
+            dataset_min = {cls: th.empty((self.n_cutted_images, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32) for cls in keys_min}
             
-        nans_masks = th.ones((self.n_cutted_images, n_channels, self.final_width, self.final_height), dtype=th.float32)
+        nans_masks = th.ones((self.n_cutted_images, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32)
         
         masked_channels_list = list(masked_channels_list)
         
@@ -124,7 +134,7 @@ class CutAndMaskImage:
         idx_start = 0 # index of the first cutted image of this raw image
         idx_end = 0 # index of the last cutted image of this raw image
         n_original_channels = n_channels - 1 # The last channel is the time layer
-        n_pixels = self.final_width * self.final_height * n_original_channels # number of pixels in the raw image
+        n_pixels = self.final_nrows * self.final_ncols * n_original_channels # number of pixels in the raw image
         threshold = self.nans_threshold * n_pixels # threshold of nans in the image
         for path, indices in path_to_indices_map.items():
             image = th.load(path)
@@ -137,7 +147,7 @@ class CutAndMaskImage:
             
             # Generate the cutted images, adding the time layer
             cutted_imgs = th.stack([self.cut_valid_image(image, index, threshold) for index in indices], dim=0)
-            time_layers = th.ones((n_indices, 1, self.final_width, self.final_height), dtype=th.float32) * encoded_time
+            time_layers = th.ones((n_indices, 1, self.final_nrows, self.final_ncols), dtype=th.float32) * encoded_time
             cutted_imgs = th.cat((cutted_imgs, time_layers), dim=1)
             
             # Find where the nans are in the cutted images
@@ -145,9 +155,9 @@ class CutAndMaskImage:
             nans_masks[idx_start:idx_end, :, :, :] = cutted_img_nans.float()
             
             # Create square masks. 0 where the values are masked, 1 where the values are not masked
-            masks = th.ones((n_indices, n_channels, self.final_width, self.final_height), dtype=th.float32)
+            masks = th.ones((n_indices, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32)
             for mc in masked_channels_list:
-                masks[:, mc, :, :] = create_square_mask(self.final_width, self.final_height, masked_fraction)
+                masks[:, mc, :, :] = create_square_mask(self.final_nrows, self.final_ncols, masked_fraction)
             
             # Set masks to 0 where the nan mask is 0
             masks = th.where(cutted_img_nans == 0, th.tensor(0, dtype=masks.dtype), masks)
@@ -233,8 +243,8 @@ def main():
     x_shape_raw = int(params["dataset"]["x_shape_raw"])
     y_shape_raw = int(params["dataset"]["y_shape_raw"])
     n_cutted_images = int(params["dataset"]["n_cutted_images"])
-    cutted_width = int(params["dataset"]["cutted_width"])
-    cutted_height = int(params["dataset"]["cutted_height"])
+    cutted_nrows = int(params["dataset"]["cutted_nrows"])
+    cutted_ncols = int(params["dataset"]["cutted_ncols"])
     n_channels = int(params["dataset"]["n_channels"])
     masked_channels = list(params["dataset"]["masked_channels"])
     nans_threshold = float(params["dataset"]["nans_threshold"])
@@ -260,8 +270,8 @@ def main():
 
     print(f"\nFound {len(processed_images_paths)} images in {processed_data_dir}\n", flush=True)
     
-    cut_class = CutAndMaskImage(original_width=x_shape_raw, original_height=y_shape_raw,
-                                final_width=cutted_width, final_height=cutted_height,
+    cut_class = CutAndMaskImage(original_nrows=x_shape_raw, original_ncols=y_shape_raw,
+                                final_nrows=cutted_nrows, final_ncols=cutted_ncols,
                                 nans_threshold=nans_threshold, n_cutted_images=n_cutted_images)
 
     # Select some random points, to use as centers for the cutted images

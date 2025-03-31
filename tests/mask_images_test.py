@@ -8,7 +8,7 @@ from src.preprocessing.mask_data import mask_inversemask_image
 
 class TestApplyMaskOnChannel(unittest.TestCase):
   def setUp(self):
-    # Create a sample image tensor (batch_size=2, channels=1, height=3, width=3)
+    # Create a sample image tensor 
     self.images = th.tensor([
       [[[1, 2, 3],
         [4, 5, 6],
@@ -18,7 +18,7 @@ class TestApplyMaskOnChannel(unittest.TestCase):
         [70, 80, 90]]]
       ], dtype=th.float32)
 
-    # Create a sample mask tensor (batch_size=2, channels=1, height=3, width=3)
+    # Create a sample mask tensor 
     self.masks = th.tensor([
       [[[1, 0, 1],
         [0, 1, 0],

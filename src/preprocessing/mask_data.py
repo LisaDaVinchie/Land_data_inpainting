@@ -21,8 +21,8 @@ def mask_inversemask_image(images: th.Tensor, masks: th.Tensor, placeholder: flo
     If the placeholder is none, use the mean of the level and, if there are nans, mask them as well.
 
     Args:
-        images (th.Tensor): images to mask, of shape (batch_size, channels, height, width)
-        masks (th.Tensor): masks to apply, of shape (batch_size, channels, height, width)
+        images (th.Tensor): images to mask, of shape (batch_size, channels, nrows, ncols)
+        masks (th.Tensor): masks to apply, of shape (batch_size, channels, nrows, ncols)
         placeholder (float, optional): number to use for masked pixels. Defaults to None.
 
     Returns:
@@ -53,41 +53,19 @@ def mask_inversemask_image(images: th.Tensor, masks: th.Tensor, placeholder: flo
     return masked_img, inverse_masked_img
 
 
-def create_square_mask(image_width: int, image_height: int, mask_percentage: float) -> th.Tensor:
+def create_square_mask(image_nrows: int, image_ncols: int, mask_percentage: float) -> th.Tensor:
     """Create a square mask of n_pixels in the image"""
-    n_pixels = int(mask_percentage * image_width * image_height)
-    square_width = int(n_pixels ** 0.5)
-    mask = th.ones((image_width, image_height), dtype=th.float32)
+    n_pixels = int(mask_percentage * image_nrows * image_ncols)
+    square_nrows = int(n_pixels ** 0.5)
+    mask = th.ones((image_nrows, image_ncols), dtype=th.float32)
     
     # Get a random top-left corner for the square
-    row_idx = th.randint(0, image_height - square_width, (1,)).item()
-    col_idx = th.randint(0, image_width - square_width, (1,)).item()
+    row_idx = th.randint(0, image_ncols - square_nrows, (1,)).item()
+    col_idx = th.randint(0, image_nrows - square_nrows, (1,)).item()
     
     mask[
-        row_idx: row_idx + square_width,
-        col_idx: col_idx + square_width
+        row_idx: row_idx + square_nrows,
+        col_idx: col_idx + square_nrows
     ] = 0
     
     return mask
-
-# def create_lines_mask(image_width: int, image_height: int, min_thickness: int, max_thickness: int, n_lines: int) -> th.Tensor:
-#     """Create a mask with lines of random thickness"""
-    
-#     mask = th.ones((image_width, image_height), dtype=th.float32)
-    
-#     for i in range(n_lines):
-#         # Get random x locations to start line
-#         x1, x2 = th.randint(1, image_width, (2,))
-#         # Get random y locations to start line
-#         y1, y2 = th.randint(1, image_height, (2,))
-#         # Get random thickness of the line drawn
-#         thickness = th.randint(min_thickness, max_thickness, (1,)).item()
-#         # Draw black line on the white mask
-#         mask[
-#             x1: x2,
-#             y1: y2
-#         ] = 0
-        
-#         cv2.line(mask.numpy(), (x1, y1), (x2, y2), (0, 0, 0), thickness)
-        
-#     return th.Tensor(mask)

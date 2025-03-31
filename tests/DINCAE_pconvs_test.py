@@ -22,8 +22,8 @@ class TestSimplePartialConv(unittest.TestCase):
         # Test input dimensions
         self.batch_size = 5
         self.n_channels = 3
-        self.height = 20
-        self.width = 15
+        self.ncols = 20
+        self.nrows = 15
         self.mask_dim = 4
         
         self.middle_channels = [16, 16, 16, 16, 16]
@@ -34,8 +34,8 @@ class TestSimplePartialConv(unittest.TestCase):
         self.params = {
             "dataset": {
                 "n_channels": self.n_channels,
-                "cutted_width": self.width,
-                "cutted_height": self.height
+                "cutted_nrows": self.nrows,
+                "cutted_ncols": self.ncols
             },
             "DINCAE_pconvs": {
                 "middle_channels": self.middle_channels,
@@ -47,7 +47,7 @@ class TestSimplePartialConv(unittest.TestCase):
         with open(self.params_path, "w") as f:
             json.dump(self.params, f)
         
-        self.dummy_input = th.rand(self.batch_size, self.n_channels, self.width, self.height)
+        self.dummy_input = th.rand(self.batch_size, self.n_channels, self.nrows, self.ncols)
         self.dummy_input[:, :, 0:self.mask_dim, 0:self.mask_dim] = th.nan
         self.dummy_mask = th.ones_like(self.dummy_input)
         self.dummy_mask[th.isnan(self.dummy_input)] = 0

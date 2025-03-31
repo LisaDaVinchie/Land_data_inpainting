@@ -8,8 +8,8 @@ from PartialConv import PartialConv2d
 from PartialPool import PartialMaxPool2D
 
 n_channels_string = "n_channels"
-image_width_string = "cutted_width"
-image_height_string = "cutted_height"
+image_nrows_string = "cutted_nrows"
+image_ncols_string = "cutted_ncols"
 
 def conv_output_size_same_padding(in_size, pool_size):
     return  math.ceil(in_size / pool_size)
@@ -18,13 +18,13 @@ def conv_output_size(in_size, kernel, padding, stride):
     return  math.ceil((in_size - kernel + 2 * padding) / stride + 1)
 
 class DINCAE_pconvs(nn.Module):
-    def __init__(self, params_path: Path, n_channels: int = None, image_width: int = None, image_height: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None, output_size: int = None):
+    def __init__(self, params_path: Path, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None, output_size: int = None):
         super(DINCAE_pconvs, self).__init__()
         
         model_params = load_config(params_path, ["dataset"]).get("dataset", {})
         self.n_channels = n_channels if n_channels is not None else model_params.get(n_channels_string, 3)
-        self.image_width = image_width if image_width is not None else model_params.get(image_width_string, 64)
-        self.image_height = image_height if image_height is not None else model_params.get(image_height_string, 64)
+        self.image_nrows = image_nrows if image_nrows is not None else model_params.get(image_nrows_string, 64)
+        self.image_ncols = image_ncols if image_ncols is not None else model_params.get(image_ncols_string, 64)
         
         model_params = load_config(params_path, ["DINCAE_pconvs"]).get("DINCAE_pconvs", {})
         self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [10, 10, 10, 10, 10])
@@ -66,15 +66,15 @@ class DINCAE_pconvs(nn.Module):
         self.interp4 = nn.Upsample(size=(self.w[1], self.h[1]), mode=self.interp_mode)
         self.pdeconv4 = PartialConv2d(self.middle_channels[1], self.middle_channels[0], kernel_size=self.kernel_sizes[1], padding='same')
         
-        self.interp5 = nn.Upsample(size=(self.image_width, self.image_height), mode=self.interp_mode)
+        self.interp5 = nn.Upsample(size=(self.image_nrows, self.image_ncols), mode=self.interp_mode)
         self.pdeconv5 = PartialConv2d(self.middle_channels[0], self.output_size, kernel_size=self.kernel_sizes[0], padding='same')
         
     def _calculate_sizes(self):
         """Calculate the output sizes of the convolutions and the downsampling and upsampling layers."""
         w = []
         h = []
-        w.append(self.image_width)
-        h.append(self.image_height)
+        w.append(self.image_nrows)
+        h.append(self.image_ncols)
         for i in range(1, self.n_layers):
             w.append(conv_output_size_same_padding(w[i - 1], self.pooling_sizes[i - 1]))
             h.append(conv_output_size_same_padding(h[i - 1], self.pooling_sizes[i - 1]))
@@ -84,8 +84,8 @@ class DINCAE_pconvs(nn.Module):
         """Forward pass
 
         Args:
-            x (th.Tensor): tensor of shape (batch_size, n_channels, image_width, image_height), can contain NaNs
-            mask (th.Tensor): tensor of shape (batch_size, n_channels, image_width, image_height), 1 where x is valid, 0 where x is masked
+            x (th.Tensor): tensor of shape (batch_size, n_channels, image_nrows, image_ncols), can contain NaNs
+            mask (th.Tensor): tensor of shape (batch_size, n_channels, image_nrows, image_ncols), 1 where x is valid, 0 where x is masked
 
         Returns:
             th.Tensor: output image and mask

@@ -9,11 +9,11 @@ class TestApplyMaskOnChannel(unittest.TestCase):
     def setUp(self):
         self.batch_size = 2
         self.channels = 3
-        self.height = 4
-        self.width = 4
+        self.nrows = 4
+        self.ncols = 4
         self.placeholder = -1.0
 
-        # Create dummy images (batch_size, channels, height, width)
+        # Create dummy images (batch_size, channels, nrows, ncols)
         self.images = th.tensor([
             [[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]],
              [[17, 18, 19, 20], [21, 22, 23, 24], [25, 26, 27, 28], [29, 30, 31, 32]],
@@ -24,7 +24,7 @@ class TestApplyMaskOnChannel(unittest.TestCase):
              [[81, 82, 83, 84], [85, 86, 87, 88], [89, 90, 91, 92], [93, 94, 95, 96]]]
         ], dtype=th.float32)
 
-        # Create a mask (batch_size, channels, height, width)
+        # Create a mask (batch_size, channels, nrows, ncols)
         self.masks = th.tensor([
             [[[1, 0, 1, 0], [1, 1, 0, 0], [0, 1, 1, 1], [1, 0, 0, 1]],
              [[0, 1, 1, 0], [1, 1, 0, 1], [1, 0, 1, 0], [0, 1, 1, 0]],
@@ -49,7 +49,7 @@ class TestApplyMaskOnChannel(unittest.TestCase):
 
         # Compute expected per-channel mean ignoring masked pixels
         means = (self.images * self.masks).sum(dim=(2, 3), keepdim=True) / (self.masks.sum(dim=(2, 3), keepdim=True))
-        means = means.expand(-1, -1, self.height, self.width)
+        means = means.expand(-1, -1, self.nrows, self.ncols)
 
         # Ensure masked values are replaced with per-channel mean
         self.assertTrue(th.allclose(masked_images[self.masks == 0], means[self.masks == 0]))

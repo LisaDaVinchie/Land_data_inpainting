@@ -17,9 +17,9 @@ class TestPartialConv2dOutput(unittest.TestCase):
         self.in_channels = 2
         self.out_channels = 3
         self.kernel_size = (3, 3)
-        self.width = 10
-        self.height = 5
-        self.input_size = (self.batch_size, self.in_channels, self.width , self.height)
+        self.nrows = 10
+        self.ncols = 5
+        self.input_size = (self.batch_size, self.in_channels, self.nrows , self.ncols)
         
         self.input_tensor = th.rand(self.input_size)
         self.input_tensor[:, :, 0:2, 0:2] = 0

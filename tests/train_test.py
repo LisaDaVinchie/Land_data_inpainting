@@ -19,8 +19,8 @@ class TestTrainingFunctions(unittest.TestCase):
         self.batch_size = 64
         self.dataset_len = 100
         self.n_channels = 3
-        self.height = 64
-        self.width = 64
+        self.ncols = 64
+        self.nrows = 64
         self.epochs = 3
         
         self.extended_model_params = {
@@ -48,8 +48,8 @@ class TestTrainingFunctions(unittest.TestCase):
         self.reduced_model_params = {
             "dataset": {
                 "n_channels": self.n_channels,
-                "cutted_width": self.width,
-                "cutted_height": self.height
+                "cutted_nrows": self.nrows,
+                "cutted_ncols": self.ncols
             },
             "DINCAE_pconvs": {
                 "middle_channels": [16, 16, 16, 16, 16],
@@ -67,9 +67,9 @@ class TestTrainingFunctions(unittest.TestCase):
         self.reduced_model = DINCAE_pconvs(params_path=self.reduced_params_path)
         
         
-        images = th.randn(self.dataset_len, self.n_channels, self.width, self.height)
-        masks = th.ones(self.dataset_len, self.n_channels, self.width, self.height)
-        masks[th.randint(0, 2, (self.dataset_len, self.n_channels, self.width, self.height)) == 0] = 0
+        images = th.randn(self.dataset_len, self.n_channels, self.nrows, self.ncols)
+        masks = th.ones(self.dataset_len, self.n_channels, self.nrows, self.ncols)
+        masks[th.randint(0, 2, (self.dataset_len, self.n_channels, self.nrows, self.ncols)) == 0] = 0
         test_dataset = {
             "images": images,
             "masks": masks
