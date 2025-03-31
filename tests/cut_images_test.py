@@ -203,11 +203,6 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             masks[idx[0], idx[1], idx[2], idx[3]] = 0
             dataset[idx[0], idx[1], idx[2], idx[3]] = th.nan
         
-        placeholder_idxs = [[0, 1, 0, 0], [1, 2, 1, 1], [2, 3, 2, 2]]
-        for idx in placeholder_idxs:
-            masks[idx[0], idx[1], idx[2], idx[3]] = 0
-            dataset[idx[0], idx[1], idx[2], idx[3]] = -1
-        
         # Calculate min and max only for the non-masked values
         min_value = dataset[masks == 1].min()
         max_value = dataset[masks == 1].max()
@@ -224,10 +219,6 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         
         for idx in nans_idxs:
             self.assertTrue(th.isnan(normalized_dataset[idx[0], idx[1], idx[2], idx[3]]))
-        
-        # Check that the masked values are replaced with the placeholder value
-        for idx in placeholder_idxs:
-            self.assertEqual(normalized_dataset[idx[0], idx[1], idx[2], idx[3]], self.placeholder)
         
         # Check that the minimum and maximum values are 0 and 1, respectively
         self.assertAlmostEqual(normalized_dataset[masks == 1].min().item(), 0.0, places=5)

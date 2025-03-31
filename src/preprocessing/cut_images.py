@@ -183,11 +183,12 @@ def check_dirs_existance(dirs: list[Path]):
         
 def normalize_dataset_minmax(images: th.Tensor, masks: th.Tensor) -> tuple[th.Tensor, list]:
     """Normalize the dataset using min-max normalization.
-    Exlcude from the normalization the masked pixels.
-    The mask must be 0 where the values are masked, 1 where the values are not masked.
+    Exlcude from the normalization the masked pixels, leaving them out of the normalization and min and max calculation.
+    Does not handle images with NaNs outside the masked pixels.
 
     Args:
         dataset (th.Tensor): dataset to normalize
+        masks (th.Tensor): mask to use for normalization. 0 where the values are masked, 1 where the values are not masked
 
     Returns:
         th.Tensor: normalized dataset
@@ -284,7 +285,7 @@ def main():
         th.save(dataset_ext, next_extended_dataset_path)
         print(f"Saved the extended dataset to {next_extended_dataset_path}\n", flush=True)
     if dataset_min is not None:
-        norm_dataset, minmax = normalize_dataset_minmax(dataset_min["images"], dataset_min["masks"])
+        norm_dataset, minmax = normalize_dataset_minmax(dataset_min["images"], nans_masks)
         dataset_min["images"] = norm_dataset
         th.save(dataset_min, next_minimal_dataset_path)
         print(f"Saved the minimal dataset to {next_minimal_dataset_path}\n", flush=True)
