@@ -76,6 +76,6 @@
     },
     "mask": {
         "mask_percentage": 0.10,
-        "placeholder": 0
+        "placeholder": -1.0
     }
 }
