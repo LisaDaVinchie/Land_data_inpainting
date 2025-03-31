@@ -66,6 +66,20 @@ class TestTrainingFunctions(unittest.TestCase):
         
         self.reduced_model = DINCAE_pconvs(params_path=self.reduced_params_path)
         
+        
+        images = th.randn(self.dataset_len, self.n_channels, self.width, self.height)
+        masks = th.ones(self.dataset_len, self.n_channels, self.width, self.height)
+        masks[th.randint(0, 2, (self.dataset_len, self.n_channels, self.width, self.height)) == 0] = 0
+        test_dataset = {
+            "images": images,
+            "masks": masks
+            }
+        
+        self.train_loader, self.test_loader = create_dataloaders(test_dataset, 0.8, batch_size=self.batch_size)
+
+        # Use a real loss function and optimizer
+        self.loss_function = per_pixel_loss
+        
     def test_track_memory(self):
         """Test that track_memory logs memory usage."""
         with patch("psutil.Process") as mock_process:
@@ -101,18 +115,7 @@ class TestTrainingFunctions(unittest.TestCase):
 
     def test_train_loop_extended(self):
         """Test that train_loop_extended trains the model and returns losses."""
-        # Mock the model and dataloader
-        masks = th.ones(self.dataset_len, self.n_channels, self.width, self.height)
-        masks[th.randint(0, 2, (self.dataset_len, self.n_channels, self.width, self.height)) == 0] = 0
-        test_dataset = {
-            "masked_images": th.randn(self.dataset_len, self.n_channels, self.width, self.height),
-            "inverse_masked_images": th.randn(self.dataset_len, self.n_channels, self.width, self.height),
-            "masks": masks}
         
-        train_loader, test_loader = create_dataloaders(test_dataset, 0.8, batch_size=self.batch_size)
-
-        # Use a real loss function and optimizer
-        loss_function = th.nn.MSELoss()
         optimizer = th.optim.Adam(self.extended_model.parameters())
         
         initial_weights = {k: v.clone() for k, v in self.extended_model.state_dict().items()}
@@ -123,9 +126,9 @@ class TestTrainingFunctions(unittest.TestCase):
             placeholder=0.0,
             model=self.extended_model,
             device=th.device("cpu"),
-            train_loader=train_loader,
-            test_loader=test_loader,
-            loss_function=loss_function,
+            train_loader=self.train_loader,
+            test_loader=self.test_loader,
+            loss_function=self.loss_function,
             optimizer=optimizer,
         )
         
@@ -148,19 +151,7 @@ class TestTrainingFunctions(unittest.TestCase):
         
     def test_train_loop_minimal(self):
         """Test that train_loop_extended trains the model and returns losses."""
-        # Create a test dataset
-        images = th.randn(self.dataset_len, self.n_channels, self.width, self.height)
-        masks = th.ones(self.dataset_len, self.n_channels, self.width, self.height)
-        masks[th.randint(0, 2, (self.dataset_len, self.n_channels, self.width, self.height)) == 0] = 0
-        test_dataset = {
-            "images": images,
-            "masks": masks
-            }
         
-        train_loader, test_loader = create_dataloaders(test_dataset, 0.8, batch_size=self.batch_size)
-
-        # Use a real loss function and optimizer
-        loss_function = per_pixel_loss
         optimizer = th.optim.Adam(self.reduced_model.parameters())
         
         initial_weights = {k: v.clone() for k, v in self.reduced_model.state_dict().items()}
@@ -170,9 +161,9 @@ class TestTrainingFunctions(unittest.TestCase):
             epochs=self.epochs,
             model=self.reduced_model,
             device = th.device("cpu"),
-            train_loader=train_loader,
-            test_loader=test_loader,
-            loss_function=loss_function,
+            train_loader=self.train_loader,
+            test_loader=self.test_loader,
+            loss_function=self.loss_function,
             optimizer=optimizer,
         )
 
