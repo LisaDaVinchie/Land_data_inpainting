@@ -13,7 +13,7 @@
     },
     "dataset":{
         "minimal_dataset": true,
-        "extended_dataset": true,
+        "extended_dataset": false,
         "n_images": 20,
         "n_channels": 10,
         "x_shape_raw": 1600,
@@ -75,7 +75,7 @@
         "print_sizes": false
     },
     "mask": {
-        "mask_percentage": 0.05,
-        "placeholder": false
+        "mask_percentage": 0.10,
+        "placeholder": 0
     }
 }
