@@ -181,10 +181,10 @@ def check_dirs_existance(dirs: list[Path]):
         if not dir.exists():
             raise FileNotFoundError(f"Folder {dir} does not exist.")
         
-def normalize_dataset_minmax(dataset: th.Tensor) -> tuple[th.Tensor, list]:
+def normalize_dataset_minmax(images: th.Tensor, masks: th.Tensor) -> tuple[th.Tensor, list]:
     """Normalize the dataset using min-max normalization.
-    NaN values remain NaN and are ignored when calculating min and max.
-    The min and max values are returned, to be used for denormalization.
+    Exlcude from the normalization the masked pixels.
+    The mask must be 0 where the values are masked, 1 where the values are not masked.
 
     Args:
         dataset (th.Tensor): dataset to normalize
@@ -193,11 +193,12 @@ def normalize_dataset_minmax(dataset: th.Tensor) -> tuple[th.Tensor, list]:
         th.Tensor: normalized dataset
         list: min and max values used for normalization
     """
-    non_nan_mask = ~th.isnan(dataset)
     
-    min_val = dataset[non_nan_mask].min()
-    max_val = dataset[non_nan_mask].max()
-    return (dataset - min_val) / (max_val - min_val), [min_val, max_val]
+    # Get the min and max values of the dataset, excluding the masked pixels
+    min_val = th.min(images[masks == 1])
+    max_val = th.max(images[masks == 1])
+    
+    return (images - min_val) / (max_val - min_val), [min_val, max_val]
 
 def main():
     start_time = time()
@@ -244,6 +245,8 @@ def main():
 
     if placeholder == False:
         placeholder = None
+        
+    print("Using placeholder value: ", placeholder, flush=True)
 
     # Select n_images random images from the processed images
     processed_images_paths = list(processed_data_dir.glob(f"*.pt"))
@@ -278,7 +281,7 @@ def main():
         th.save(dataset_ext, next_extended_dataset_path)
         print(f"Saved the extended dataset to {next_extended_dataset_path}\n", flush=True)
     if dataset_min is not None:
-        norm_dataset, minmax = normalize_dataset_minmax(dataset_min["images"])
+        norm_dataset, minmax = normalize_dataset_minmax(dataset_min["images"], dataset_min["masks"])
         dataset_min["images"] = norm_dataset
         th.save(dataset_min, next_minimal_dataset_path)
         print(f"Saved the minimal dataset to {next_minimal_dataset_path}\n", flush=True)
