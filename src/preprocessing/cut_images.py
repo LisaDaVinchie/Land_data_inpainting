@@ -180,6 +180,24 @@ def check_dirs_existance(dirs: list[Path]):
     for dir in dirs:
         if not dir.exists():
             raise FileNotFoundError(f"Folder {dir} does not exist.")
+        
+def normalize_dataset_minmax(dataset: th.Tensor) -> tuple[th.Tensor, list]:
+    """Normalize the dataset using min-max normalization.
+    NaN values remain NaN and are ignored when calculating min and max.
+    The min and max values are returned, to be used for denormalization.
+
+    Args:
+        dataset (th.Tensor): dataset to normalize
+
+    Returns:
+        th.Tensor: normalized dataset
+        list: min and max values used for normalization
+    """
+    non_nan_mask = ~th.isnan(dataset)
+    
+    min_val = dataset[non_nan_mask].min()
+    max_val = dataset[non_nan_mask].max()
+    return (dataset - min_val) / (max_val - min_val), [min_val, max_val]
 
 def main():
     start_time = time()
@@ -260,6 +278,8 @@ def main():
         th.save(dataset_ext, next_extended_dataset_path)
         print(f"Saved the extended dataset to {next_extended_dataset_path}\n", flush=True)
     if dataset_min is not None:
+        norm_dataset, minmax = normalize_dataset_minmax(dataset_min["images"])
+        dataset_min["images"] = norm_dataset
         th.save(dataset_min, next_minimal_dataset_path)
         print(f"Saved the minimal dataset to {next_minimal_dataset_path}\n", flush=True)
         
@@ -276,8 +296,14 @@ def main():
         'mask': mask_section
     }
 
+    elapsed_time = time() - start_time
+    
     # Save the combined sections to a text file
     with open(dataset_specs_path, 'w') as txt_file:
+        txt_file.write("# Dataset specifications\n")
+        txt_file.write(f"Elapsed time:\n{elapsed_time:.2f} seconds\n")
+        txt_file.write(f"Original min and max values:\n{minmax}\n")
+        txt_file.write("Dataset and mask specifications:\n")
         json.dump(sections_to_save, txt_file, indent=4)
 
     print("Elapsed time: {:.2f} seconds\n".format(time() - start_time), flush=True)

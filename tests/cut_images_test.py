@@ -6,7 +6,7 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from preprocessing.cut_images import CutAndMaskImage
+from preprocessing.cut_images import CutAndMaskImage, normalize_dataset_minmax
 
 
 class TestGenerateMaskedImageDataset(unittest.TestCase):
@@ -138,8 +138,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             
             # Check that the mask covers all the nans
             self.assertTrue(th.all(mask[nan_mask == 0] == 0), "Mask does not cover all nans")
-        
-            
+             
     def test_dataset_kind_switch_extended_data_false(self):
         """Test that the dataset kind switch works correctly. In this case, the extended dataset should be None."""
         
@@ -183,6 +182,39 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         self.assertIsNone(dataset_ext)
         self.assertIsNone(dataset_min)
 
-
+    def test_normalize_dataset_minmax(self):
+        """Test that the normalize_dataset_minmax function works correctly."""
+        # Create a dummy dataset
+        dataset = th.rand(self.n_cutted_images, self.n_channels, self.cutted_width, self.cutted_height)
+        # Add some NaN values to the dataset
+        dataset[0, 0, 0, 0] = th.nan
+        dataset[1, 1, 1, 1] = th.nan
+        dataset[2, 2, 2, 2] = th.nan
+        dataset[3, 3, 3, 3] = th.nan
+        
+        non_nan_mask = ~th.isnan(dataset)
+        
+        min_value = dataset[non_nan_mask].min()
+        max_value = dataset[non_nan_mask].max()
+        
+        # Normalize the dataset
+        normalized_dataset, minmax = normalize_dataset_minmax(dataset)
+        norm_non_nan_mask = ~th.isnan(normalized_dataset)
+        
+        # Check that the normalized dataset has the same shape and dtype
+        self.assertEqual(normalized_dataset.shape, dataset.shape)
+        self.assertEqual(normalized_dataset.dtype, dataset.dtype)
+        
+        # Check that the NaN values are still NaN
+        self.assertTrue(th.equal(norm_non_nan_mask, non_nan_mask), "NaN values are not preserved in the normalized dataset")
+        
+        # Check that the minimum and maximum values are 0 and 1, respectively
+        self.assertAlmostEqual(normalized_dataset[non_nan_mask].min().item(), 0.0, places=5)
+        self.assertAlmostEqual(normalized_dataset[non_nan_mask].max().item(), 1.0, places=5)
+        
+        # Check that the min and max values are correct
+        self.assertAlmostEqual(minmax[0].item(), min_value.item(), places=5)
+        self.assertAlmostEqual(minmax[1].item(), max_value.item(), places=5)
+        
 if __name__ == "__main__":
     unittest.main()
