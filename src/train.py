@@ -13,6 +13,7 @@ from CustomDataset import create_dataloaders
 from models import initialize_model_and_dataset_kind
 from preprocessing.mask_data import mask_inversemask_image
 from losses import per_pixel_loss, per_pixel_mse
+from preprocessing.dataset_normalization import MinMaxNormalization
 
 def main():
     parser = argparse.ArgumentParser(description='Train a CNN model on a dataset')
@@ -45,7 +46,6 @@ def main():
     
     results_path = Path(paths["results"]["results_path"])
     weights_path = Path(paths["results"]["weights_path"])
-    current_extended_dataset_path = Path(paths["data"]["current_extended_dataset_path"])
     current_minimal_dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
     
     track_memory("Before loading model")
@@ -67,8 +67,18 @@ def main():
     track_memory("Before loading dataset")
     dataset = th.load(dataset_path)
     track_memory("After loading dataset")
-    print(f"Dataset created in {time() - dataset_start_time:.2f} seconds", flush = True)
+    print(f"Dataset loaded in {time() - dataset_start_time:.2f} seconds", flush = True)
+    
+    n_time = time()
+    track_memory("Before normalizing dataset")
+    norm_class = MinMaxNormalization(1000)
+    images, _ = norm_class.normalize(dataset["images"], dataset["masks"])
+    track_memory("After normalizing dataset")
+    print(f"Dataset normalized in {time() - n_time:.2f} seconds\n", flush = True)
 
+    dataset = {
+        "images": images,
+        "masks": dataset["masks"],}
     track_memory("Before creating dataloaders")
     train_loader, test_loader = create_dataloaders(dataset, train_perc, batch_size)
     del dataset
