@@ -6,7 +6,7 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from preprocessing.cut_images import CutAndMaskImage, normalize_dataset_minmax
+from preprocessing.cut_images import CutAndMaskImage
 
 
 class TestGenerateMaskedImageDataset(unittest.TestCase):
@@ -103,6 +103,9 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             self.assertIsInstance(self.dataset_min[key], th.Tensor)
             self.assertEqual(self.dataset_min[key].shape, expected_shape)
             self.assertEqual(self.dataset_min[key].dtype, expected_dtype)
+            
+        self.assertIsInstance(self.nans_mask, th.Tensor)
+        self.assertEqual(self.nans_mask.shape, expected_shape)
         
     def test_generate_masked_datasets_values(self):
         """Test that generate_masked_image_dataset returns tensors with the correct masked channels."""
@@ -188,45 +191,6 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         
         self.assertIsNone(dataset_ext)
         self.assertIsNone(dataset_min)
-
-    def test_normalize_dataset_minmax(self):
-        """Test that the normalize_dataset_minmax function works correctly."""
-        # Create a dummy dataset
-        dataset = th.rand(self.n_cutted_images, self.n_channels, self.cutted_nrows, self.cutted_ncols)
-        
-        # Create a mask with 0s in the selected points
-        masks = th.ones_like(dataset)
-        
-        # Set some points to NaN and some to the placeholder value, masking them as 0 in the mask
-        nans_idxs = [[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]]
-        for idx in nans_idxs:
-            masks[idx[0], idx[1], idx[2], idx[3]] = 0
-            dataset[idx[0], idx[1], idx[2], idx[3]] = th.nan
-        
-        # Calculate min and max only for the non-masked values
-        min_value = dataset[masks == 1].min()
-        max_value = dataset[masks == 1].max()
-        
-        # Normalize the dataset
-        normalized_dataset, minmax = normalize_dataset_minmax(dataset, masks)
-        norm_non_nan_mask = ~th.isnan(normalized_dataset)
-        
-        # Check that the normalized dataset has the same shape and dtype
-        self.assertEqual(normalized_dataset.shape, dataset.shape)
-        self.assertEqual(normalized_dataset.dtype, dataset.dtype)
-        
-        # Check that the NaN values are still NaN
-        
-        for idx in nans_idxs:
-            self.assertTrue(th.isnan(normalized_dataset[idx[0], idx[1], idx[2], idx[3]]))
-        
-        # Check that the minimum and maximum values are 0 and 1, respectively
-        self.assertAlmostEqual(normalized_dataset[masks == 1].min().item(), 0.0, places=5)
-        self.assertAlmostEqual(normalized_dataset[masks == 1].max().item(), 1.0, places=5)
-        
-        # Check that the min and max values are correct
-        self.assertAlmostEqual(minmax[0].item(), min_value.item(), places=5)
-        self.assertAlmostEqual(minmax[1].item(), max_value.item(), places=5)
         
 if __name__ == "__main__":
     unittest.main()

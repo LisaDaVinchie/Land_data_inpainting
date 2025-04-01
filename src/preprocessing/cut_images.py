@@ -147,6 +147,7 @@ class CutAndMaskImage:
             
             # Generate the cutted images, adding the time layer
             cutted_imgs = th.stack([self.cut_valid_image(image, index, threshold) for index in indices], dim=0)
+            
             time_layers = th.ones((n_indices, 1, self.final_nrows, self.final_ncols), dtype=th.float32) * encoded_time
             cutted_imgs = th.cat((cutted_imgs, time_layers), dim=1)
             
@@ -190,29 +191,6 @@ def check_dirs_existance(dirs: list[Path]):
     for dir in dirs:
         if not dir.exists():
             raise FileNotFoundError(f"Folder {dir} does not exist.")
-        
-def normalize_dataset_minmax(images: th.Tensor, masks: th.Tensor) -> tuple[th.Tensor, list]:
-    """Normalize the dataset using min-max normalization.
-    Exlcude from the normalization the masked pixels, leaving them out of the normalization and min and max calculation.
-    Does not handle images with NaNs outside the masked pixels.
-
-    Args:
-        dataset (th.Tensor): dataset to normalize
-        masks (th.Tensor): mask to use for normalization. 0 where the values are masked, 1 where the values are not masked
-
-    Returns:
-        th.Tensor: normalized dataset
-        list: min and max values used for normalization
-    """
-    
-    # Get the min and max values of the dataset, excluding the masked pixels
-    min_val = th.min(images[masks == 1])
-    max_val = th.max(images[masks == 1])
-    
-    # Normalize where the mask is 1, keep the original values where the mask is 0
-    norm_images = th.where(masks == 1, (images - min_val) / (max_val - min_val), images)
-    
-    return norm_images, [min_val, max_val]
 
 def main():
     start_time = time()
@@ -295,8 +273,6 @@ def main():
         th.save(dataset_ext, next_extended_dataset_path)
         print(f"Saved the extended dataset to {next_extended_dataset_path}\n", flush=True)
     if dataset_min is not None:
-        norm_dataset, minmax = normalize_dataset_minmax(dataset_min["images"], nans_masks)
-        dataset_min["images"] = norm_dataset
         th.save(dataset_min, next_minimal_dataset_path)
         print(f"Saved the minimal dataset to {next_minimal_dataset_path}\n", flush=True)
         
@@ -319,7 +295,6 @@ def main():
     with open(dataset_specs_path, 'w') as txt_file:
         txt_file.write("# Dataset specifications\n")
         txt_file.write(f"Elapsed time:\n{elapsed_time:.2f} seconds\n")
-        txt_file.write(f"Original min and max values:\n{minmax}\n")
         txt_file.write("Dataset and mask specifications:\n")
         json.dump(sections_to_save, txt_file, indent=4)
 
