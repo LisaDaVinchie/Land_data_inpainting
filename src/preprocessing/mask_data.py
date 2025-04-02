@@ -1,8 +1,8 @@
 import torch as th
-from pathlib import Path
-import cv2
 import os
 import sys
+import random
+import math
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from utils.import_params_json import load_config
@@ -52,7 +52,6 @@ def mask_inversemask_image(images: th.Tensor, masks: th.Tensor, placeholder: flo
     inverse_masked_img = new_images * inverse_masks + inv_placeholder * (1 - inverse_masks)
     return masked_img, inverse_masked_img
 
-
 def create_square_mask(image_nrows: int, image_ncols: int, mask_percentage: float) -> th.Tensor:
     """Create a square mask of n_pixels in the image"""
     n_pixels = int(mask_percentage * image_nrows * image_ncols)
@@ -69,3 +68,74 @@ def create_square_mask(image_nrows: int, image_ncols: int, mask_percentage: floa
     ] = 0
     
     return mask
+
+def generate_random_lines_mask(nrows, ncols, num_lines=1, min_thickness=1, max_thickness=5):
+    """
+    Generate an INVERTED binary mask with random lines (0=line, 1=background).
+    
+    Args:
+        nrows (int): Mask height
+        width (int): Mask width
+        num_lines (int): Number of random lines to generate
+        min_thickness (int): Minimum line thickness
+        max_thickness (int): Maximum line thickness
+        
+    Returns:
+        torch.Tensor: Inverted binary mask of shape (height, width)
+    """
+    # Start with all ones (background)
+    mask = th.ones((nrows, ncols), dtype=th.float32)
+    
+    for _ in range(num_lines):
+        # Random start and end points
+        start_point = (random.randint(0, nrows-1), random.randint(0, ncols-1))
+        end_point = (random.randint(0, nrows-1), random.randint(0, ncols-1))
+        
+        # Random thickness
+        thickness = random.randint(min_thickness, max_thickness)
+        
+        # Generate the line and subtract from mask (lines become 0)
+        mask = mask * (1 - generate_single_line(nrows, ncols, start_point, end_point, thickness))
+        
+    return mask
+
+def generate_single_line(nrows, ncols, start_point, end_point, thickness):
+    """
+    Helper function to generate a single line (1=line, 0=background).
+    """
+    line_mask = th.zeros((nrows, ncols), dtype=th.float32)
+    
+    y1, x1 = start_point
+    y2, x2 = end_point
+    
+    # Vector from start to end
+    dx = x2 - x1
+    dy = y2 - y1
+    
+    # Normalize
+    length = max(math.sqrt(dx**2 + dy**2), 1e-8)
+    dx /= length
+    dy /= length
+    
+    # Generate points along the line
+    num_samples = max(int(length * 2), 2)
+    t_values = th.linspace(0, 1, num_samples)
+    
+    for t in t_values:
+        x = x1 + t * (x2 - x1)
+        y = y1 + t * (y2 - y1)
+        
+        # Create a grid for the thickness circle
+        radius = thickness / 2
+        i_values = th.arange(-thickness//2, thickness//2 + 1, dtype=th.float32)
+        j_values = th.arange(-thickness//2, thickness//2 + 1, dtype=th.float32)
+        
+        for i in i_values:
+            for j in j_values:
+                if (i**2 + j**2) <= radius**2:
+                    yi = int(th.round(y + i).item())
+                    xi = int(th.round(x + j).item())
+                    if 0 <= yi < nrows and 0 <= xi < ncols:
+                        line_mask[yi, xi] = 1
+                        
+    return line_mask
