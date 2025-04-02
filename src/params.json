@@ -14,11 +14,11 @@
     "dataset":{
         "minimal_dataset": true,
         "extended_dataset": false,
-        "n_images": 20,
+        "n_images": 30,
         "n_channels": 10,
         "x_shape_raw": 1600,
         "y_shape_raw": 3600,
-        "n_cutted_images": 100,
+        "n_cutted_images": 1000,
         "cutted_nrows": 128,
         "cutted_ncols": 128,
         "nans_threshold": 0.5,
