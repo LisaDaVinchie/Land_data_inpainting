@@ -14,11 +14,7 @@ PROCESSED_DATA_EXT := ".pt"
 
 RESULTS_DIR := $(DATA_DIR)/results
 RESULT_BASENAME := "result"
-RESULT2_BASENAME := "result2"
 RESULT_FILE_EXT := ".txt"
-
-FIGS_BASENAME := "result"
-FIG_FILE_EXT := ".png"
 
 WEIGHTS_DIR := $(DATA_DIR)/weights
 WEIGHTS_BASENAME := "weights"
@@ -50,6 +46,14 @@ NANS_MASKS_DIR := $(DATA_DIR)/nans_masks
 NANS_MASKS_BASENAME := "nans_mask"
 NANS_MASKS_FILE_EXT := ".pt"
 
+FIG_RESULTS_DIR := $(FIG_DIR)/results
+FIGS_BASENAME := "result"
+FIG_FILE_EXT := ".png"
+
+MINMAX_DIR := $(DATA_DIR)/minmax_vals
+MINMAX_BASENAME := "minmax"
+MINMAX_FILE_EXT := ".pt"
+
 # Find the next available dataset index
 IDX_DATASET = $(shell i=0; while [ -e "$(MINIMAL_DATASETS_DIR)/$(DATASET_BASENAME)_$$i$(DATASET_FILE_EXT)" ] || [ -e "$(EXTENDED_DATASETS_DIR)/$(DATASET_BASENAME)_$$i$(DATASET_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
 IDX_DATASET_MINUS_ONE = $(shell echo $$(($(IDX_DATASET) - 1)))
@@ -60,21 +64,22 @@ CURRENT_EXTENDED_DATASET_PATH = $(EXTENDED_DATASETS_DIR)/$(DATASET_BASENAME)_$(I
 DATASET_SPECS_PATH = $(DATASET_SPECS_DIR)/$(DATASET_SPECS_BASENAME)_$(IDX_DATASET)$(DATASET_SPECS_FILE_EXT)
 CURRENT_NANS_MASKS_PATH = $(NANS_MASKS_DIR)/$(NANS_MASKS_BASENAME)_$(IDX_DATASET_MINUS_ONE)$(NANS_MASKS_FILE_EXT)
 NEXT_NANS_MASKS_PATH = $(NANS_MASKS_DIR)/$(NANS_MASKS_BASENAME)_$(IDX_DATASET)$(NANS_MASKS_FILE_EXT)
+CURRENT_MIMAX_PATH = $(MINMAX_DIR)/$(MINMAX_BASENAME)_$(IDX_DATASET_MINUS_ONE)$(MINMAX_FILE_EXT)
+NEXT_MINMAX_PATH = $(MINMAX_DIR)/$(MINMAX_BASENAME)_$(IDX_DATASET)$(MINMAX_FILE_EXT)
 
 # Find the next RESULT_FILE_EXT available filename
 IDX=$(shell i=0; while [ -e "$(RESULTS_DIR)/$(RESULT_BASENAME)_$$i$(RESULT_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
+IDX_MINUS_ONE = $(shell echo $$(($(IDX) - 1)))
 RESULT_PATH = $(RESULTS_DIR)/$(RESULT_BASENAME)_$(IDX)$(RESULT_FILE_EXT)
-FIGS_PATH = $(FIG_DIR)/$(FIGS_BASENAME)_$(IDX)$(FIG_FILE_EXT)
+CURRENT_RESULT_PATH = $(RESULTS_DIR)/$(RESULT_BASENAME)_$(IDX_MINUS_ONE)$(RESULT_FILE_EXT)
+FIGS_PATH = $(FIG_RESULTS_DIR)/$(FIGS_BASENAME)_$(IDX)$(FIG_FILE_EXT)
 WEIGHTS_PATH = $(WEIGHTS_DIR)/$(WEIGHTS_BASENAME)_$(IDX)$(WEIGHTS_FILE_EXT)
-
-IDX2 = $(shell i=0; while [ -e "$(RESULTS_DIR)/$(RESULT2_BASENAME)_$$i$(RESULT_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
-RESULT2_PATH = $(RESULTS_DIR)/$(RESULT2_BASENAME)_$(IDX2)$(RESULT_FILE_EXT)
 
 PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
 
-.PHONY: config preprocess cut train bottleneck test help
+.PHONY: config preprocess cut train bottleneck test plot help
 
 config:
 	@echo "Storing paths to json..."
@@ -92,11 +97,13 @@ config:
 	@echo "        \"next_minimal_dataset_path\": \"$(NEXT_MINIMAL_DATASET_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"dataset_specs_path\": \"$(DATASET_SPECS_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"current_nans_masks_path\": \"$(CURRENT_NANS_MASKS_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"next_nans_masks_path\": \"$(NEXT_NANS_MASKS_PATH)\"" >> $(PATHS_FILE)
+	@echo "        \"next_nans_masks_path\": \"$(NEXT_NANS_MASKS_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"current_minmax_path\": \"$(CURRENT_MIMAX_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"next_minmax_path\": \"$(NEXT_MINMAX_PATH)\"" >> $(PATHS_FILE)
 	@echo "    }," >> $(PATHS_FILE)
 	@echo "    \"results\": {" >> $(PATHS_FILE)
 	@echo "        \"results_path\": \"$(RESULT_PATH)\", " >> $(PATHS_FILE)
-	@echo "        \"results2_path\": \"$(RESULT2_PATH)\", " >> $(PATHS_FILE)
+	@echo "        \"current_results_path\": \"$(CURRENT_RESULT_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"figs_path\": \"$(FIGS_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"weights_path\": \"$(WEIGHTS_PATH)\"" >> $(PATHS_FILE)   
 	@echo "    }" >> $(PATHS_FILE)
@@ -115,6 +122,10 @@ train: config
 
 bottleneck: config
 	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
+plot:config
+	@echo "Plotting results..."
+	@$(PYTHON) $(SRC_DIR)/plot_results.py --paths $(PATHS_FILE)
 
 test:
 	@echo "Running tests..."
