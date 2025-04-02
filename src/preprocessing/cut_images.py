@@ -9,6 +9,8 @@ import os
 import sys
 import math
 
+from dataset_normalization import MinMaxNormalization
+
 path_to_append = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(path_to_append)
 from preprocessing.mask_data import mask_inversemask_image, create_square_mask
@@ -211,9 +213,10 @@ def main():
     next_minimal_dataset_path = Path(json_paths["data"]["next_minimal_dataset_path"])
     dataset_specs_path = Path(json_paths["data"]["dataset_specs_path"])
     next_nans_masks_path = Path(json_paths["data"]["next_nans_masks_path"])
+    next_minmax_path = Path(json_paths["data"]["next_minmax_path"])
     
     # Check if the directories exist
-    check_dirs_existance([processed_data_dir, next_extended_dataset_path.parent, next_minimal_dataset_path.parent, dataset_specs_path.parent])
+    check_dirs_existance([processed_data_dir, next_extended_dataset_path.parent, next_minimal_dataset_path.parent, dataset_specs_path.parent, next_minmax_path.parent])
 
     with open(params_path, 'r') as json_file:
         params = json.load(json_file)
@@ -269,12 +272,16 @@ def main():
                                                     extended_data=extended_dataset, placeholder=placeholder)
     print(f"Generated the dataset in {time() - d_time} seconds\n", flush=True)
     
+    norm_class = MinMaxNormalization(batch_size=1000)
     if dataset_ext is not None:
         th.save(dataset_ext, next_extended_dataset_path)
         print(f"Saved the extended dataset to {next_extended_dataset_path}\n", flush=True)
     if dataset_min is not None:
+        dataset_min["images"], minmax = norm_class.normalize(dataset_min["images"], dataset_min["masks"])
         th.save(dataset_min, next_minimal_dataset_path)
         print(f"Saved the minimal dataset to {next_minimal_dataset_path}\n", flush=True)
+        th.save(minmax, next_minmax_path)
+        print(f"Saved the minmax values to {next_minmax_path}\n", flush=True)
         
     th.save(nans_masks, next_nans_masks_path)
     print(f"Saved the nans masks to {next_nans_masks_path}\n", flush=True)
