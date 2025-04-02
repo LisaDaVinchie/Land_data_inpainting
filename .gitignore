@@ -1,5 +1,9 @@
-# The raw data
+# The datasets
 data/
+
+# Figures
+figs/reconstructed/
+figs/results/
 
 # The paths json file
 src/paths.json
