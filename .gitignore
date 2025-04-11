@@ -11,6 +11,9 @@ figs/results/
 # The paths json file
 src/paths.json
 
+# The sbatch file with personal chat codes
+*.sh
+
 # Pconvs not done by me
 **/*nvidia*
 **/*Nvidia*
