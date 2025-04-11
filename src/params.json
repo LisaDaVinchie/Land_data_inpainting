@@ -2,7 +2,7 @@
     "training":{
         "train_perc": 0.8,
         "batch_size": 64,
-        "epochs": 3,
+        "epochs": 5,
         "learning_rate": 0.001,
         "placeholder": 0,
         "optimizer_kind": "adam",
@@ -14,19 +14,18 @@
     "dataset":{
         "minimal_dataset": true,
         "extended_dataset": false,
-        "n_images": 30,
-        "n_channels": 10,
+        "n_images": 31,
+        "n_channels": 5,
         "x_shape_raw": 1600,
         "y_shape_raw": 3600,
-        "n_cutted_images": 1000,
+        "n_cutted_images": 5000,
         "cutted_nrows": 128,
         "cutted_ncols": 128,
-        "nans_threshold": 0.5,
+        "nans_threshold": 0.4,
         "masked_channels": [0, 1],
         "channels_to_keep": [
-            "sea_surface_temperature", "sea_surface_temperature_stddev", "or_number_of_pixels",
-            "sses_bias", "sses_standard_deviation", "satellite_zenith_angle",
-            "or_latitude", "or_longitude", "solar_zenith_angle"
+            "sea_surface_temperature", "sea_surface_temperature_stddev",
+            "or_latitude", "or_longitude"
             ],
         "channels_list": [
             "crs", "sea_surface_temperature", "or_number_of_pixels",
