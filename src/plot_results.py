@@ -48,7 +48,9 @@ def main():
     plt.plot(train_losses, label='Train Loss', color='blue')
     plt.plot(test_losses, label='Test Loss', color='orange')
     plt.xticks(range(len(train_losses)), range(1, len(train_losses) + 1))
-
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
     plt.savefig(figs_path)
     
 if __name__ == "__main__":
