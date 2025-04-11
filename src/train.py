@@ -55,6 +55,7 @@ def main():
     print("Model initialized\n", flush = True)
     
     dataset_path = current_minimal_dataset_path
+    print("Using dataset path:", dataset_path, flush = True)
     
     idx = args.dataset_idx
     dataset_path = change_dataset_idx(idx, dataset_path)
