@@ -1,8 +1,8 @@
-# The datasets
+# The data folder, except for the result calculated using the server
 data/*
-# Exclude the folder containing results calculated in the hpc server
 !data/results_to_sync/
-!data/results_to_sync/**/*
+data/results_to_sync/*
+!data/results_to_sync/**/* 
 
 # Figures
 figs/reconstructed/
