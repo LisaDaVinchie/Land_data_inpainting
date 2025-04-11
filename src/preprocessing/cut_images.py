@@ -205,8 +205,8 @@ def main():
     params_path = args.params
     paths_path = args.paths
     
-    with open(paths_path, 'r') as json_file:
-        json_paths = json.load(json_file)
+    with open(paths_path, 'r') as paths_file:
+        json_paths = json.load(paths_file)
         
     processed_data_dir = Path(json_paths["data"]["processed_data_dir"])
     next_extended_dataset_path = Path(json_paths["data"]["next_extended_dataset_path"])
@@ -218,8 +218,8 @@ def main():
     # Check if the directories exist
     check_dirs_existance([processed_data_dir, next_extended_dataset_path.parent, next_minimal_dataset_path.parent, dataset_specs_path.parent, next_minmax_path.parent])
 
-    with open(params_path, 'r') as json_file:
-        params = json.load(json_file)
+    with open(params_path, 'r') as params_file:
+        params = json.load(params_file)
     
     x_shape_raw = int(params["dataset"]["x_shape_raw"])
     y_shape_raw = int(params["dataset"]["y_shape_raw"])
@@ -287,8 +287,8 @@ def main():
     print(f"Saved the nans masks to {next_nans_masks_path}\n", flush=True)
 
     # Extract the "dataset" and "mask" sections
-    dataset_section = json_paths.get('dataset', {})
-    mask_section = json_paths.get('mask', {})
+    dataset_section = params["dataset"]
+    mask_section = params["mask"]
 
     # Combine the sections into a single dictionary
     sections_to_save = {
