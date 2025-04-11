@@ -1,9 +1,7 @@
 BASE_DIR := $(shell pwd)
 PYTHON := $(shell which python3)
 
-DATASET_NAME := "IFREMER-GLOB-SST-L3-NRT-OBS_FULL_TIME_SERIE_202211"
-
-DATA_DIR := $(BASE_DIR)/data/$(DATASET_NAME)
+DATA_DIR := $(BASE_DIR)/data
 SRC_DIR := $(BASE_DIR)/src
 FIG_DIR := $(BASE_DIR)/figs
 TEST_DIR := $(BASE_DIR)/tests
