@@ -26,7 +26,8 @@ def per_pixel_mse(prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) ->
     Args:
         prediction (th.Tensor): output of the model, shape (batch_size, channels, height, width)
         target (th.Tensor): ground truth, shape (batch_size, channels, height, width)
-        masks (th.Tensor): binary mask with 0s for masked pixels, shape (batch_size, channels, height, width)
+        masks (th.Tensor): binary mask with 0 where the pixel is masked, shape (batch_size, channels, height, width).
+        The loss is calculated on the masked (0) pixels.
 
     Returns:
         th.Tensor: per-pixel loss
