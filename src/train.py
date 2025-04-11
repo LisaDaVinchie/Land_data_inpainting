@@ -205,6 +205,7 @@ def train_loop_minimal(epochs: int, model: th.nn.Module, device, train_loader: D
             masks = masks.to(device)
             output, output_masks = model(images, masks)
             loss_val = loss_function(output, images, masks)
+            
             train_loss += loss_val.item()
             
             optimizer.zero_grad()
@@ -217,6 +218,8 @@ def train_loop_minimal(epochs: int, model: th.nn.Module, device, train_loader: D
             model.eval()
             test_loss = 0
             for i, (images, masks) in enumerate(test_loader):
+                images = images.to(device)
+                masks = masks.to(device)
                 output, output_masks = model(images, masks)
                 loss_val = loss_function(output, images, masks)
                 test_loss += loss_val.item()
