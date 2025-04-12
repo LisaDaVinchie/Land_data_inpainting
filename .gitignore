@@ -4,6 +4,10 @@ data/*
 data/results_to_sync/*
 !data/results_to_sync/**/* 
 
+!data/weights_to_sync/
+data/weights_to_sync/*
+!data/weights_to_sync/**/*
+
 # Slurm logs
 logs/
 
