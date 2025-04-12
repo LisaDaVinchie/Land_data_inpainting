@@ -4,6 +4,9 @@ data/*
 data/results_to_sync/*
 !data/results_to_sync/**/* 
 
+# Slurm logs
+logs/
+
 # Figures
 figs/reconstructed/
 figs/results/
