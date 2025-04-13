@@ -277,7 +277,7 @@ def main():
         th.save(dataset_ext, next_extended_dataset_path)
         print(f"Saved the extended dataset to {next_extended_dataset_path}\n", flush=True)
     if dataset_min is not None:
-        dataset_min["images"], minmax = norm_class.normalize(dataset_min["images"], dataset_min["masks"])
+        dataset_min["images"], minmax = norm_class.normalize(dataset_min["images"], nans_masks)
         th.save(dataset_min, next_minimal_dataset_path)
         print(f"Saved the minimal dataset to {next_minimal_dataset_path}\n", flush=True)
         th.save(minmax, next_minmax_path)
