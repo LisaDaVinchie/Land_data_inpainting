@@ -55,11 +55,12 @@ def main():
     print("Model initialized\n", flush = True)
     
     dataset_path = current_minimal_dataset_path
-    print("Using dataset path:", dataset_path, flush = True)
+    
     
     idx = args.dataset_idx
     dataset_path = change_dataset_idx(idx, dataset_path)
-        
+    print("Using dataset path:", dataset_path, flush = True)
+    
     validate_paths([dataset_path, results_path.parent, weights_path.parent])
     print("\nPaths imported\n", flush = True)
 
@@ -97,6 +98,7 @@ def main():
 
     # Save the model
     th.save(model.state_dict(), weights_path)
+    print(f"Weights saved to {weights_path}\n", flush = True)
 
     with open(params_path, 'r') as f:
         params = json.load(f)
@@ -122,6 +124,8 @@ def main():
         f.write("\n\n")
         f.write("Parameters\n")
         f.write(json_str)
+    
+    print(f"Results saved to {results_path}\n", flush = True)
         
 def track_memory(stage=""):
     process = psutil.Process(os.getpid())
@@ -198,17 +202,17 @@ def train_loop_minimal(epochs: int, model: th.nn.Module, device, train_loader: D
 
     for epoch in range(epochs):
         print(f"\nEpoch {epoch + 1}/{epochs}\n", flush=True)
-        model.train()
         
+        model.train()
         train_loss = 0
-        for i, (images, masks) in enumerate(train_loader):
+        for (images, masks) in train_loader:
             images = images.to(device)
             masks = masks.to(device)
             output, output_masks = model(images, masks)
+            
             loss_val = loss_function(output, images, masks)
-            
             train_loss += loss_val.item()
-            
+
             optimizer.zero_grad()
             loss_val.backward()
             optimizer.step()
@@ -218,7 +222,7 @@ def train_loop_minimal(epochs: int, model: th.nn.Module, device, train_loader: D
         with th.no_grad():
             model.eval()
             test_loss = 0
-            for i, (images, masks) in enumerate(test_loader):
+            for (images, masks) in test_loader:
                 images = images.to(device)
                 masks = masks.to(device)
                 output, output_masks = model(images, masks)
