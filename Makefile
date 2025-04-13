@@ -69,9 +69,9 @@ NEXT_MINMAX_PATH = $(MINMAX_DIR)/$(MINMAX_BASENAME)_$(IDX_DATASET)$(MINMAX_FILE_
 # Find the next RESULT_FILE_EXT available filename
 IDX=$(shell i=0; while [ -e "$(RESULTS_DIR)/$(RESULT_BASENAME)_$$i$(RESULT_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
 IDX_MINUS_ONE = $(shell echo $$(($(IDX) - 1)))
-RESULT_PATH = $(RESULTS_DIR)/$(RESULT_BASENAME)_$(IDX)$(RESULT_FILE_EXT)
+NEXT_RESULT_PATH = $(RESULTS_DIR)/$(RESULT_BASENAME)_$(IDX)$(RESULT_FILE_EXT)
 CURRENT_RESULT_PATH = $(RESULTS_DIR)/$(RESULT_BASENAME)_$(IDX_MINUS_ONE)$(RESULT_FILE_EXT)
-FIGS_PATH = $(FIG_RESULTS_DIR)/$(FIGS_BASENAME)_$(IDX)$(FIG_FILE_EXT)
+FIGS_PATH = $(FIG_RESULTS_DIR)/$(FIGS_BASENAME)_$(IDX_MINUS_ONE)$(FIG_FILE_EXT)
 WEIGHTS_PATH = $(WEIGHTS_DIR)/$(WEIGHTS_BASENAME)_$(IDX)$(WEIGHTS_FILE_EXT)
 
 PATHS_FILE := $(SRC_DIR)/paths.json
@@ -101,7 +101,7 @@ config:
 	@echo "        \"next_minmax_path\": \"$(NEXT_MINMAX_PATH)\"" >> $(PATHS_FILE)
 	@echo "    }," >> $(PATHS_FILE)
 	@echo "    \"results\": {" >> $(PATHS_FILE)
-	@echo "        \"results_path\": \"$(RESULT_PATH)\", " >> $(PATHS_FILE)
+	@echo "        \"results_path\": \"$(NEXT_RESULT_PATH)\", " >> $(PATHS_FILE)
 	@echo "        \"current_results_path\": \"$(CURRENT_RESULT_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"figs_path\": \"$(FIGS_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"weights_path\": \"$(WEIGHTS_PATH)\"" >> $(PATHS_FILE)   
