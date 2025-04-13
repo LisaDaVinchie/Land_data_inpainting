@@ -41,7 +41,7 @@ def initialize_model_and_dataset_kind(params_path: Path, model_kind: str) -> tup
         dataset_kind = "extended"
     elif model_kind == "DINCAE_like":
         model = DINCAE_like(params_path)
-        dataset_kind = "minimal"
+        dataset_kind = "extended"
     elif model_kind == "DINCAE_pconvs":
         model = DINCAE_pconvs(params_path)
         dataset_kind = "minimal"
