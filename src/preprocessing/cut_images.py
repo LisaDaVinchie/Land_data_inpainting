@@ -9,11 +9,10 @@ import os
 import sys
 import math
 
-from dataset_normalization import MinMaxNormalization
-
 path_to_append = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(path_to_append)
 from preprocessing.mask_data import mask_inversemask_image, create_square_mask
+from preprocessing.dataset_normalization_v2 import MinMaxNormalization
 
 class CutAndMaskImage:
     """Class used to:
@@ -233,13 +232,15 @@ def main():
     extended_dataset = bool(params["dataset"]["extended_dataset"])
     
     mask_percentage = float(params["mask"]["mask_percentage"])
-    placeholder = float(params["mask"]["placeholder"])
+    placeholder = params["training"]["placeholder"]
     
     if minimal_dataset == False and extended_dataset == False:
         raise ValueError("Both minimal_dataset and extended_dataset are False. At least one of them should be True.")
 
-    if placeholder == False:
+    if placeholder == "false":
         placeholder = None
+    else:
+        placeholder = float(placeholder)
         
     print("Using placeholder value: ", placeholder, flush=True)
 
