@@ -11,7 +11,7 @@ import math
 
 path_to_append = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(path_to_append)
-from preprocessing.mask_data import mask_inversemask_image, create_square_mask
+from preprocessing.mask_data import mask_inversemask_image, SquareMask, LinesMask, initialize_mask_kind
 from preprocessing.dataset_normalization_v2 import MinMaxNormalization
 
 class CutAndMaskImage:
@@ -96,12 +96,12 @@ class CutAndMaskImage:
                 nan_count = th.isnan(cutted_img).sum().item()
         return cutted_img
 
-    def generate_image_dataset(self, n_channels: int, masked_fraction: float, masked_channels_list: list, path_to_indices_map: dict, extended_data: bool, minimal_data: bool, placeholder: float = None) -> tuple[dict, dict, th.Tensor]:
+    def generate_image_dataset(self, n_channels: int, mask_function, masked_channels_list: list, path_to_indices_map: dict, extended_data: bool, minimal_data: bool, placeholder: float = None) -> tuple[dict, dict, th.Tensor]:
         """Generate a dataset of masked images, inverse masked images and masks
 
         Args:
             n_channels (int): final number of channels in the image
-            masked_fraction (float): percentage of masked pixels in each channel
+            mask_function: function used to generate the masks
             masked_channels_list (list): list of channels that should not be masked
             path_to_indices_map (dict): dictionary with the paths to the images as keys and the points as values
             extended_data (bool): True if the extended dataset should be generated
@@ -159,7 +159,7 @@ class CutAndMaskImage:
             # Create square masks. 0 where the values are masked, 1 where the values are not masked
             masks = th.ones((n_indices, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32)
             for mc in masked_channels_list:
-                masks[:, mc, :, :] = create_square_mask(self.final_nrows, self.final_ncols, masked_fraction)
+                masks[:, mc, :, :] = mask_function.mask()
             
             # Set masks to 0 where the nan mask is 0
             masks = th.where(cutted_img_nans == 0, th.tensor(0, dtype=masks.dtype), masks)
@@ -230,8 +230,8 @@ def main():
     nans_threshold = float(params["dataset"]["nans_threshold"])
     minimal_dataset = bool(params["dataset"]["minimal_dataset"])
     extended_dataset = bool(params["dataset"]["extended_dataset"])
+    mask_kind = str(params["dataset"]["mask_kind"])
     
-    mask_percentage = float(params["mask"]["mask_percentage"])
     placeholder = params["training"]["placeholder"]
     
     if minimal_dataset == False and extended_dataset == False:
@@ -243,6 +243,8 @@ def main():
         placeholder = float(placeholder)
         
     print("Using placeholder value: ", placeholder, flush=True)
+    
+    mask_function = initialize_mask_kind(params_path, mask_kind)
 
     # Select n_images random images from the processed images
     processed_images_paths = list(processed_data_dir.glob(f"*.pt"))
@@ -268,7 +270,7 @@ def main():
     d_time = time() 
     # Generate the dataset
     dataset_ext, dataset_min, nans_masks = cut_class.generate_image_dataset(n_channels=n_channels,
-                                                    masked_fraction=mask_percentage, masked_channels_list=masked_channels,
+                                                    mask_function=mask_function, masked_channels_list=masked_channels,
                                                     path_to_indices_map=path_to_indices, minimal_data=minimal_dataset,
                                                     extended_data=extended_dataset, placeholder=placeholder)
     print(f"Generated the dataset in {time() - d_time} seconds\n", flush=True)
@@ -289,12 +291,14 @@ def main():
 
     # Extract the "dataset" and "mask" sections
     dataset_section = params["dataset"]
-    mask_section = params["mask"]
+    square_mask_section = params["square_mask"]
+    lines_mask_section = params["lines_mask"]
 
     # Combine the sections into a single dictionary
     sections_to_save = {
         'dataset': dataset_section,
-        'mask': mask_section
+        'square_mask': square_mask_section,
+        'lines_mask': lines_mask_section
     }
 
     elapsed_time = time() - start_time
