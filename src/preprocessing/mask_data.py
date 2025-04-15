@@ -57,24 +57,6 @@ def initialize_mask_kind(params_path: Path, mask_kind: str):
         return LinesMask(params_path)
     else:
         raise ValueError(f"Unknown mask kind: {mask_kind}")
-    
-
-# def create_square_mask(params_path: Path = None, image_nrows: int = None, image_ncols: int = None, mask_percentage: float = None) -> th.Tensor:
-#     """Create a square mask of n_pixels in the image"""
-#     n_pixels = int(mask_percentage * image_nrows * image_ncols)
-#     square_nrows = int(n_pixels ** 0.5)
-#     mask = th.ones((image_nrows, image_ncols), dtype=th.float32)
-    
-#     # Get a random top-left corner for the square
-#     row_idx = th.randint(0, image_ncols - square_nrows, (1,)).item()
-#     col_idx = th.randint(0, image_nrows - square_nrows, (1,)).item()
-    
-#     mask[
-#         row_idx: row_idx + square_nrows,
-#         col_idx: col_idx + square_nrows
-#     ] = 0
-    
-#     return mask
 
 class SquareMask:
     def __init__(self, params_path: Path = None, image_nrows: int = None, image_ncols: int = None, mask_percentage: float = None):
@@ -82,6 +64,9 @@ class SquareMask:
         
         self._initialize_parameters(params_path, image_nrows, image_ncols, mask_percentage)
         
+        self._check_parameters()
+
+    def _check_parameters(self):
         if self.image_nrows <= 0 or self.image_ncols <= 0:
             raise ValueError("Image dimensions must be positive integers.")
         
@@ -123,6 +108,9 @@ class LinesMask:
         
         self._initialize_parameters(params_path, image_nrows, image_ncols, num_lines, min_thickness, max_thickness)
         
+        self._check_parameters()
+
+    def _check_parameters(self):
         if self.image_nrows <= 0 or self.image_ncols <= 0:
             raise ValueError("Image dimensions must be positive integers.")
         
@@ -132,16 +120,30 @@ class LinesMask:
         if self.min_thickness <= 0 or self.max_thickness <= 0:
             raise ValueError("Line thickness must be positive integers.")
         
+        if self.min_thickness > self.max_thickness:
+            raise ValueError("Minimum thickness cannot be greater than maximum thickness.")
+        
 
     def _initialize_parameters(self, params_path, image_nrows, image_ncols, num_lines, min_thickness, max_thickness):
-        with open(params_path, 'r') as f:
-            params = json.load(f)
-            
-        self.image_nrows = image_nrows if image_nrows is not None else params['dataset']['cutted_nrows']
-        self.image_ncols = image_ncols if image_ncols is not None else params['dataset']['cutted_ncols']
-        self.num_lines = num_lines if num_lines is not None else params['lines_mask']['num_lines']
-        self.min_thickness = min_thickness if min_thickness is not None else params['lines_mask']['min_thickness']
-        self.max_thickness = max_thickness if max_thickness is not None else params['lines_mask']['max_thickness']
+        
+        if params_path is not None:
+            with open(params_path, 'r') as f:
+                params = json.load(f)
+                
+            self.image_nrows = params['dataset']['cutted_nrows']
+            self.image_ncols = params['dataset']['cutted_ncols']
+            self.num_lines = params['lines_mask']['num_lines']
+            self.min_thickness = params['lines_mask']['min_thickness']
+            self.max_thickness = params['lines_mask']['max_thickness']
+        else:
+            self.image_nrows = image_nrows
+            self.image_ncols = image_ncols
+            self.num_lines = num_lines
+            self.min_thickness = min_thickness
+            self.max_thickness = max_thickness
+        
+        if self.image_nrows is None or self.image_ncols is None or self.num_lines is None or self.min_thickness is None or self.max_thickness is None:
+            raise ValueError("Missing one of the following required parameters: image_nrows, image_ncols, num_lines, min_thickness, max_thickness")
         
     def mask(self):
         """
