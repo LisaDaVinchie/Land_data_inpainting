@@ -1,15 +1,15 @@
 import unittest
-import torch as th
 from tempfile import NamedTemporaryFile
 import os
 import sys
+import json
+from pathlib import Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from preprocessing.mask_data import LinesMask
 
 class TestLinesMask(unittest.TestCase):
     
     def setUp(self):
-        self.params_path = NamedTemporaryFile(delete=False)
         self.image_nrows = 10
         self.image_ncols = 10
         self.num_lines = 5
@@ -28,12 +28,17 @@ class TestLinesMask(unittest.TestCase):
             }
         }
         
+        self.temp_json = NamedTemporaryFile(delete=False, mode='w')
+        json.dump(self.params, self.temp_json)
+        self.temp_json.close()
+        self.params_path = Path(self.temp_json.name).resolve()  # Use absolute path
+        
         # Create a LinesMask instance
         self.lines_mask = LinesMask(params_path=self.params_path)
         
     def tearDown(self):
         # Remove the temporary file
-        os.remove(self.params_path.name)
+        os.remove(self.temp_json.name)
     
     def test_initialization(self):
         """Test if the LinesMask class initializes correctly."""
