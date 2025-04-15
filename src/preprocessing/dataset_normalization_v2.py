@@ -46,7 +46,7 @@ class MinMaxNormalization:
                 self.min_val[channel] = th.min(valid_pixels)
                 self.max_val[channel] = th.max(valid_pixels)
                 # Normalize where the mask is 1, keep the original values where the mask is 0
-                norm_images[:, channel, :, :] = th.where(nans_masks[:, channel, :, :], (images[:, channel, :, :] - self.min_vals[channel]) / (self.max_vals[channel] - self.min_vals[channel]), images[:, channel, :, :])
+                norm_images[:, channel, :, :] = th.where(nans_masks[:, channel, :, :], (images[:, channel, :, :] - self.min_val[channel]) / (self.max_val[channel] - self.min_val[channel]), images[:, channel, :, :])
         
         # For larger datasets, normalize in batches
         # More memory efficient but slower
