@@ -78,7 +78,7 @@ PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
 
-.PHONY: config preprocess cut train bottleneck test plot help
+.PHONY: config preprocess cut train bottleneck test plot clean_data help
 
 config:
 	@echo "Storing paths to json..."
@@ -129,6 +129,9 @@ plot:config
 test:
 	@echo "Running tests..."
 	$(PYTHON) -m unittest discover -s $(TEST_DIR) -p "*_test.py"
+
+clean_data:
+	rm -rf $(MINIMAL_DATASETS_DIR)/* $(EXTENDED_DATASETS_DIR)/* $(MASKS_DIR)/* $(DATASET_SPECS_DIR)/* $(NANS_MASKS_DIR)/* $(MINMAX_DIR)/*
 
 help:
 	@echo "Usage: make [target]"
