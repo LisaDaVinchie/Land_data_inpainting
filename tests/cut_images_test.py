@@ -7,6 +7,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from preprocessing.cut_images import CutAndMaskImage
+from preprocessing.mask_data import SquareMask
 
 
 class TestGenerateMaskedImageDataset(unittest.TestCase):
@@ -25,7 +26,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         self.n_cutted_images = 8
         self.cutted_nrows = 10
         self.cutted_ncols = 10
-        self.mask_percentage = 0.5
+        mask_percentage = 0.5
         self.masked_channels = [0, 2]
         self.placeholder = -1.0
         
@@ -65,11 +66,15 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         
         processed_images_paths = list(self.processed_data_dir.glob("*.pt"))
         self.path_to_indices = self.cut_class.map_random_points_to_images(processed_images_paths, random_points)
+        
+        self.mask_function = SquareMask(image_nrows=self.cutted_nrows,
+                                   image_ncols=self.cutted_ncols,
+                                   mask_percentage=mask_percentage)
 
         # Generate the dataset
         self.dataset_ext, self.dataset_min, self.nans_mask = self.cut_class.generate_image_dataset(
                         n_channels=self.n_channels,
-                        masked_fraction=self.mask_percentage,
+                        mask_function=self.mask_function,
                         masked_channels_list=self.masked_channels,
                         path_to_indices_map=self.path_to_indices,
                         minimal_data=True, extended_data=True,
@@ -154,7 +159,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         
         dataset_ext, dataset_min, nans_mask = self.cut_class.generate_image_dataset(
                         n_channels=self.n_channels,
-                        masked_fraction=self.mask_percentage,
+                        mask_function=self.mask_function,
                         masked_channels_list=self.masked_channels,
                         path_to_indices_map=self.path_to_indices,
                         minimal_data=True, extended_data=False,
@@ -169,7 +174,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         
         dataset_ext, dataset_min, nans_mask = self.cut_class.generate_image_dataset(
                         n_channels=self.n_channels,
-                        masked_fraction=self.mask_percentage,
+                        mask_function=self.mask_function,
                         masked_channels_list=self.masked_channels,
                         path_to_indices_map=self.path_to_indices,
                         minimal_data=False, extended_data=True,
@@ -183,7 +188,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         
         dataset_ext, dataset_min, nans_mask = self.cut_class.generate_image_dataset(
                         n_channels=self.n_channels,
-                        masked_fraction=self.mask_percentage,
+                        mask_function=self.mask_function,
                         masked_channels_list=self.masked_channels,
                         path_to_indices_map=self.path_to_indices,
                         minimal_data=False, extended_data=False,
