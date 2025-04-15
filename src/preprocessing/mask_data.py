@@ -1,11 +1,8 @@
 import torch as th
-import os
-import sys
 import random
 import math
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from utils.import_params_json import load_config
+from pathlib import Path
+import json
 
 def apply_mask_on_channel(images: th.Tensor, masks: th.Tensor, placeholder: float = None) -> th.Tensor:
     """Mask the image with the mask, using a placeholder. If the placeholder is none, use the mean of the level"""
@@ -52,31 +49,99 @@ def mask_inversemask_image(images: th.Tensor, masks: th.Tensor, placeholder: flo
     inverse_masked_img = new_images * inverse_masks + inv_placeholder * (1 - inverse_masks)
     return masked_img, inverse_masked_img
 
-def create_square_mask(image_nrows: int, image_ncols: int, mask_percentage: float) -> th.Tensor:
-    """Create a square mask of n_pixels in the image"""
-    n_pixels = int(mask_percentage * image_nrows * image_ncols)
-    square_nrows = int(n_pixels ** 0.5)
-    mask = th.ones((image_nrows, image_ncols), dtype=th.float32)
+def initialize_mask_kind(params_path: Path, mask_kind: str):
+    """Initialize the mask kind based on the provided parameters."""
+    if mask_kind == "square":
+        return SquareMask(params_path)
+    elif mask_kind == "lines":
+        return LinesMask(params_path)
+    else:
+        raise ValueError(f"Unknown mask kind: {mask_kind}")
     
-    # Get a random top-left corner for the square
-    row_idx = th.randint(0, image_ncols - square_nrows, (1,)).item()
-    col_idx = th.randint(0, image_nrows - square_nrows, (1,)).item()
+
+# def create_square_mask(params_path: Path = None, image_nrows: int = None, image_ncols: int = None, mask_percentage: float = None) -> th.Tensor:
+#     """Create a square mask of n_pixels in the image"""
+#     n_pixels = int(mask_percentage * image_nrows * image_ncols)
+#     square_nrows = int(n_pixels ** 0.5)
+#     mask = th.ones((image_nrows, image_ncols), dtype=th.float32)
     
-    mask[
-        row_idx: row_idx + square_nrows,
-        col_idx: col_idx + square_nrows
-    ] = 0
+#     # Get a random top-left corner for the square
+#     row_idx = th.randint(0, image_ncols - square_nrows, (1,)).item()
+#     col_idx = th.randint(0, image_nrows - square_nrows, (1,)).item()
     
-    return mask
+#     mask[
+#         row_idx: row_idx + square_nrows,
+#         col_idx: col_idx + square_nrows
+#     ] = 0
+    
+#     return mask
+
+class SquareMask:
+    def __init__(self, params_path: Path = None, image_nrows: int = None, image_ncols: int = None, mask_percentage: float = None):
+        """Initialize the SquareMask class."""
+        
+        self._initialize_parameters(params_path, image_nrows, image_ncols, mask_percentage)
+        
+        if self.image_nrows <= 0 or self.image_ncols <= 0:
+            raise ValueError("Image dimensions must be positive integers.")
+        
+        if self.mask_percentage <= 0 or self.mask_percentage >= 1:
+            raise ValueError("Mask percentage must be between 0 and 1.")
+
+    def _initialize_parameters(self, params_path, image_nrows, image_ncols, mask_percentage):
+        
+        if params_path is not None:
+            with open(params_path, 'r') as f:
+                params = json.load(f)
+        
+        self.image_nrows = image_nrows if image_nrows is not None else params['dataset']['cutted_nrows']
+        self.image_ncols = image_ncols if image_ncols is not None else params['dataset']['cutted_ncols']
+        self.mask_percentage = mask_percentage if mask_percentage is not None else params['square_mask']['mask_percentage']
+        
+        if self.image_nrows is None or self.image_ncols is None or self.mask_percentage is None:
+            raise ValueError("Missing one of the following required parameters: image_nrows, image_ncols, mask_percentage")
+        
+    def mask(self):
+        """Create a square mask of n_pixels in the image"""
+        n_pixels = int(self.mask_percentage * self.image_nrows * self.image_ncols)
+        square_nrows = int(n_pixels ** 0.5)
+        image_mask = th.ones((self.image_nrows, self.image_ncols), dtype=th.float32)
+        
+        # Get a random top-left corner for the square
+        row_idx = th.randint(0, self.image_ncols - square_nrows, (1,)).item()
+        col_idx = th.randint(0, self.image_nrows - square_nrows, (1,)).item()
+        
+        image_mask[
+            row_idx: row_idx + square_nrows,
+            col_idx: col_idx + square_nrows
+        ] = 0
+        
+        return image_mask
 
 class LinesMask:
-    def __init__(self, image_nrows: int, image_ncols: int, num_lines: int = 1, min_thickness: int = 1, max_thickness: int = 5):
+    def __init__(self, params_path: Path = None, image_nrows: int = None, image_ncols: int = None, num_lines: int = None, min_thickness: int = None, max_thickness: int = None):
         
-        self.image_nrows = image_nrows
-        self.image_ncols = image_ncols
-        self.num_lines = num_lines
-        self.min_thickness = min_thickness
-        self.max_thickness = max_thickness
+        self._initialize_parameters(params_path, image_nrows, image_ncols, num_lines, min_thickness, max_thickness)
+        
+        if self.image_nrows <= 0 or self.image_ncols <= 0:
+            raise ValueError("Image dimensions must be positive integers.")
+        
+        if self.num_lines <= 0:
+            raise ValueError("Number of lines must be a positive integer.")
+        
+        if self.min_thickness <= 0 or self.max_thickness <= 0:
+            raise ValueError("Line thickness must be positive integers.")
+        
+
+    def _initialize_parameters(self, params_path, image_nrows, image_ncols, num_lines, min_thickness, max_thickness):
+        with open(params_path, 'r') as f:
+            params = json.load(f)
+            
+        self.image_nrows = image_nrows if image_nrows is not None else params['dataset']['cutted_nrows']
+        self.image_ncols = image_ncols if image_ncols is not None else params['dataset']['cutted_ncols']
+        self.num_lines = num_lines if num_lines is not None else params['lines_mask']['num_lines']
+        self.min_thickness = min_thickness if min_thickness is not None else params['lines_mask']['min_thickness']
+        self.max_thickness = max_thickness if max_thickness is not None else params['lines_mask']['max_thickness']
         
     def mask(self):
         """
@@ -104,11 +169,11 @@ class LinesMask:
             thickness = random.randint(self.min_thickness, self.max_thickness)
             
             # Generate the line and subtract from mask (lines become 0)
-            mask = mask * (1 - self.generate_single_line(start_point, end_point, thickness))
+            mask = mask * (1 - self._generate_single_line(start_point, end_point, thickness))
             
         return mask
 
-    def generate_single_line(self, start_point: tuple, end_point: tuple, thickness: int):
+    def _generate_single_line(self, start_point: tuple, end_point: tuple, thickness: int):
         """Helper function to generate a single line (1=line, 0=background).
 
         Args:
