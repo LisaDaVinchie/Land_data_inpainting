@@ -81,26 +81,25 @@ class MinMaxNormalization:
         
         return norm_images, [self.min_val, self.max_val]
     
-    def denormalize(self, images: th.Tensor, minmax: list = None) -> th.Tensor:
+    def denormalize(self, images: th.Tensor, minmax: list) -> th.Tensor:
         """Denormalize the dataset using min-max denormalization.
 
         Args:s
             images (th.Tensor): dataset to denormalize
-            minmax (list): min and max values used for normalization. If None, use the min and max values from the normalization
+            minmax (list): min and max values used for normalization.
 
         Returns:
             th.Tensor: denormalized dataset
         """
         
-        if minmax is None: # Use the min and max values from the normalization
-            min_val = self.min_val
-            max_val = self.max_val
-        else: # Use the min and max values from the provided list
-            min_val = minmax[0]
-            max_val = minmax[1]
+        min_val = minmax[0]
+        max_val = minmax[1]
             
         if min_val is None or max_val is None:
             raise ValueError("Min and max values must be provided for denormalization.")
+        
+        if self.channels is None:
+            self.channels = list(range(images.shape[1]))
         
         # Denormalize the images
         denorm_images = th.empty_like(images)
