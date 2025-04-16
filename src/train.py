@@ -12,7 +12,7 @@ import os
 from CustomDataset import create_dataloaders
 from models import initialize_model_and_dataset_kind
 from preprocessing.mask_data import mask_inversemask_image
-from losses import per_pixel_loss, per_pixel_mse
+from losses import get_loss_function
 
 def main():
     parser = argparse.ArgumentParser(description='Train a CNN model on a dataset')
@@ -55,8 +55,6 @@ def main():
     print("Model initialized\n", flush = True)
     
     dataset_path = current_minimal_dataset_path
-    
-    
     idx = args.dataset_idx
     dataset_path = change_dataset_idx(idx, dataset_path)
     print("Using dataset path:", dataset_path, flush = True)
@@ -76,12 +74,7 @@ def main():
     print("Dataloaders created\n", flush = True)
     track_memory("After creating dataloaders")
     
-    if loss_kind == "per_pixel_loss":
-        loss_function = per_pixel_loss
-    elif loss_kind == "per_pixel_mse":
-        loss_function = per_pixel_mse
-    else:
-        raise ValueError(f"Loss kind {loss_kind} not recognized")
+    loss_function = get_loss_function(loss_kind)
     
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
