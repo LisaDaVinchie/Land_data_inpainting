@@ -11,7 +11,7 @@ class TestMinMaxNormalization(unittest.TestCase):
     def setUp(self):
         
         dataset_shape = (100, 5, 128, 128)
-        self.sample_images = th.rand(dataset_shape)
+        self.sample_images = th.randn(dataset_shape[0], dataset_shape[1], dataset_shape[2], dataset_shape[3])
         self.sample_masks = th.ones(dataset_shape[0], dataset_shape[1], dataset_shape[2], dataset_shape[3])
         
         masked_idxs = [[0, 0, 0, 0], [0, 1, 1, 0], [0, 2, 2, 0], [0, 3, 3, 0], [0, 4, 4, 0]]
@@ -55,8 +55,13 @@ class TestMinMaxNormalization(unittest.TestCase):
         masks = self.sample_masks
         norm_images, _ = self.normalizer.normalize(images, masks)
         
+        minmax = [
+            th.stack([self.sample_images[:, c].min() for c in range(self.sample_images.shape[1])]),
+            th.stack([self.sample_images[:, c].max() for c in range(self.sample_images.shape[1])])
+        ]
+        
         # Denormalize
-        denorm_images = self.normalizer.denormalize(norm_images)
+        denorm_images = self.normalizer.denormalize(norm_images, minmax)
         
         # Check if denormalized images are equal to original images where masks are 1
         masks = masks.to(th.bool)
