@@ -17,9 +17,10 @@ def get_loss_function(loss_kind: str) -> nn.Module:
         return PerPixelMSE()
     elif loss_kind == "tv_loss":
         return TotalVariationLoss()
+    elif loss_kind == "custom1":
+        return CustomLoss1()
     else:
         raise ValueError(f"Loss kind {loss_kind} not recognized")
-    
 
 class PerPixelMSE(nn.Module):
     def __init__(self):
@@ -166,3 +167,33 @@ class TotalVariationLoss(nn.Module):
         dilated_mask = dilated_mask.view(B, C, H, W).float()
         
         return dilated_mask if inverse else 1 - dilated_mask
+   
+class CustomLoss1(nn.Module):
+    def __init__(self, per_pixel_weight: float = 1.0, tv_weight: float = 0.1):
+        """Combine per-pixel loss and total variation loss.
+
+        Args:
+            per_pixel_weight (float, optional): weight for the per-pixel loss. Defaults to 1.0.
+            tv_weight (float, optional): weight for the total variation loss. Defaults to 0.1.
+        """
+        super(CustomLoss1, self).__init__()
+        self.per_pixel_weight = per_pixel_weight
+        self.tv_weight = tv_weight
+        self.per_pixel_loss = PerPixelMSE()
+        self.tv_loss = TotalVariationLoss()
+        
+    def forward(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) -> th.Tensor:
+        """Calculate the combined loss.
+
+        Args:
+            prediction (th.Tensor): output of the model, shape (batch_size, channels, height, width)
+            target (th.Tensor): ground truth, shape (batch_size, channels, height, width)
+            masks (th.Tensor): binary mask with 0 where the pixel is masked, shape (batch_size, channels, height, width)
+
+        Returns:
+            th.Tensor: combined loss
+        """
+        per_pixel_loss = self.per_pixel_loss(prediction, target, masks)
+        tv_loss = self.tv_loss(prediction, target, masks)
+        
+        return self.per_pixel_weight * per_pixel_loss + self.tv_weight * tv_loss
