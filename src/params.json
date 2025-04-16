@@ -7,7 +7,7 @@
         "placeholder": 0.0,
         "optimizer_kind": "adam",
         "loss_kind": "per_pixel_mse",
-        "_possible_losses": ["per_pixel", "per_pixel_mse"],
+        "_possible_losses": ["per_pixel", "per_pixel_mse", "tv_loss"],
         "model_kind": "DINCAE_pconvs",
         "_possible_model_kinds": ["simple_conv", "conv_unet", "conv_maxpool", "DINCAE_like", "DINCAE_pconvs"]
     },
