@@ -1,12 +1,12 @@
 # The data folder, except for the result calculated using the server
 data/*
-!data/results_to_sync/
-data/results_to_sync/*
-!data/results_to_sync/**/* 
+!data/results_sync/
+data/results_sync/*
+!data/results_sync/**/* 
 
-!data/weights_to_sync/
-data/weights_to_sync/*
-!data/weights_to_sync/**/*
+!data/weights_sync/
+data/weights_sync/*
+!data/weights_sync/**/*
 
 # Slurm logs
 logs/
