@@ -3,15 +3,15 @@ from unittest.mock import patch
 import torch as th
 from pathlib import Path
 from models import DINCAE_pconvs, simple_conv
-import sys
-import os
 import json
 from tempfile import NamedTemporaryFile
 
+import os
+import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from train import track_memory, change_dataset_idx, validate_paths, train_loop_extended, train_loop_minimal
 from CustomDataset import create_dataloaders
-from losses import per_pixel_loss
+from losses import PerPixelL1
 
 class TestTrainingFunctions(unittest.TestCase):
     def setUp(self):
@@ -78,7 +78,7 @@ class TestTrainingFunctions(unittest.TestCase):
         self.train_loader, self.test_loader = create_dataloaders(test_dataset, 0.8, batch_size=self.batch_size)
 
         # Use a real loss function and optimizer
-        self.loss_function = per_pixel_loss
+        self.loss_function = PerPixelL1()
         
     def test_track_memory(self):
         """Test that track_memory logs memory usage."""

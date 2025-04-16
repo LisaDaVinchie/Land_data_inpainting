@@ -15,7 +15,7 @@ def get_loss_function(loss_kind: str) -> nn.Module:
         return PerPixelL1()
     elif loss_kind == "per_pixel_mse":
         return PerPixelMSE()
-    elif loss_kind == "total_variation_loss":
+    elif loss_kind == "tv_loss":
         return TotalVariationLoss()
     else:
         raise ValueError(f"Loss kind {loss_kind} not recognized")
