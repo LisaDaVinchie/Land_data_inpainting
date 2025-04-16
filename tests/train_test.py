@@ -11,7 +11,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from train import track_memory, change_dataset_idx, validate_paths, train_loop_extended, train_loop_minimal
 from CustomDataset import create_dataloaders
-from losses import PerPixelL1
+from losses import get_loss_function
 
 class TestTrainingFunctions(unittest.TestCase):
     def setUp(self):
@@ -78,7 +78,7 @@ class TestTrainingFunctions(unittest.TestCase):
         self.train_loader, self.test_loader = create_dataloaders(test_dataset, 0.8, batch_size=self.batch_size)
 
         # Use a real loss function and optimizer
-        self.loss_function = PerPixelL1()
+        self.loss_function = get_loss_function("per_pixel_mse")
         
     def test_track_memory(self):
         """Test that track_memory logs memory usage."""
