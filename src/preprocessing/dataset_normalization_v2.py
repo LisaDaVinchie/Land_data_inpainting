@@ -85,11 +85,14 @@ class MinMaxNormalization:
         """Denormalize the dataset using min-max denormalization.
 
         Args:s
-            images (th.Tensor): dataset to denormalize
-            minmax (list): min and max values used for normalization.
+            images (th.Tensor): dataset to denormalize, shape (batch_size, channels, height, width)
+            minmax (list): min and max values used for normalization, one per channel
 
         Returns:
-            th.Tensor: denormalized dataset
+            th.Tensor: denormalized dataset, shape (batch_size, channels, height, width)
+        
+        Raises:
+            ValueError: If min and max values are None
         """
         
         min_val = minmax[0]
@@ -105,6 +108,7 @@ class MinMaxNormalization:
         denorm_images = th.empty_like(images)
         
         diff = max_val - min_val
+        
         for channel in self.channels:
             denorm_images[:, channel, :, :] = images[:, channel, :, :] * diff[channel] + min_val[channel]
         
