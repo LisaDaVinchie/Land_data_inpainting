@@ -129,6 +129,31 @@ class TestTVLoss(unittest.TestCase):
         loss = self.tvloss(pred, target, masks)
         
         self.assertAlmostEqual(loss.item(), 2.0, places=4)
+    
+    def test_border_case(self):
+        """Test with partial masking"""
+        pred = th.tensor([[[
+            [1., 2., 3., 1.],
+            [4., 5., 6., 1.],
+            [7., 8., 9., 1.],
+            [1., 1., 1., 1.]
+        ]]])
+        target = th.tensor([[[
+            [2., 2., 2., 2.],
+            [2., 2., 2., 2.],
+            [2., 2., 2., 2.],
+            [2., 2., 2., 2.]
+        ]]])
+        masks = th.tensor([[[
+            [0., 1., 1., 1.],
+            [1., 1., 1., 1.],
+            [1., 1., 1., 1.],
+            [1., 1., 1., 1.]
+        ]]])
+        
+        loss = self.tvloss(pred, target, masks)
+        # (2 - 1 + 5 - 4 + 4 - 1 + 5 - 2) / 4 = 8 / 4 = 2
+        self.assertAlmostEqual(loss.item(), 2.0, places=4)
         
     def test_gradient_flow(self):
         """Verify gradients can flow back through the loss"""
