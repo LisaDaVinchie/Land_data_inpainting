@@ -14,16 +14,30 @@ class Test_simpleconv_model(unittest.TestCase):
     
     def setUp(self):
         """Create a temporary JSON file with reward parameters."""
+        
+        self.n_channels = 1
+        self.ncols = 64
+        self.nrows = 64
+        self.middle_channels = [64, 128, 256]
+        self.kernel_sizes = [3, 3, 3]
+        self.stride = [2, 2, 2]
+        self.padding = [1, 1, 1]
+        self.output_padding = [1, 1, 1]
+        
+        self.batch_size = 2
         self.model_params = {
             "simple_conv": {
-                "middle_channels": [64, 128, 256],
-                "kernel_size": [3, 3, 3],
-                "stride": [2, 2, 2],
-                "padding": [1, 1, 1],
-                "output_padding": [1, 1, 1]
+                "middle_channels": self.middle_channels,
+                "kernel_size": self.kernel_sizes,
+                "stride": self.stride,
+                "padding": self.padding,
+                "output_padding": self.output_padding
                 },  
             "dataset":{
-                "n_channels": 1
+                "dataset_kind": "test",
+                "test": {
+                    "n_channels": self.n_channels,
+                }
             }      
         }
         
@@ -36,7 +50,6 @@ class Test_simpleconv_model(unittest.TestCase):
         
         self.model = simple_conv(params_path=self.params_path)
         
-        self.batch_size = 2
         self.input_tensor = th.rand(self.batch_size, self.model.n_channels, 64, 64)
         
     
@@ -49,12 +62,12 @@ class Test_simpleconv_model(unittest.TestCase):
         # Test if the model initializes correctly
         
         # Check if the model has the correct attributes
-        self.assertEqual(self.model.n_channels, 1)
-        self.assertEqual(self.model.middle_channels, [64, 128, 256])
-        self.assertEqual(self.model.kernel_size, [3, 3, 3])
-        self.assertEqual(self.model.stride, [2, 2, 2])
-        self.assertEqual(self.model.padding, [1, 1, 1])
-        self.assertEqual(self.model.output_padding, [1, 1, 1])
+        self.assertEqual(self.model.n_channels, self.n_channels)
+        self.assertEqual(self.model.middle_channels, self.middle_channels)
+        self.assertEqual(self.model.kernel_size, self.kernel_sizes)
+        self.assertEqual(self.model.stride, self.stride)
+        self.assertEqual(self.model.padding, self.padding)
+        self.assertEqual(self.model.output_padding, self.output_padding)
         
     def test_forward_pass(self):
         """Test if the forward pass of the model works correctly"""

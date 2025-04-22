@@ -51,7 +51,7 @@ def initialize_model_and_dataset_kind(params_path: Path, model_kind: str) -> tup
     
     return model, dataset_kind
 class DINCAE_like(nn.Module):
-    def __init__(self, params_path: Path, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None, output_size: int = None):
+    def __init__(self, params_path: Path = None, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None, output_size: int = None):
         super(DINCAE_like, self).__init__()
         
         self.model_name: str = "DINCAE_like"
@@ -316,17 +316,18 @@ class DINCAE_pconvs(nn.Module):
         return dec5, dmask5
         
 class simple_conv(nn.Module):
-    def __init__(self, params_path: Path, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
+    def __init__(self, params_path: Path = None, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
         super(simple_conv, self).__init__()
-        model_params = load_config(params_path, ["dataset"]).get("dataset", {})
-        self.n_channels = n_channels if n_channels is not None else model_params.get(n_channels_string, 3)
         
-        model_params = load_config(params_path, ["simple_conv"]).get("simple_conv", {})
-        self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [10, 10, 10])
-        self.kernel_size = kernel_size if kernel_size is not None else model_params.get("kernel_size", [1, 1, 1])
-        self.stride = stride if stride is not None else model_params.get("stride", [7, 7, 7])
-        self.padding = padding if padding is not None else model_params.get("padding", [5, 5, 5])
-        self.output_padding = output_padding if output_padding is not None else model_params.get("output_padding", [5, 5, 5])
+        self.model_name: str = "simple_conv"
+        self.n_channels = n_channels
+        self.middle_channels = middle_channels
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.output_padding = output_padding
+        
+        self._load_configurations(params_path)
         
         
         # Encoder
@@ -347,6 +348,24 @@ class simple_conv(nn.Module):
             nn.ConvTranspose2d(self.middle_channels[0], self.n_channels, kernel_size=self.kernel_size[0], stride=self.stride[0], padding=self.padding[2], output_padding=self.output_padding[2]),  # 32x32 -> 64x64
             nn.Sigmoid()  # Output between 0 and 1
         )
+        
+    def _load_configurations(self, params_path):
+        if params_path is not None:
+            with open(params_path, 'r') as f:
+                params = json.load(f)
+    
+            dataset_kind = params["dataset"].get("dataset_kind", "temperature")
+            self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 3)
+            
+            self.middle_channels = params[self.model_name].get("middle_channels", [10, 10, 10])
+            self.kernel_size = params[self.model_name].get("kernel_size", [2, 2, 2])
+            self.stride = params[self.model_name].get("stride", [2, 2, 2])
+            self.padding = params[self.model_name].get("padding", [1, 1, 1])
+            self.output_padding = params[self.model_name].get("output_padding", [1, 1, 1])
+        
+        for var in [self.n_channels, self.middle_channels, self.kernel_size, self.stride, self.padding, self.output_padding]:
+            if var is None:
+                raise ValueError(f"Variable {var} is None. Please provide a value for it.")
 
     def forward(self, x: th.Tensor):
         encoded = self.encoder(x)
