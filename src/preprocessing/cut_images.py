@@ -219,20 +219,22 @@ def main():
 
     with open(params_path, 'r') as params_file:
         params = json.load(params_file)
-    
-    x_shape_raw = int(params["dataset"]["x_shape_raw"])
-    y_shape_raw = int(params["dataset"]["y_shape_raw"])
+        
     n_cutted_images = int(params["dataset"]["n_cutted_images"])
     cutted_nrows = int(params["dataset"]["cutted_nrows"])
     cutted_ncols = int(params["dataset"]["cutted_ncols"])
-    n_channels = int(params["dataset"]["n_channels"])
-    masked_channels = list(params["dataset"]["masked_channels"])
     nans_threshold = float(params["dataset"]["nans_threshold"])
     minimal_dataset = bool(params["dataset"]["minimal_dataset"])
     extended_dataset = bool(params["dataset"]["extended_dataset"])
     mask_kind = str(params["dataset"]["mask_kind"])
-    
     placeholder = params["training"]["placeholder"]
+    
+    
+    dataset_kind = str(params["dataset"]["dataset_kind"])
+    x_shape_raw = int(params["dataset"][dataset_kind]["x_shape_raw"])
+    y_shape_raw = int(params["dataset"][dataset_kind]["y_shape_raw"])
+    n_channels = int(params["dataset"][dataset_kind]["n_channels"])
+    masked_channels = list(params["dataset"][dataset_kind]["masked_channels"])
     
     if minimal_dataset == False and extended_dataset == False:
         raise ValueError("Both minimal_dataset and extended_dataset are False. At least one of them should be True.")
