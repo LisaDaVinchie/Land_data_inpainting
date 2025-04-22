@@ -2,7 +2,7 @@
     "training":{
         "train_perc": 0.8,
         "batch_size": 64,
-        "epochs": 3,
+        "epochs": 10,
         "learning_rate": 0.0001,
         "placeholder": 0.0,
         "optimizer_kind": "adam",
@@ -16,7 +16,7 @@
         "extended_dataset": false,
         "cutted_nrows": 128,
         "cutted_ncols": 128,
-        "n_cutted_images": 200,
+        "n_cutted_images": 5000,
         "nans_threshold": 0.3,
         "mask_kind": "square",
         "_possible_mask_kinds": ["square", "lines"],
