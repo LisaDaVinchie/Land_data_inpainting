@@ -8,6 +8,7 @@ import json
 import os
 import sys
 import math
+import pickle
 
 path_to_append = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(path_to_append)
@@ -96,7 +97,7 @@ class CutAndMaskImage:
                 nan_count = th.isnan(cutted_img).sum().item()
         return cutted_img
 
-    def generate_image_dataset(self, n_channels: int, mask_function, masked_channels_list: list, path_to_indices_map: dict, extended_data: bool, minimal_data: bool, placeholder: float = None) -> tuple[dict, dict, th.Tensor]:
+    def generate_image_dataset(self, n_channels: int, mask_function, masked_channels_list: list, path_to_indices_map: dict, placeholder: float = None) -> tuple[dict, dict, th.Tensor]:
         """Generate a dataset of masked images, inverse masked images and masks
 
         Args:
@@ -104,8 +105,6 @@ class CutAndMaskImage:
             mask_function: function used to generate the masks
             masked_channels_list (list): list of channels that should not be masked
             path_to_indices_map (dict): dictionary with the paths to the images as keys and the points as values
-            extended_data (bool): True if the extended dataset should be generated
-            minimal_data (bool): True if the minimal dataset should be generated
             placeholder (float): value to use as placeholder for masked pixels, None if the mean of the image should be used
 
         Returns:
@@ -114,13 +113,10 @@ class CutAndMaskImage:
         """
         
         # Initialize the two datasets
-        dataset_ext, dataset_min = None, None
-        if extended_data:
-            keys_ext = ["masked_images", "inverse_masked_images", "masks"]
-            dataset_ext = {cls: th.empty((self.n_cutted_images, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32) for cls in keys_ext}
-        if minimal_data:
-            keys_min = ["images", "masks"]
-            dataset_min = {cls: th.empty((self.n_cutted_images, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32) for cls in keys_min}
+        dataset = None
+        
+        dataset_keys = ["images", "masks"]
+        dataset = {cls: th.empty((self.n_cutted_images, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32) for cls in dataset_keys}
             
         nans_masks = th.ones((self.n_cutted_images, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32)
         
@@ -165,20 +161,12 @@ class CutAndMaskImage:
             masks = th.where(cutted_img_nans == 0, th.tensor(0, dtype=masks.dtype), masks)
             
             # Save the images to the minimal dataset, substituting the nans with the placeholder
-            if minimal_data:
-                dataset_min[keys_min[0]][idx_start:idx_end] = th.nan_to_num(cutted_imgs, nan=placeholder)
-                dataset_min[keys_min[1]][idx_start:idx_end] = masks
-            
-            # Save the images to the extended dataset
-            if extended_data:
-                masked_images, inverse_masked_images = mask_inversemask_image(cutted_imgs, masks, placeholder)
-                dataset_ext[keys_ext[0]][idx_start:idx_end] = masked_images
-                dataset_ext[keys_ext[1]][idx_start:idx_end] = inverse_masked_images
-                dataset_ext[keys_ext[2]][idx_start:idx_end] = masks
+            dataset[dataset_keys[0]][idx_start:idx_end] = th.nan_to_num(cutted_imgs, nan=placeholder)
+            dataset[dataset_keys[1]][idx_start:idx_end] = masks
             
             idx_start = idx_end
             
-        return dataset_ext, dataset_min, nans_masks
+        return dataset, nans_masks
 
 def check_dirs_existance(dirs: list[Path]):
     """Check if the directories exist
@@ -208,14 +196,13 @@ def main():
         json_paths = json.load(paths_file)
         
     processed_data_dir = Path(json_paths["data"]["processed_data_dir"])
-    next_extended_dataset_path = Path(json_paths["data"]["next_extended_dataset_path"])
     next_minimal_dataset_path = Path(json_paths["data"]["next_minimal_dataset_path"])
     dataset_specs_path = Path(json_paths["data"]["dataset_specs_path"])
     next_nans_masks_path = Path(json_paths["data"]["next_nans_masks_path"])
     next_minmax_path = Path(json_paths["data"]["next_minmax_path"])
     
     # Check if the directories exist
-    check_dirs_existance([processed_data_dir, next_extended_dataset_path.parent, next_minimal_dataset_path.parent, dataset_specs_path.parent, next_minmax_path.parent])
+    check_dirs_existance([processed_data_dir, next_minimal_dataset_path.parent, dataset_specs_path.parent, next_minmax_path.parent])
 
     with open(params_path, 'r') as params_file:
         params = json.load(params_file)
@@ -224,8 +211,6 @@ def main():
     cutted_nrows = int(params["dataset"]["cutted_nrows"])
     cutted_ncols = int(params["dataset"]["cutted_ncols"])
     nans_threshold = float(params["dataset"]["nans_threshold"])
-    minimal_dataset = bool(params["dataset"]["minimal_dataset"])
-    extended_dataset = bool(params["dataset"]["extended_dataset"])
     mask_kind = str(params["dataset"]["mask_kind"])
     placeholder = params["training"]["placeholder"]
     
@@ -235,9 +220,6 @@ def main():
     y_shape_raw = int(params["dataset"][dataset_kind]["y_shape_raw"])
     n_channels = int(params["dataset"][dataset_kind]["n_channels"])
     masked_channels = list(params["dataset"][dataset_kind]["masked_channels"])
-    
-    if minimal_dataset == False and extended_dataset == False:
-        raise ValueError("Both minimal_dataset and extended_dataset are False. At least one of them should be True.")
 
     if placeholder == "false":
         placeholder = None
@@ -271,25 +253,24 @@ def main():
 
     d_time = time() 
     # Generate the dataset
-    dataset_ext, dataset_min, nans_masks = cut_class.generate_image_dataset(n_channels=n_channels,
+    dataset, nans_masks = cut_class.generate_image_dataset(n_channels=n_channels,
                                                     mask_function=mask_function, masked_channels_list=masked_channels,
-                                                    path_to_indices_map=path_to_indices, minimal_data=minimal_dataset,
-                                                    extended_data=extended_dataset, placeholder=placeholder)
+                                                    path_to_indices_map=path_to_indices, placeholder=placeholder)
     print(f"Generated the dataset in {time() - d_time} seconds\n", flush=True)
     
     norm_class = MinMaxNormalization(batch_size=1000)
-    if dataset_ext is not None:
-        th.save(dataset_ext, next_extended_dataset_path)
-        print(f"Saved the extended dataset to {next_extended_dataset_path}\n", flush=True)
-    if dataset_min is not None:
-        dataset_min["images"], minmax = norm_class.normalize(dataset_min["images"], nans_masks)
-        th.save(dataset_min, next_minimal_dataset_path)
+
+    if dataset is not None:
+        dataset["images"], minmax = norm_class.normalize(dataset["images"], nans_masks)
+        
+        pickle.HIGHEST_PROTOCOL = 4
+        th.save(dataset, next_minimal_dataset_path, _use_new_zipfile_serialization=False)
         print(f"Saved the minimal dataset to {next_minimal_dataset_path}\n", flush=True)
         th.save(minmax, next_minmax_path)
         print(f"Saved the minmax values to {next_minmax_path}\n", flush=True)
         
-    th.save(nans_masks, next_nans_masks_path)
-    print(f"Saved the nans masks to {next_nans_masks_path}\n", flush=True)
+        th.save(nans_masks, next_nans_masks_path)
+        print(f"Saved the nans masks to {next_nans_masks_path}\n", flush=True)
 
     # Extract the "dataset" and "mask" sections
     dataset_section = params["dataset"]
