@@ -166,7 +166,7 @@ class DINCAE_like(nn.Module):
         
         return dec5
 class DINCAE_pconvs(nn.Module):
-    def __init__(self, params_path: Path = None, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None, output_size: int = None):
+    def __init__(self, params_path: Path = None, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None):
         super(DINCAE_pconvs, self).__init__()
         
         self.model_name = "DINCAE_pconvs"
@@ -179,9 +179,10 @@ class DINCAE_pconvs(nn.Module):
         self.kernel_sizes = kernel_sizes
         self.pooling_sizes = pooling_sizes
         self.interp_mode = interp_mode
-        self.output_size = output_size
         
         self._load_configurations(params_path)
+        
+        self.output_size = self.n_channels
         
         self.n_layers = len(self.middle_channels)
         self.w, self.h = self._calculate_sizes()
@@ -217,7 +218,7 @@ class DINCAE_pconvs(nn.Module):
         self.pdeconv4 = PartialConv2d(self.middle_channels[1], self.middle_channels[0], kernel_size=self.kernel_sizes[1], padding='same')
         
         self.interp5 = nn.Upsample(size=(self.image_nrows, self.image_ncols), mode=self.interp_mode)
-        self.pdeconv5 = PartialConv2d(self.middle_channels[0], self.output_size, kernel_size=self.kernel_sizes[0], padding='same')
+        self.pdeconv5 = PartialConv2d(self.middle_channels[0], self.n_channels, kernel_size=self.kernel_sizes[0], padding='same')
 
     def _load_configurations(self, params_path):
         if params_path is not None:
@@ -232,10 +233,9 @@ class DINCAE_pconvs(nn.Module):
             self.kernel_sizes = params[self.model_name].get("kernel_sizes", [2, 2, 2, 2, 2])
             self.pooling_sizes = params[self.model_name].get("pooling_sizes", [7, 7, 7, 7, 7])
             self.interp_mode = params[self.model_name].get("interp_mode", "bilinear")
-            self.output_size = params[self.model_name].get("output_size", 2)
             
         
-        for var in [self.n_channels, self.image_nrows, self.image_ncols, self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode, self.output_size]:
+        for var in [self.n_channels, self.image_nrows, self.image_ncols, self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode]:
             if var is None:
                 raise ValueError(f"Variable {var} is None. Please provide a value for it.")
         
