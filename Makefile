@@ -5,9 +5,11 @@ DATA_DIR := $(BASE_DIR)/data
 SRC_DIR := $(BASE_DIR)/src
 FIG_DIR := $(BASE_DIR)/figs
 TEST_DIR := $(BASE_DIR)/tests
+RAW_DATA_DIR := $(DATA_DIR)/raw
 
 PREPROCESSING_DIR := $(SRC_DIR)/preprocessing
 
+PROCESSED_DATA_DIR := $(DATA_DIR)/processed/biochemistry
 PROCESSED_DATA_EXT := ".pt"
 
 RESULTS_DIR := $(DATA_DIR)/results
@@ -84,8 +86,8 @@ config:
 	@echo "Storing paths to json..."
 	@echo "{" > $(PATHS_FILE)
 	@echo "    \"data\": {" >> $(PATHS_FILE)
-	@echo "        \"raw_data_dir\": \"$(DATA_DIR)/raw\"," >> $(PATHS_FILE)
-	@echo "        \"processed_data_dir\": \"$(DATA_DIR)/processed/\"," >> $(PATHS_FILE)
+	@echo "        \"raw_data_dir\": \"$(RAW_DATA_DIR)\"," >> $(PATHS_FILE)
+	@echo "        \"processed_data_dir\": \"$(PROCESSED_DATA_DIR)\"," >> $(PATHS_FILE)
 	@echo "        \"processed_data_ext\": \"$(PROCESSED_DATA_EXT)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_dir\": \"$(MASKS_DIR)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_basename\": \"$(MASKS_BASENAME)\"," >> $(PATHS_FILE)
