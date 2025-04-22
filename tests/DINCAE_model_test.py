@@ -14,18 +14,30 @@ class Test_DINCAE_model(unittest.TestCase):
     
     def setUp(self):
         """Create a temporary JSON file with parameters."""
+        self.middle_channels = [16, 30, 58, 110, 209]
+        self.kernel_sizes = [3, 3, 3, 3, 3]
+        self.pooling_sizes = [2, 2, 2, 2, 2]
+        self.interp_mode = "bilinear"
+        self.nrows = 168
+        self.ncols = 144
+        self.n_channels = 10
+        
+        self.batch_size = 32
         self.model_params = {
+            "dataset": {
+                "cutted_nrows": self.nrows,
+                "cutted_ncols": self.ncols,
+                "dataset_kind": "test",
+                "test": {
+                    "n_channels": self.n_channels,
+                }
+            },
             "DINCAE_like": {
-                "middle_channels": [16, 30, 58, 110, 209],
-                "kernel_sizes": [3, 3, 3, 3, 3],
-                "pooling_sizes": [2, 2, 2, 2, 2],
-                "interp_mode": "bilinear"
-                },  
-            "dataset":{
-                "n_channels": 10,
-                "cutted_nrows": 168,
-                "cutted_ncols": 144
-            }      
+                "middle_channels": self.middle_channels,
+                "kernel_sizes": self.kernel_sizes,
+                "pooling_sizes": self.pooling_sizes,
+                "interp_mode": self.interp_mode
+            }
         }
         
         
@@ -37,9 +49,6 @@ class Test_DINCAE_model(unittest.TestCase):
         
         self.model = DINCAE_like(params_path=self.params_path)
         
-        self.batch_size = 32
-        self.nrows = 168
-        self.ncols = 144
         self.input_tensor = th.rand(self.batch_size, self.model.n_channels, self.nrows, self.ncols)
         
     
@@ -52,13 +61,13 @@ class Test_DINCAE_model(unittest.TestCase):
         # Test if the model initializes correctly
         
         # Check if the model has the correct attributes
-        self.assertEqual(self.model.n_channels, 10)
-        self.assertEqual(self.model.middle_channels, [16, 30, 58, 110, 209])
-        self.assertEqual(self.model.kernel_sizes, [3, 3, 3, 3, 3])
-        self.assertEqual(self.model.pooling_sizes, [2, 2, 2, 2, 2])
-        self.assertEqual(self.model.image_nrows, 168)
-        self.assertEqual(self.model.image_ncols, 144)
-        self.assertEqual(self.model.interp_mode, "bilinear")
+        self.assertEqual(self.model.n_channels, self.n_channels)
+        self.assertEqual(self.model.middle_channels, self.middle_channels)
+        self.assertEqual(self.model.kernel_sizes, self.kernel_sizes)
+        self.assertEqual(self.model.pooling_sizes, self.pooling_sizes)
+        self.assertEqual(self.model.image_nrows, self.nrows)
+        self.assertEqual(self.model.image_ncols, self.ncols)
+        self.assertEqual(self.model.interp_mode, self.interp_mode)
         
     def test_forward_pass(self):
         """Test if the forward pass of the model works correctly"""
