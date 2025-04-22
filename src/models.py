@@ -314,7 +314,7 @@ class DINCAE_pconvs(nn.Module):
         dec5 = self.activation(dec5)
         
         return dec5, dmask5
-        
+  
 class simple_conv(nn.Module):
     def __init__(self, params_path: Path = None, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
         super(simple_conv, self).__init__()
