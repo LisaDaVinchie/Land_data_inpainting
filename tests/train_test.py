@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import patch
 import torch as th
 from pathlib import Path
-from models import DINCAE_pconvs, simple_conv
 import json
 from tempfile import NamedTemporaryFile
 
@@ -10,6 +9,7 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from train import track_memory, change_dataset_idx, validate_paths, train_loop_extended, train_loop_minimal
+from models import simple_conv, DINCAE_pconvs
 from CustomDataset import create_dataloaders
 from losses import get_loss_function
 
@@ -23,17 +23,27 @@ class TestTrainingFunctions(unittest.TestCase):
         self.nrows = 64
         self.epochs = 3
         
+        self.middle_channels_e = [12, 24, 36]
+        self.kernel_sizes_e = [3, 3, 3]
+        self.stride_e = [2, 2, 2]
+        self.padding_e = [1, 1, 1]
+        self.output_padding_e = [1, 1, 1]
+        
+        
         self.extended_model_params = {
             "simple_conv": {
-                "middle_channels": [12, 24, 36],
-                "kernel_size": [3, 3, 3],
-                "stride": [2, 2, 2],
-                "padding": [1, 1, 1],
-                "output_padding": [1, 1, 1]
+                "middle_channels": self.middle_channels_e,
+                "kernel_size": self.kernel_sizes_e,
+                "stride": self.stride_e,
+                "padding": self.padding_e,
+                "output_padding": self.output_padding_e
                 },  
-            "dataset":{
-                "n_channels": self.n_channels
-            }      
+            "dataset": {
+                "dataset_kind": "test",
+                "test": {
+                    "n_channels": self.n_channels,
+                }
+            }
         }
         
         
@@ -47,9 +57,12 @@ class TestTrainingFunctions(unittest.TestCase):
         
         self.reduced_model_params = {
             "dataset": {
-                "n_channels": self.n_channels,
                 "cutted_nrows": self.nrows,
-                "cutted_ncols": self.ncols
+                "cutted_ncols": self.ncols,
+                "dataset_kind": "test",
+                "test": {
+                    "n_channels": self.n_channels,
+                }
             },
             "DINCAE_pconvs": {
                 "middle_channels": [16, 16, 16, 16, 16],
@@ -60,7 +73,7 @@ class TestTrainingFunctions(unittest.TestCase):
         }
         
         self.temp_json = NamedTemporaryFile(delete=False, mode='w')
-        json.dump(self.extended_model_params, self.temp_json)
+        json.dump(self.reduced_model_params, self.temp_json)
         self.temp_json.close()  # Close the file to ensure it's written and available
         self.reduced_params_path = Path(self.temp_json.name).resolve()  # Use absolute path
         
