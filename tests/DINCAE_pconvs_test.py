@@ -33,9 +33,12 @@ class TestSimplePartialConv(unittest.TestCase):
         
         self.params = {
             "dataset": {
-                "n_channels": self.n_channels,
                 "cutted_nrows": self.nrows,
-                "cutted_ncols": self.ncols
+                "cutted_ncols": self.ncols,
+                "dataset_kind": "test",
+                "test": {
+                    "n_channels": self.n_channels,
+                }
             },
             "DINCAE_pconvs": {
                 "middle_channels": self.middle_channels,
@@ -64,6 +67,8 @@ class TestSimplePartialConv(unittest.TestCase):
 
         # Check that the network has the correct attributes
         self.assertEqual(self.model.n_channels, self.n_channels)
+        self.assertEqual(self.model.image_nrows, self.nrows)
+        self.assertEqual(self.model.image_ncols, self.ncols)
         self.assertEqual(self.model.middle_channels, self.middle_channels)
         self.assertEqual(self.model.kernel_sizes, self.kernel_sizes)
         self.assertEqual(self.model.pooling_sizes, self.pooling_sizes)
