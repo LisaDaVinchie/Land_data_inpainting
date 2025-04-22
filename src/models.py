@@ -96,6 +96,35 @@ class DINCAE_like(nn.Module):
         self.deconv4 = nn.Conv2d(self.middle_channels[1], self.middle_channels[0], self.kernel_sizes[1], padding='same')
         self.interp5 = nn.Upsample(size=(self.image_nrows, self.image_ncols), mode=self.interp_mode)
         self.deconv5 = nn.Conv2d(self.middle_channels[0], self.output_size, self.kernel_sizes[0], padding='same')
+        
+    def _load_configurations(self, params_path, n_channels, image_nrows, image_ncols, middle_channels, kernel_sizes, pooling_sizes, interp_mode, output_size):
+        if params_path is not None:
+            with open(params_path, 'r') as f:
+                params = json.load(f)
+            self.image_nrows = params["dataset"].get(image_nrows_string, 64)
+            self.image_ncols = params["dataset"].get(image_ncols_string, 64)
+            dataset_kind = params["dataset"].get("dataset_kind", "temperature")
+            self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 3)
+            
+            self.middle_channels = params[self.model_name].get("middle_channels", [10, 10, 10, 10, 10])
+            self.kernel_sizes = params[self.model_name].get("kernel_sizes", [2, 2, 2, 2, 2])
+            self.pooling_sizes = params[self.model_name].get("pooling_sizes", [7, 7, 7, 7, 7])
+            self.interp_mode = params[self.model_name].get("interp_mode", "bilinear")
+            self.output_size = params[self.model_name].get("output_size", 2)
+        else:
+            self.n_channels = n_channels
+            self.image_nrows = image_nrows
+            self.image_ncols = image_ncols
+            
+            self.middle_channels = middle_channels
+            self.kernel_sizes = kernel_sizes
+            self.pooling_sizes = pooling_sizes
+            self.interp_mode = interp_mode
+            self.output_size = output_size
+        
+        for var in [self.n_channels, self.image_nrows, self.image_ncols, self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode, self.output_size]:
+            if var is None:
+                raise ValueError(f"Variable {var} is None. Please provide a value for it.")
 
     def _calculate_sizes(self):
         w = []
@@ -137,7 +166,18 @@ class DINCAE_pconvs(nn.Module):
         super(DINCAE_pconvs, self).__init__()
         
         self.model_name = "DINCAE_pconvs"
-        self._load_configurations(params_path, n_channels, image_nrows, image_ncols, middle_channels, kernel_sizes, pooling_sizes, interp_mode, output_size)
+        
+        self.n_channels = n_channels
+        self.image_nrows = image_nrows
+        self.image_ncols = image_ncols
+        
+        self.middle_channels = middle_channels
+        self.kernel_sizes = kernel_sizes
+        self.pooling_sizes = pooling_sizes
+        self.interp_mode = interp_mode
+        self.output_size = output_size
+        
+        self._load_configurations(params_path)
         
         self.n_layers = len(self.middle_channels)
         self.w, self.h = self._calculate_sizes()
@@ -175,7 +215,7 @@ class DINCAE_pconvs(nn.Module):
         self.interp5 = nn.Upsample(size=(self.image_nrows, self.image_ncols), mode=self.interp_mode)
         self.pdeconv5 = PartialConv2d(self.middle_channels[0], self.output_size, kernel_size=self.kernel_sizes[0], padding='same')
 
-    def _load_configurations(self, params_path, n_channels, image_nrows, image_ncols, middle_channels, kernel_sizes, pooling_sizes, interp_mode, output_size):
+    def _load_configurations(self, params_path):
         if params_path is not None:
             with open(params_path, 'r') as f:
                 params = json.load(f)
@@ -189,16 +229,7 @@ class DINCAE_pconvs(nn.Module):
             self.pooling_sizes = params[self.model_name].get("pooling_sizes", [7, 7, 7, 7, 7])
             self.interp_mode = params[self.model_name].get("interp_mode", "bilinear")
             self.output_size = params[self.model_name].get("output_size", 2)
-        else:
-            self.n_channels = n_channels
-            self.image_nrows = image_nrows
-            self.image_ncols = image_ncols
             
-            self.middle_channels = middle_channels
-            self.kernel_sizes = kernel_sizes
-            self.pooling_sizes = pooling_sizes
-            self.interp_mode = interp_mode
-            self.output_size = output_size
         
         for var in [self.n_channels, self.image_nrows, self.image_ncols, self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode, self.output_size]:
             if var is None:
