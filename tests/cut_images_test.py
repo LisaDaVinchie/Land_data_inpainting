@@ -53,31 +53,31 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             dummy_date = f"{years.item()}_{months.item()}_{days.item()}"
             th.save(dummy_image, self.processed_data_dir / f"{dummy_date}.pt")
             
+        self.mask_function = SquareMask(image_nrows=self.cutted_nrows,
+                                   image_ncols=self.cutted_ncols,
+                                   mask_percentage=mask_percentage)
+            
         self.cut_class = CutAndMaskImage(
             original_nrows=self.x_shape_raw,
             original_ncols=self.y_shape_raw,
             final_nrows=self.cutted_nrows,
             final_ncols=self.cutted_ncols,
             nans_threshold=0.5,
-            n_cutted_images=self.n_cutted_images)
+            n_cutted_images=self.n_cutted_images,
+            mask_function=self.mask_function)
         
         # Select random points and map them to images
         random_points = self.cut_class.select_random_points(n_points=self.n_cutted_images)
         
         processed_images_paths = list(self.processed_data_dir.glob("*.pt"))
         self.path_to_indices = self.cut_class.map_random_points_to_images(processed_images_paths, random_points)
-        
-        self.mask_function = SquareMask(image_nrows=self.cutted_nrows,
-                                   image_ncols=self.cutted_ncols,
-                                   mask_percentage=mask_percentage)
 
         # Generate the dataset
         self.dataset, self.nans_mask = self.cut_class.generate_image_dataset(
                         n_channels=self.n_channels,
-                        mask_function=self.mask_function,
                         masked_channels_list=self.masked_channels,
                         path_to_indices_map=self.path_to_indices,
-                        placeholder=self.placeholder)
+                        placeholder=self.placeholder, same_mask=True)
 
     def tearDown(self):
         """Clean up temporary directory after tests."""
@@ -135,6 +135,25 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             
             # Check that the mask covers all the nans
             self.assertTrue(th.all(mask[nan_mask == 0] == 0), "Mask does not cover all nans")
+            
+    def test_same_mask(self):
+        """Test that the same mask is used for all images."""
+        # Check that the masks are the same for all images
+        keys = list(self.dataset.keys())
+        masks = self.dataset[keys[1]]
+        
+        for i in range(1, self.n_cutted_images):
+            image_mask = masks[i, self.masked_channels[0], :, :]
+            for channel in range(0, self.n_channels):
+                # Check that the masked channels are the same
+                if channel in self.masked_channels:
+                    self.assertTrue(th.all(image_mask == masks[i, channel, :, :]), f"Masked channels are not the same for each masked channel")
+                else:
+                    # Check that the non masked channels are not masked
+                    self.assertTrue(th.all(masks[i, channel, :, :] == 1), f"Non masked channel has 0s in the mask")
+            
+            
+    
         
 if __name__ == "__main__":
     unittest.main()
