@@ -9,10 +9,12 @@ import os
 import sys
 import math
 import pickle
+from typing import Type
+# from concurrent.futures import ThreadPoolExecutor
 
 path_to_append = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(path_to_append)
-from preprocessing.mask_data import mask_inversemask_image, SquareMask, LinesMask, initialize_mask_kind
+from preprocessing.mask_data import initialize_mask_kind
 from preprocessing.dataset_normalization_v2 import MinMaxNormalization
 
 class CutAndMaskImage:
@@ -23,7 +25,7 @@ class CutAndMaskImage:
         - save the dataset and masks
         - save info regarding the dataset, such as the number of images, the size of the images, etc.
     """
-    def __init__(self, original_nrows: int, original_ncols: int, final_nrows: int, final_ncols: int, nans_threshold: float, n_cutted_images: int):
+    def __init__(self, original_nrows: int, original_ncols: int, final_nrows: int, final_ncols: int, nans_threshold: float, n_cutted_images: int, mask_function: Type =None):
         """Initalize the class with the parameters needed to cut the images and generate the dataset
 
         Args:
@@ -33,6 +35,7 @@ class CutAndMaskImage:
             final_ncols (int): number of columns in the cutted image
             nans_threshold (float): maximum fraction of nans allowed in the cutted image. Must be between 0 and 1
             n_cutted_images (int): number of cutted images to generate
+            mask_function (Type): class used to generate the masks, with .mask() method. Defaults to None.
         """
         self.original_nrows = original_nrows
         self.original_ncols = original_ncols
@@ -40,6 +43,9 @@ class CutAndMaskImage:
         self.final_ncols = final_ncols
         self.nans_threshold = nans_threshold
         self.n_cutted_images = n_cutted_images
+        self.mask_function = mask_function
+        if self.mask_function is not None and not hasattr(self.mask_function, 'mask'):
+            raise AttributeError("The provided mask_function does not have a 'mask' method.")
 
 
     def select_random_points(self, n_points: int) -> th.Tensor:
@@ -96,16 +102,42 @@ class CutAndMaskImage:
                 cutted_img = image[:, index[0]:index[0] + self.final_nrows, index[1]:index[1] + self.final_ncols]
                 nan_count = th.isnan(cutted_img).sum().item()
         return cutted_img
+    
+    def batch_cut_images(self, image: th.Tensor, indices: list, threshold: int) -> th.Tensor:
+        """Vectorized version of cut_valid_image for multiple indices"""
+        print(indices)
+        indices_tensor = th.cat([th.tensor(idx).unsqueeze(0) for idx in indices], dim=0)  # Flatten into a single tensor
+        windows = indices_tensor.unsqueeze(1).expand(-1, 2, -1)  # Shape: [n_indices, 2, 2]
+        windows[..., 0] += self.final_nrows  # Add row offsets
+        windows[..., 1] += self.final_ncols   # Add col offsets
+        
+        # Batched slicing
+        cuts = image[:, windows[:, 0, 0]:windows[:, 0, 1], 
+                    windows[:, 1, 0]:windows[:, 1, 1]]
+        
+        # Vectorized NaN check
+        nan_counts = th.isnan(cuts).sum(dim=(1,2,3))
+        valid = nan_counts <= threshold
+        
+        # Only re-cut invalid slices
+        while not valid.all():
+            bad_idx = ~valid
+            new_indices = self.select_random_points(bad_idx.sum().item())
+            new_cuts = self.batch_cut_images(image, new_indices, threshold)
+            cuts[bad_idx] = new_cuts[bad_idx]
+            valid[bad_idx] = True
+            
+        return cuts
 
-    def generate_image_dataset(self, n_channels: int, mask_function, masked_channels_list: list, path_to_indices_map: dict, placeholder: float = None) -> tuple[dict, dict, th.Tensor]:
+    def generate_image_dataset(self, n_channels: int, masked_channels_list: list, path_to_indices_map: dict, placeholder: float = None, same_mask: bool = False) -> tuple[dict, dict, th.Tensor]:
         """Generate a dataset of masked images, inverse masked images and masks
 
         Args:
             n_channels (int): final number of channels in the image
-            mask_function: function used to generate the masks
             masked_channels_list (list): list of channels that should not be masked
             path_to_indices_map (dict): dictionary with the paths to the images as keys and the points as values
             placeholder (float): value to use as placeholder for masked pixels, None if the mean of the image should be used
+            same_mask (bool): if True, use the same mask for all the masked channels of the image, otherwise use a different mask for each channel. Defaults to False.
 
         Returns:
             tuple: dictionary with the masked images, inverse masked images and masks as keys and the corresponding tensors as values
@@ -133,8 +165,15 @@ class CutAndMaskImage:
         n_original_channels = n_channels - 1 # The last channel is the time layer
         n_pixels = self.final_nrows * self.final_ncols * n_original_channels # number of pixels in the raw image
         threshold = self.nans_threshold * n_pixels # threshold of nans in the image
+        
+        image_cache = {}
         for path, indices in path_to_indices_map.items():
-            image = th.load(path)
+            
+            if path not in image_cache:
+                image = th.load(path)
+                image_cache[path] = image
+            else:
+                image = image_cache[path]
             n_indices = len(indices)
             idx_end = idx_start + n_indices
             
@@ -143,7 +182,19 @@ class CutAndMaskImage:
             encoded_time = math.cos(math.pi * days_from_inital_date / interval)
             
             # Generate the cutted images, adding the time layer
-            cutted_imgs = th.stack([self.cut_valid_image(image, index, threshold) for index in indices], dim=0)
+            # cutted_imgs = self.batch_cut_images(image, indices, threshold)
+            
+            with th.no_grad():
+                cutted_imgs = th.stack([self.cut_valid_image(image, index, threshold) for index in indices], dim=0)
+                # cutted_imgs = self.batch_cut_images(image, indices, threshold)
+            # with ThreadPoolExecutor(max_workers=4) as executor:
+            #     cutted_imgs = th.stack(
+            #         list(executor.map(
+            #             lambda idx: self.cut_valid_image(image, idx, threshold),
+            #             indices
+            #         )),
+            #         dim=0
+            #     )
             
             time_layers = th.ones((n_indices, 1, self.final_nrows, self.final_ncols), dtype=th.float32) * encoded_time
             cutted_imgs = th.cat((cutted_imgs, time_layers), dim=1)
@@ -154,8 +205,13 @@ class CutAndMaskImage:
             
             # Create square masks. 0 where the values are masked, 1 where the values are not masked
             masks = th.ones((n_indices, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32)
-            for mc in masked_channels_list:
-                masks[:, mc, :, :] = mask_function.mask()
+            
+            if same_mask:
+                image_mask = self.mask_function.mask()
+                masks[:, masked_channels_list, :, :] = image_mask
+            else:
+                all_masks = th.stack([self.mask_function.mask() for _ in masked_channels_list])
+                masks[:, masked_channels_list] = all_masks.permute(1,0,2,3)  # [n_masks, H,W] -> [1, n_masks, H,W]
             
             # Set masks to 0 where the nan mask is 0
             masks = th.where(cutted_img_nans == 0, th.tensor(0, dtype=masks.dtype), masks)
@@ -212,6 +268,7 @@ def main():
     cutted_ncols = int(params["dataset"]["cutted_ncols"])
     nans_threshold = float(params["dataset"]["nans_threshold"])
     mask_kind = str(params["dataset"]["mask_kind"])
+    same_mask = str(params["dataset"]["same_mask"]).lower() == "true"
     placeholder = params["training"]["placeholder"]
     
     
@@ -240,7 +297,8 @@ def main():
     
     cut_class = CutAndMaskImage(original_nrows=x_shape_raw, original_ncols=y_shape_raw,
                                 final_nrows=cutted_nrows, final_ncols=cutted_ncols,
-                                nans_threshold=nans_threshold, n_cutted_images=n_cutted_images)
+                                nans_threshold=nans_threshold, n_cutted_images=n_cutted_images,
+                                mask_function=mask_function)
 
     # Select some random points, to use as centers for the cutted images
     idx_time = time()
@@ -254,8 +312,8 @@ def main():
     d_time = time() 
     # Generate the dataset
     dataset, nans_masks = cut_class.generate_image_dataset(n_channels=n_channels,
-                                                    mask_function=mask_function, masked_channels_list=masked_channels,
-                                                    path_to_indices_map=path_to_indices, placeholder=placeholder)
+                                                           masked_channels_list=masked_channels, path_to_indices_map=path_to_indices,
+                                                           placeholder=placeholder, same_mask=same_mask)
     print(f"Generated the dataset in {time() - d_time} seconds\n", flush=True)
     
     norm_class = MinMaxNormalization(batch_size=1000)
