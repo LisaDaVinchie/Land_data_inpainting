@@ -80,7 +80,7 @@ PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
 
-.PHONY: config preprocess cut train bottleneck test plot clean_data help
+.PHONY: config preprocess cut bcut train btrain test plot clean_data help
 
 config:
 	@echo "Storing paths to json..."
@@ -121,8 +121,11 @@ cut: config
 train: config
 	@$(PYTHON) $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
-bottleneck: config
+btrain: config
 	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
+bcut: config
+	@$(PYTHON) -m torch.utils.bottleneck $(PREPROCESSING_DIR)/cut_images.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 plot:config
 	@echo "Plotting results..."
