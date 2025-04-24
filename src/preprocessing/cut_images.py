@@ -210,8 +210,13 @@ class CutAndMaskImage:
                 image_mask = self.mask_function.mask()
                 masks[:, masked_channels_list, :, :] = image_mask
             else:
-                all_masks = th.stack([self.mask_function.mask() for _ in masked_channels_list])
-                masks[:, masked_channels_list] = all_masks.permute(1,0,2,3)  # [n_masks, H,W] -> [1, n_masks, H,W]
+                for mc in masked_channels_list:
+                    # Generate the mask for each channel
+                    masks[:, mc, :, :] = self.mask_function.mask()
+                # all_masks = th.stack([self.mask_function.mask() for _ in masked_channels_list])
+                
+                # print("all_masks shape: ", all_masks.shape)
+                # masks[:, masked_channels_list] = all_masks.permute(1,0,2,3)  # [n_masks, H,W] -> [1, n_masks, H,W]
             
             # Set masks to 0 where the nan mask is 0
             masks = th.where(cutted_img_nans == 0, th.tensor(0, dtype=masks.dtype), masks)
