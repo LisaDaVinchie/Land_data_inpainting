@@ -38,6 +38,7 @@ def main():
     loss_kind = params["training"]["loss_kind"]
     model_kind = params["training"]["model_kind"]
     placeholder = params["training"]["placeholder"]
+    nan_placeholder = params["dataset"]["nan_placeholder"]
     print("Parameters imported\n", flush = True)
     
     with open(paths_path, 'r') as f:
@@ -74,7 +75,7 @@ def main():
     print("Dataloaders created\n", flush = True)
     track_memory("After creating dataloaders")
     
-    loss_function = get_loss_function(loss_kind)
+    loss_function = get_loss_function(loss_kind, nan_placeholder)
     
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
