@@ -42,8 +42,8 @@ class PerPixelMSE(nn.Module):
         Returns:
             th.Tensor: per-pixel loss
         """
-        
-        n_valid_pixels = (~masks.bool()).sum().float() # count the number of masked (0) pixels, by inverting the mask
+        bool_masks = masks.bool()
+        n_valid_pixels = (~bool_masks).sum().float() # count the number of masked (0) pixels, by inverting the mask
         
         # Create a mask that is 1 where the target is the NaN placeholder and 0 otherwise
         # This is used to count the number of NaN pixels
@@ -54,7 +54,7 @@ class PerPixelMSE(nn.Module):
             return 0
         
         diff = (prediction - target) ** 2 # Calculate the squared difference, for each pixel
-        masked_diff = diff.masked_fill(masks.bool(), 0.0) # Set the masked pixels to 0 where the mask is 1, i.e. where the pixel is not masked
+        masked_diff = diff.masked_fill(bool_masks, 0.0) # Set the masked pixels to 0 where the mask is 1, i.e. where the pixel is not masked
         return masked_diff.sum() / n_valid_pixels # Return the mean of the squared differences over the number of valid pixels
 
 class PerPixelL1(nn.Module):
@@ -76,7 +76,9 @@ class PerPixelL1(nn.Module):
             th.Tensor: per-pixel loss
         """
         
-        n_valid_pixels = (~masks.bool()).sum().float()
+        bool_masks = masks.bool()
+        
+        n_valid_pixels = (~bool_masks).sum().float()
         n_nans = th.where(target == self.nan_placeholder, th.ones_like(target), th.zeros_like(target)).sum().float() # count the number of NaN pixels
         
         n_valid_pixels -= n_nans # Subtract the number of NaN pixels from the number of valid pixels
@@ -84,7 +86,7 @@ class PerPixelL1(nn.Module):
             return th.tensor(0.0, requires_grad=True)
         
         diff = th.abs(prediction - target)
-        masked_diff = diff.masked_fill(masks.bool(), 0.0)
+        masked_diff = diff.masked_fill(bool_masks, 0.0)
         return masked_diff.sum() / n_valid_pixels
 
 class TotalVariationLoss(nn.Module):
@@ -108,15 +110,15 @@ class TotalVariationLoss(nn.Module):
         # Dilate the mask by 1 pixel
         inv_dilated_mask = self._dilate_mask(masks, 1, True)
         # Get a mask that is 1 where the image is masked and 0 otherwise
-        
-        # Exclude NaN pixels from the mask
-        inv_dilated_mask = self._exclude_nans_from_mask(prediction, inv_dilated_mask)
 
         if inv_dilated_mask.sum() == 0: # if all pixels are masked, return 0
             return prediction.sum() * 0.0 # Trick to preserve grad
         
-        # calculate the image to be used for the loss
+        # Calculate the image to be used for the loss
         image_comp = self._compose_image(prediction, target, inv_dilated_mask.bool())
+        
+        # Exclude NaN pixels from the mask
+        inv_dilated_mask = self._exclude_nans_from_mask(prediction, inv_dilated_mask)
         
         return self._tv_loss(image_comp, inv_dilated_mask)
 
