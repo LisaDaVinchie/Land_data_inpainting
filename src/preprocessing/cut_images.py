@@ -129,14 +129,14 @@ class CutAndMaskImage:
             
         return cuts
 
-    def generate_image_dataset(self, n_channels: int, masked_channels_list: list, path_to_indices_map: dict, placeholder: float = None, same_mask: bool = False) -> tuple[dict, dict, th.Tensor]:
+    def generate_image_dataset(self, n_channels: int, masked_channels_list: list, path_to_indices_map: dict, placeholder: float, same_mask: bool = False) -> tuple[dict, dict, th.Tensor]:
         """Generate a dataset of masked images, inverse masked images and masks
 
         Args:
             n_channels (int): final number of channels in the image
             masked_channels_list (list): list of channels that should not be masked
             path_to_indices_map (dict): dictionary with the paths to the images as keys and the points as values
-            placeholder (float): value to use as placeholder for masked pixels, None if the mean of the image should be used
+            placeholder (float): value to use as placeholder for nan pixels.
             same_mask (bool): if True, use the same mask for all the masked channels of the image, otherwise use a different mask for each channel. Defaults to False.
 
         Returns:
@@ -274,7 +274,9 @@ def main():
     nans_threshold = float(params["dataset"]["nans_threshold"])
     mask_kind = str(params["dataset"]["mask_kind"])
     same_mask = str(params["dataset"]["same_mask"]).lower() == "true"
-    placeholder = params["training"]["placeholder"]
+    nan_placeholder = params["dataset"]["nan_placeholder"]
+    if nan_placeholder == "false":
+        raise ValueError("The placeholder value must be a float, not 'false'.")
     
     
     dataset_kind = str(params["dataset"]["dataset_kind"])
@@ -282,13 +284,8 @@ def main():
     y_shape_raw = int(params["dataset"][dataset_kind]["y_shape_raw"])
     n_channels = int(params["dataset"][dataset_kind]["n_channels"])
     masked_channels = list(params["dataset"][dataset_kind]["masked_channels"])
-
-    if placeholder == "false":
-        placeholder = None
-    else:
-        placeholder = float(placeholder)
         
-    print("Using placeholder value: ", placeholder, flush=True)
+    print("Using placeholder value: ", nan_placeholder, flush=True)
     
     mask_function = initialize_mask_kind(params_path, mask_kind)
 
@@ -318,7 +315,7 @@ def main():
     # Generate the dataset
     dataset, nans_masks = cut_class.generate_image_dataset(n_channels=n_channels,
                                                            masked_channels_list=masked_channels, path_to_indices_map=path_to_indices,
-                                                           placeholder=placeholder, same_mask=same_mask)
+                                                           placeholder=nan_placeholder, same_mask=same_mask)
     print(f"Generated the dataset in {time() - d_time} seconds\n", flush=True)
     
     norm_class = MinMaxNormalization(batch_size=1000)
