@@ -22,6 +22,7 @@ class TestTrainingFunctions(unittest.TestCase):
         self.ncols = 64
         self.nrows = 64
         self.epochs = 3
+        self.nan_placeholder = -2.0
         
         self.middle_channels_e = [12, 24, 36]
         self.kernel_sizes_e = [3, 3, 3]
@@ -91,7 +92,7 @@ class TestTrainingFunctions(unittest.TestCase):
         self.train_loader, self.test_loader = create_dataloaders(test_dataset, 0.8, batch_size=self.batch_size)
 
         # Use a real loss function and optimizer
-        self.loss_function = get_loss_function("per_pixel_mse")
+        self.loss_function = get_loss_function("per_pixel_mse", self.nan_placeholder)
         
     def test_track_memory(self):
         """Test that track_memory logs memory usage."""
