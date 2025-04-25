@@ -19,7 +19,7 @@ def get_loss_function(loss_kind: str, nan_placeholder: float) -> nn.Module:
     elif loss_kind == "tv_loss":
         return TotalVariationLoss(nan_placeholder=nan_placeholder)
     elif loss_kind == "custom1":
-        return CustomLoss1()
+        return CustomLoss1(nan_placeholder=nan_placeholder)
     else:
         raise ValueError(f"Loss kind {loss_kind} not recognized")
 
@@ -204,7 +204,7 @@ class TotalVariationLoss(nn.Module):
         return dilated_mask if inverse else 1 - dilated_mask
    
 class CustomLoss1(nn.Module):
-    def __init__(self, per_pixel_weight: float = 1.0, tv_weight: float = 0.1):
+    def __init__(self, nan_placeholder: float, per_pixel_weight: float = 1.0, tv_weight: float = 0.1):
         """Combine per-pixel loss and total variation loss.
 
         Args:
@@ -214,8 +214,8 @@ class CustomLoss1(nn.Module):
         super(CustomLoss1, self).__init__()
         self.per_pixel_weight = per_pixel_weight
         self.tv_weight = tv_weight
-        self.per_pixel_loss = PerPixelMSE()
-        self.tv_loss = TotalVariationLoss()
+        self.per_pixel_loss = PerPixelMSE(nan_placeholder=nan_placeholder)
+        self.tv_loss = TotalVariationLoss(nan_placeholder=nan_placeholder)
         
     def forward(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) -> th.Tensor:
         """Calculate the combined loss.
