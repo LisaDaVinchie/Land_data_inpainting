@@ -1,22 +1,23 @@
 import torch as th
 import torch.nn as nn
 
-def get_loss_function(loss_kind: str) -> nn.Module:
+def get_loss_function(loss_kind: str, nan_placeholder: float) -> nn.Module:
     """Get the loss function based on the specified kind.
 
     Args:
         loss_kind (str): type of loss function to use. Options are "per_pixel_loss" or "per_pixel_mse".
+        nan_placeholder (float): value used to represent NaN pixels in the target tensor.
 
     Returns:
         nn.Module: loss function
     """
     
     if loss_kind == "per_pixel_loss":
-        return PerPixelL1()
+        return PerPixelL1(nan_placeholder=nan_placeholder)
     elif loss_kind == "per_pixel_mse":
-        return PerPixelMSE()
+        return PerPixelMSE(nan_placeholder=nan_placeholder)
     elif loss_kind == "tv_loss":
-        return TotalVariationLoss()
+        return TotalVariationLoss(nan_placeholder=nan_placeholder)
     elif loss_kind == "custom1":
         return CustomLoss1()
     else:
