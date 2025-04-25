@@ -18,6 +18,8 @@ n_channels_string = "n_channels"
 image_nrows_string = "cutted_nrows"
 image_ncols_string = "cutted_ncols"
 
+model_cathegory_string: str = "models"
+
 def initialize_model_and_dataset_kind(params_path: Path, model_kind: str) -> tuple[nn.Module, str]:
     """Initialize the model and dataset kind from the json file.
 
@@ -67,17 +69,6 @@ class DINCAE_like(nn.Module):
         
         self._load_configurations(params_path)
         
-        # model_params = load_config(params_path, ["dataset"]).get("dataset", {})
-        # self.n_channels = n_channels if n_channels is not None else model_params.get(n_channels_string, 3)
-        # self.image_nrows = image_nrows if image_nrows is not None else model_params.get(image_nrows_string, 64)
-        # self.image_ncols = image_ncols if image_ncols is not None else model_params.get(image_ncols_string, 64)
-        
-        # model_params = load_config(params_path, ["DINCAE_like"]).get("DINCAE_like", {})
-        # self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [10, 10, 10, 10, 10])
-        # self.kernel_sizes = kernel_sizes if kernel_sizes is not None else model_params.get("kernel_sizes", [2, 2, 2, 2, 2])
-        # self.pooling_sizes = pooling_sizes if pooling_sizes is not None else model_params.get("pooling_sizes", [7, 7, 7, 7, 7])
-        # self.interp_mode = interp_mode if interp_mode is not None else model_params.get("interp_mode", "bilinear")
-        # # self.output_size = output_size if output_size is not None else model_params.get("output_size", 2)
         self.output_size = self.n_channels
         
         w, h = self._calculate_sizes()
@@ -119,11 +110,11 @@ class DINCAE_like(nn.Module):
             dataset_kind = params["dataset"].get("dataset_kind", "temperature")
             self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 3)
             
-            self.middle_channels = params[self.model_name].get("middle_channels", [10, 10, 10, 10, 10])
-            self.kernel_sizes = params[self.model_name].get("kernel_sizes", [2, 2, 2, 2, 2])
-            self.pooling_sizes = params[self.model_name].get("pooling_sizes", [7, 7, 7, 7, 7])
-            self.interp_mode = params[self.model_name].get("interp_mode", "bilinear")
-            self.output_size = params[self.model_name].get("output_size", 2)
+            self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", [10, 10, 10, 10, 10])
+            self.kernel_sizes = params[model_cathegory_string][self.model_name].get("kernel_sizes", [2, 2, 2, 2, 2])
+            self.pooling_sizes = params[model_cathegory_string][self.model_name].get("pooling_sizes", [7, 7, 7, 7, 7])
+            self.interp_mode = params[model_cathegory_string][self.model_name].get("interp_mode", "bilinear")
+            self.output_size = params[model_cathegory_string][self.model_name].get("output_size", 2)
             
         
         for var in [self.n_channels, self.image_nrows, self.image_ncols, self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode, self.output_size]:
@@ -224,15 +215,15 @@ class DINCAE_pconvs(nn.Module):
         if params_path is not None:
             with open(params_path, 'r') as f:
                 params = json.load(f)
-            self.image_nrows = params["dataset"].get(image_nrows_string, 64)
-            self.image_ncols = params["dataset"].get(image_ncols_string, 64)
+            self.image_nrows = params["dataset"].get(image_nrows_string, 0)
+            self.image_ncols = params["dataset"].get(image_ncols_string, 0)
             dataset_kind = params["dataset"].get("dataset_kind", "temperature")
-            self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 3)
+            self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 0)
             
-            self.middle_channels = params[self.model_name].get("middle_channels", [10, 10, 10, 10, 10])
-            self.kernel_sizes = params[self.model_name].get("kernel_sizes", [2, 2, 2, 2, 2])
-            self.pooling_sizes = params[self.model_name].get("pooling_sizes", [7, 7, 7, 7, 7])
-            self.interp_mode = params[self.model_name].get("interp_mode", "bilinear")
+            self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", [0, 0, 0, 0, 0])
+            self.kernel_sizes = params[model_cathegory_string][self.model_name].get("kernel_sizes", [0, 0, 0, 0, 0])
+            self.pooling_sizes = params[model_cathegory_string][self.model_name].get("pooling_sizes", [0, 0, 0, 0, 0])
+            self.interp_mode = params[model_cathegory_string][self.model_name].get("interp_mode", "bilinear")
             
         
         for var in [self.n_channels, self.image_nrows, self.image_ncols, self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode]:
@@ -357,11 +348,11 @@ class simple_conv(nn.Module):
             dataset_kind = params["dataset"].get("dataset_kind", "temperature")
             self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 3)
             
-            self.middle_channels = params[self.model_name].get("middle_channels", [10, 10, 10])
-            self.kernel_size = params[self.model_name].get("kernel_size", [2, 2, 2])
-            self.stride = params[self.model_name].get("stride", [2, 2, 2])
-            self.padding = params[self.model_name].get("padding", [1, 1, 1])
-            self.output_padding = params[self.model_name].get("output_padding", [1, 1, 1])
+            self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", [10, 10, 10])
+            self.kernel_size = params[model_cathegory_string][self.model_name].get("kernel_size", [2, 2, 2])
+            self.stride = params[model_cathegory_string][self.model_name].get("stride", [2, 2, 2])
+            self.padding = params[model_cathegory_string][self.model_name].get("padding", [1, 1, 1])
+            self.output_padding = params[model_cathegory_string][self.model_name].get("output_padding", [1, 1, 1])
         
         for var in [self.n_channels, self.middle_channels, self.kernel_size, self.stride, self.padding, self.output_padding]:
             if var is None:
@@ -372,17 +363,18 @@ class simple_conv(nn.Module):
         decoded = self.decoder(encoded)
         return decoded
 class conv_unet(nn.Module):
-    def __init__(self, params_path: Path, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
+    def __init__(self, params_path: Path = None, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
         super(conv_unet, self).__init__()
-        model_params = load_config(params_path, ["dataset_params"]).get("dataset_params", {})
-        self.n_channels = n_channels if n_channels is not None else model_params.get(n_channels_string, 1)
         
-        model_params = load_config(params_path, ["conv_unet"]).get("conv_unet", {})
-        self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [10, 10, 10])
-        self.kernel_size = kernel_size if kernel_size is not None else model_params.get("kernel_size", [7, 7, 7])
-        self.stride = stride if stride is not None else model_params.get("stride", [11, 11, 11])
-        self.padding = padding if padding is not None else model_params.get("padding", [3, 3, 3])
-        self.output_padding = output_padding if output_padding is not None else model_params.get("output_padding", [4, 4, 4])
+        self.model_name: str = "conv_unet"
+        self.n_channels = n_channels
+        self.middle_channels = middle_channels
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.output_padding = output_padding
+        
+        self._load_configurations(params_path)
         
         self.encoder1 = nn.Conv2d(self.n_channels, self.middle_channels[0], kernel_size=self.kernel_size[0], stride=self.stride[0], padding=self.padding[0])  # 64x64 -> 32x32
         self.encoder2 = nn.Conv2d(self.middle_channels[0], self.middle_channels[1], kernel_size=self.kernel_size[1], stride=self.stride[1], padding=self.padding[1])  # 32x32 -> 16x16
@@ -393,6 +385,23 @@ class conv_unet(nn.Module):
         self.decoder3 = nn.ConvTranspose2d(self.middle_channels[0], self.n_channels, kernel_size=self.kernel_size[0], stride=self.stride[0], padding=self.padding[2], output_padding=self.output_padding[2])
         
         self.relu = nn.ReLU()
+
+    def _load_configurations(self, params_path):
+        if params_path is not None:
+            with open(params_path, 'r') as f:
+                params = json.load(f)
+            dataset_kind = params["dataset"].get("dataset_kind", "temperature")
+            self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 3)
+            
+            self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", [10, 10, 10])
+            self.kernel_size = params[model_cathegory_string][self.model_name].get("kernel_size", [7, 7, 7])
+            self.stride = params[model_cathegory_string][self.model_name].get("stride", [11, 11, 11])
+            self.padding = params[model_cathegory_string][self.model_name].get("padding", [3, 3, 3])
+            self.output_padding = params[model_cathegory_string][self.model_name].get("output_padding", [4, 4, 4])
+        
+        for var in [self.n_channels, self.middle_channels, self.kernel_size, self.stride, self.padding, self.output_padding]:
+            if var is None:
+                raise ValueError(f"Variable {var} is None. Please provide a value for it.")
 
     def forward(self, x: th.Tensor):
         enc1 = self.relu(self.encoder1(x))
@@ -408,17 +417,18 @@ class conv_unet(nn.Module):
 class conv_maxpool(nn.Module):
     def __init__(self, params_path: Path, n_channels: int = None, middle_channels: list = None, kernel_size: int = None, stride: int = None, pool_size: int = None, up_kernel: int = None, up_stride: int = None, print_sizes: bool = None):
         super(conv_maxpool, self).__init__()
-        model_params = load_config(params_path, ["dataset"]).get("dataset", {})
-        self.n_channels = n_channels if n_channels is not None else model_params.get(n_channels_string, 1)
         
-        model_params = load_config(params_path, ["conv_maxpool"]).get("conv_maxpool", {})
-        self.middle_channels = middle_channels if middle_channels is not None else model_params.get("middle_channels", [12, 12, 12, 12, 12])
-        self.kernel_size = kernel_size if kernel_size is not None else model_params.get("kernel_size", 5)
-        self.stride = stride if stride is not None else model_params.get("stride", 5)
-        self.pool_size = pool_size if pool_size is not None else model_params.get("pool_size", 5)
-        self.up_kernel = up_kernel if up_kernel is not None else model_params.get("up_kernel", 5)
-        self.up_stride = up_stride if up_stride is not None else model_params.get("up_stride", 5)
-        self.print_sizes = print_sizes if print_sizes is not None else model_params.get("print_sizes", False)
+        self.model_name: str = "conv_maxpool"
+        self.n_channels = n_channels
+        self.middle_channels = middle_channels
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.pool_size = pool_size
+        self.up_kernel = up_kernel
+        self.up_stride = up_stride
+        self.print_sizes = print_sizes
+        
+        self._load_configurations(params_path)
         
         assert self.kernel_size % 2 == 1, "Kernel size must be an odd number"
         
@@ -458,6 +468,26 @@ class conv_maxpool(nn.Module):
         # Output layer
         self.output_conv = nn.Conv2d(self.middle_channels[1], self.n_channels, self.kernel_size, self.stride, padding=(self.kernel_size - 1) // 2)
         self.sigmoid = nn.Sigmoid()
+
+    def _load_configurations(self, params_path):
+        if params_path is not None:
+            with open(params_path, 'r') as f:
+                params = json.load(f)
+            
+            dataset_kind = params["dataset"].get("dataset_kind", "temperature")
+            self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 3)
+            
+            self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", [12, 12, 12, 12, 12])
+            self.kernel_size = params[model_cathegory_string][self.model_name].get("kernel_size", 5)
+            self.stride = params[model_cathegory_string][self.model_name].get("stride", 5)
+            self.pool_size = params[model_cathegory_string][self.model_name].get("pool_size", 5)
+            self.up_kernel = params[model_cathegory_string][self.model_name].get("up_kernel", 5)
+            self.up_stride = params[model_cathegory_string][self.model_name].get("up_stride", 5)
+            self.print_sizes = params[model_cathegory_string][self.model_name].get("print_sizes", False)
+        
+        for var in [self.n_channels, self.middle_channels, self.kernel_size, self.stride, self.pool_size, self.up_kernel, self.up_stride]:
+            if var is None:
+                raise ValueError(f"Variable {var} is None. Please provide a value for it.")
     
     def _create_conv_block(self, n_channels, out_channels, kernel_size, stride, activation):
         """Helper method to create a convolutional block."""
