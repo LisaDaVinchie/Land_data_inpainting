@@ -9,7 +9,8 @@ from losses import PerPixelL1
 class TestPerPixelLoss(unittest.TestCase):
     
     def setUp(self):
-        self.loss_function = PerPixelL1()
+        self.nan_placeholder = -2.0
+        self.loss_function = PerPixelL1(nan_placeholder=self.nan_placeholder)
     def test_no_masking(self):
         """Test case where no pixels are masked (all pixels are valid)."""
         prediction = th.tensor([[[[1.0, 2.0], [3.0, 4.0]]]])
@@ -38,6 +39,22 @@ class TestPerPixelLoss(unittest.TestCase):
         # Differences: |1.0 - 1.0| = 0.0 and |4.0 - 1.0| = 3.0
         # Mean loss: (0.0 + 3.0) / 2 = 1.5
         expected_loss = th.tensor(1.5)
+        self.assertTrue(th.allclose(loss, expected_loss))
+        
+    def test_full_masking_with_nans(self):
+        """Test case where some pixels are masked."""
+        prediction = th.tensor([[[[1.0, self.nan_placeholder, self.nan_placeholder],
+                                  [self.nan_placeholder, self.nan_placeholder, 6],
+                                  [7, 8, 9]]]], dtype=th.float32)
+        target = th.tensor([[[[11, self.nan_placeholder, self.nan_placeholder],
+                              [self.nan_placeholder, self.nan_placeholder, 16],
+                              [17, 18, 19]]]], dtype=th.float32)
+        mask = th.zeros((1, 1, 3, 3), dtype=th.float32)  # All pixels masked
+        loss = self.loss_function(prediction, target, mask)
+        # Differences: (11 - 1.0) = 10, (16 - 6) = 10, (17 - 7) = 10,
+        # (18 - 8) = 10, (19 - 9) = 10
+        # Mean loss: (10 + 10 + 10 + 10 + 10) / 5 = 10
+        expected_loss = th.tensor(11, dtype=th.float32)
         self.assertTrue(th.allclose(loss, expected_loss))
 
     def test_random_inputs(self):
