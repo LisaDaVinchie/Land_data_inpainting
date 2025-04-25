@@ -12,7 +12,7 @@ def get_loss_function(loss_kind: str, nan_placeholder: float) -> nn.Module:
         nn.Module: loss function
     """
     
-    if loss_kind == "per_pixel_loss":
+    if loss_kind == "per_pixel":
         return PerPixelL1(nan_placeholder=nan_placeholder)
     elif loss_kind == "per_pixel_mse":
         return PerPixelMSE(nan_placeholder=nan_placeholder)
