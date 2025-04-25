@@ -96,14 +96,16 @@
             "print_sizes": false
         }
     },
-    "square_mask": {
-        "mask_percentage": 0.10
-    },
-    "lines_mask": {
-        "num_lines": 5,
-        "min_thickness": 1,
-        "max_thickness": 5
-    },
+    "masks": {
+        "square_mask": {
+            "mask_percentage": 0.10
+        },
+        "lines_mask": {
+            "num_lines": 5,
+            "min_thickness": 1,
+            "max_thickness": 5
+        }
+},
     "lr_schedulers":
     {
         "step": {
