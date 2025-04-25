@@ -35,6 +35,7 @@ def main():
     batch_size = params["training"]["batch_size"]
     learning_rate = params["training"]["learning_rate"]
     optimizer_kind = params["training"]["optimizer_kind"]
+    lr_scheduler = params["training"]["lr_scheduler"]
     loss_kind = params["training"]["loss_kind"]
     model_kind = params["training"]["model_kind"]
     placeholder = params["training"]["placeholder"]
@@ -78,6 +79,11 @@ def main():
     loss_function = get_loss_function(loss_kind, nan_placeholder)
     
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    
+    if lr_scheduler == "step":
+        step_size = int(params["training"]["step_size"])
+        gamma = float(params["training"]["gamma"])
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
 
     training_time = time()
     track_memory("Before training")
