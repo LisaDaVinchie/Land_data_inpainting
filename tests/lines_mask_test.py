@@ -17,10 +17,12 @@ class TestLinesMask(unittest.TestCase):
         self.max_thickness = 3
         
         self.params = {
-            "lines_mask": {
-                "num_lines": self.num_lines,
-                "min_thickness": self.min_thickness,
-                "max_thickness": self.max_thickness
+            "masks": {
+                "lines_mask": {
+                    "num_lines": self.num_lines,
+                    "min_thickness": self.min_thickness,
+                    "max_thickness": self.max_thickness
+                }
             },
             "dataset": {
                 "cutted_nrows": self.image_nrows,

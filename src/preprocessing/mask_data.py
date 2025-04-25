@@ -4,6 +4,8 @@ import math
 from pathlib import Path
 import json
 
+mask_name = "masks"
+
 def apply_mask_on_channel(images: th.Tensor, masks: th.Tensor, placeholder: float = None) -> th.Tensor:
     """Mask the image with the mask, using a placeholder. If the placeholder is none, use the mean of the level"""
     new_images = images.clone()
@@ -81,7 +83,7 @@ class SquareMask:
         
         self.image_nrows = image_nrows if image_nrows is not None else params['dataset']['cutted_nrows']
         self.image_ncols = image_ncols if image_ncols is not None else params['dataset']['cutted_ncols']
-        self.mask_percentage = mask_percentage if mask_percentage is not None else params['square_mask']['mask_percentage']
+        self.mask_percentage = mask_percentage if mask_percentage is not None else params[mask_name]['square_mask']['mask_percentage']
         
         if self.image_nrows is None or self.image_ncols is None or self.mask_percentage is None:
             raise ValueError("Missing one of the following required parameters: image_nrows, image_ncols, mask_percentage")
@@ -132,9 +134,9 @@ class LinesMask:
                 
             self.image_nrows = params['dataset']['cutted_nrows']
             self.image_ncols = params['dataset']['cutted_ncols']
-            self.num_lines = params['lines_mask']['num_lines']
-            self.min_thickness = params['lines_mask']['min_thickness']
-            self.max_thickness = params['lines_mask']['max_thickness']
+            self.num_lines = params[mask_name]['lines_mask']['num_lines']
+            self.min_thickness = params[mask_name]['lines_mask']['min_thickness']
+            self.max_thickness = params[mask_name]['lines_mask']['max_thickness']
         else:
             self.image_nrows = image_nrows
             self.image_ncols = image_ncols
