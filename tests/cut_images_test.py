@@ -28,7 +28,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         self.cutted_ncols = 10
         mask_percentage = 0.5
         self.masked_channels = [0, 2]
-        self.placeholder = -1.0
+        self.nan_placeholder = -2.0
         
         # Create dummy input with nans
         for i in range(self.n_images):
@@ -77,7 +77,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
                         n_channels=self.n_channels,
                         masked_channels_list=self.masked_channels,
                         path_to_indices_map=self.path_to_indices,
-                        placeholder=self.placeholder, same_mask=True)
+                        placeholder=self.nan_placeholder, same_mask=True)
 
     def tearDown(self):
         """Clean up temporary directory after tests."""
@@ -122,7 +122,7 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             for j in range(self.n_channels):
                 nan_mask = self.nans_mask[i, j, :, :]
                 image = self.dataset[keys[0]][i, j, :, :]
-                self.assertTrue(th.all(image[nan_mask == 0] == self.placeholder), "Not all values under the nan mask are placeholder")
+                self.assertTrue(th.all(image[nan_mask == 0] == self.nan_placeholder), "Not all values under the nan mask are placeholder")
                 
     def test_nans_coverage(self):
         """Test that the masks cover all the nans in the images."""
