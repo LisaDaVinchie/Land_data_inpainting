@@ -9,7 +9,8 @@ from losses import TotalVariationLoss
 class TestTVLoss(unittest.TestCase):
     
     def setUp(self):
-        self.tvloss = TotalVariationLoss()
+        self.nan_placeholder = -2.0
+        self.tvloss = TotalVariationLoss(nan_placeholder=self.nan_placeholder)
     
     def test_dilation(self):
         sample_mask = th.tensor([[[
