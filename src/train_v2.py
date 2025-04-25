@@ -82,13 +82,13 @@ def main():
     
     scheduler = None
     if lr_scheduler == "step":
-        step_size = int(params["training"]["step_size"])
-        gamma = float(params["training"]["gamma"])
+        step_size = int(params["lr_schedulers"][lr_scheduler]["step_size"])
+        gamma = float(params["lr_schedulers"][lr_scheduler]["gamma"])
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
 
     training_time = time()
     track_memory("Before training")
-    training_class = TrainModel(model, epochs, device, train_loader, test_loader, loss_function, optimizer)
+    training_class = TrainModel(model, epochs, device, train_loader, test_loader, loss_function, optimizer, scheduler)
     if dataset_kind == "extended":
         train_losses, test_losses = training_class.train_loop_extended(placeholder)
     elif dataset_kind == "minimal":
