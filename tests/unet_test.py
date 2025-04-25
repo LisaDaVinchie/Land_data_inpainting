@@ -16,16 +16,21 @@ class TestCNNModel(unittest.TestCase):
     def setUp(self):
         """Create a temporary JSON file with reward parameters."""
         self.model_params = {
-            "conv_unet": {
-            "middle_channels": [12, 12, 12],
-            "kernel_size": [3, 3, 3],
-            "stride": [2, 2, 2],
-            "padding": [1, 1, 1],
-            "output_padding": [1, 1, 1]
+            "models": {
+                "conv_unet": {
+                    "middle_channels": [12, 12, 12],
+                    "kernel_size": [3, 3, 3],
+                    "stride": [2, 2, 2],
+                    "padding": [1, 1, 1],
+                    "output_padding": [1, 1, 1]
+                    }
             },
-            "dataset_params":{
-                "n_channels": 1
-            }      
+            "dataset": {
+                "dataset_kind": "test",
+                "test": {
+                    "n_channels": 1,
+                }
+            }    
         }
         
         

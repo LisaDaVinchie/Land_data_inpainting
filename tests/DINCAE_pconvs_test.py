@@ -6,8 +6,7 @@ import json
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-# from models import DINCAE_pconvs
-from DINCAE import DINCAE_pconvs
+from models import DINCAE_pconvs
 
 
 class TestSimplePartialConv(unittest.TestCase):
@@ -40,11 +39,13 @@ class TestSimplePartialConv(unittest.TestCase):
                     "n_channels": self.n_channels,
                 }
             },
-            "DINCAE_pconvs": {
-                "middle_channels": self.middle_channels,
-                "kernel_sizes": self.kernel_sizes,
-                "pooling_sizes": self.pooling_sizes,
-                "interp_mode": self.interp_mode
+            "models": {
+                "DINCAE_pconvs": {
+                    "middle_channels": self.middle_channels,
+                    "kernel_sizes": self.kernel_sizes,
+                    "pooling_sizes": self.pooling_sizes,
+                    "interp_mode": self.interp_mode
+                }
             }
         }
         with open(self.params_path, "w") as f:

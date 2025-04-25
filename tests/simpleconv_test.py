@@ -26,13 +26,15 @@ class Test_simpleconv_model(unittest.TestCase):
         
         self.batch_size = 2
         self.model_params = {
-            "simple_conv": {
-                "middle_channels": self.middle_channels,
-                "kernel_size": self.kernel_sizes,
-                "stride": self.stride,
-                "padding": self.padding,
-                "output_padding": self.output_padding
-                },  
+            "models": {
+                "simple_conv": {
+                    "middle_channels": self.middle_channels,
+                    "kernel_size": self.kernel_sizes,
+                    "stride": self.stride,
+                    "padding": self.padding,
+                    "output_padding": self.output_padding
+                    }
+            },  
             "dataset":{
                 "dataset_kind": "test",
                 "test": {

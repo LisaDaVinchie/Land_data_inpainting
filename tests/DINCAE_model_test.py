@@ -32,11 +32,15 @@ class Test_DINCAE_model(unittest.TestCase):
                     "n_channels": self.n_channels,
                 }
             },
-            "DINCAE_like": {
-                "middle_channels": self.middle_channels,
-                "kernel_sizes": self.kernel_sizes,
-                "pooling_sizes": self.pooling_sizes,
-                "interp_mode": self.interp_mode
+            "models": {
+                "DINCAE_like": {
+                    "middle_channels": self.middle_channels,
+                    "kernel_sizes": self.kernel_sizes,
+                    "pooling_sizes": self.pooling_sizes,
+                    "interp_mode": self.interp_mode,
+                    "n_channels": self.n_channels,
+                }
+            
             }
         }
         

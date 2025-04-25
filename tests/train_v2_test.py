@@ -32,12 +32,14 @@ class TestTrainingFunctions(unittest.TestCase):
         
         
         self.extended_model_params = {
-            "simple_conv": {
-                "middle_channels": self.middle_channels_e,
-                "kernel_size": self.kernel_sizes_e,
-                "stride": self.stride_e,
-                "padding": self.padding_e,
-                "output_padding": self.output_padding_e
+            "models": {
+                "simple_conv": {
+                    "middle_channels": self.middle_channels_e,
+                    "kernel_size": self.kernel_sizes_e,
+                    "stride": self.stride_e,
+                    "padding": self.padding_e,
+                    "output_padding": self.output_padding_e
+                    }
                 },  
             "dataset": {
                 "dataset_kind": "test",
@@ -65,11 +67,13 @@ class TestTrainingFunctions(unittest.TestCase):
                     "n_channels": self.n_channels,
                 }
             },
-            "DINCAE_pconvs": {
-                "middle_channels": [16, 16, 16, 16, 16],
-                "kernel_sizes": [5, 3, 5, 3, 5],
-                "pooling_sizes": [2, 2, 2, 2, 2],
-                "interp_mode": "nearest"
+            "models": {
+                "DINCAE_pconvs": {
+                    "middle_channels": [16, 16, 16, 16, 16],
+                    "kernel_sizes": [5, 3, 5, 3, 5],
+                    "pooling_sizes": [2, 2, 2, 2, 2],
+                    "interp_mode": "nearest"
+                }
             }
         }
         
