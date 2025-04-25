@@ -63,8 +63,33 @@ class TestTVLoss(unittest.TestCase):
         composed_image = self.tvloss._compose_image(pred, target, masks)
         
         self.assertTrue(th.allclose(composed_image, expected_image))
+    
+    def test_nan_exlcusion(self):
+        image = th.tensor([[[
+            [self.nan_placeholder, self.nan_placeholder, 3., 4.],
+            [self.nan_placeholder, self.nan_placeholder, 7., 8.],
+            [9., 10., 11., 12.],
+            [13., 14., 15., 16.]
+        ]]], dtype=th.float32)
+        mask = th.tensor([[[
+            [0, 0, 0, 0],
+            [0, 1, 1, 0],
+            [0, 1, 1, 0],
+            [0, 0, 0, 0]
+        ]]], dtype=th.float32)
         
-    def test_tv_loss(self):
+        expected_mask = th.tensor([[[
+            [0, 0, 0, 0],
+            [0, 0, 1, 0],
+            [0, 1, 1, 0],
+            [0, 0, 0, 0]
+        ]]], dtype=th.float32)
+        
+        output_mask = self.tvloss._exclude_nans_from_mask(image, mask)
+        
+        self.assertTrue(th.equal(output_mask, expected_mask))
+    
+    def test_tv_loss_no_nans(self):
         image = th.tensor([[[
             [1., 2., 3., 2.],
             [4., 5., 6., 2.],
@@ -80,6 +105,11 @@ class TestTVLoss(unittest.TestCase):
         ]]], dtype=th.float32)
         
         loss = self.tvloss._tv_loss(image, masks)
+        
+        # The expected loss is calculated as:
+        # (2 - 1 + 3 - 2 + 5 - 4 + 6 - 5 + 8 - 7 + 9 - 8 + 
+        # + 4 - 1 + 7 - 4 + 8 - 5 + 5 - 2 + 9 - 6 + 6 - 3) / 12
+        # = (6 + 3 * 6) / 12 = 24 / 12 = 2.0  
         
         self.assertAlmostEqual(loss.item(), 2.0, places=4)
         

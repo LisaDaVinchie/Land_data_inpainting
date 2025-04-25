@@ -107,6 +107,10 @@ class TotalVariationLoss(nn.Module):
 
         # Dilate the mask by 1 pixel
         inv_dilated_mask = self._dilate_mask(masks, 1, True)
+        # Get a mask that is 1 where the image is masked and 0 otherwise
+        
+        # Exclude NaN pixels from the mask
+        inv_dilated_mask = self._exclude_nans_from_mask(prediction, inv_dilated_mask)
 
         if inv_dilated_mask.sum() == 0: # if all pixels are masked, return 0
             return prediction.sum() * 0.0 # Trick to preserve grad
@@ -125,7 +129,7 @@ class TotalVariationLoss(nn.Module):
 
         Returns:
             th.Tensor: total variation loss
-        """
+        """        
         # calculate the valid pixels in the x and y direction
         valid_x = mask[:, :, 1:, :] * mask[:, :, :-1, :]
         valid_y = mask[:, :, :, 1:] * mask[:, :, :, :-1]
@@ -143,6 +147,21 @@ class TotalVariationLoss(nn.Module):
         valid_norm_y = th.abs(diff_cols) * valid_y
         # sum the absolute differences in the x and y direction and divide by the number of valid pixels
         return (valid_norm_x.sum() + valid_norm_y.sum()) / n_diffs
+
+    def _exclude_nans_from_mask(self, image: th.Tensor, mask: th.Tensor) -> th.Tensor:
+        """Exclude NaN pixels from the valid pixels in the mask.
+
+        Args:
+            image (th.Tensor): image to be used for the loss, shape (batch_size, channels, height, width)
+            mask (th.Tensor): binary mask with 1 where the pixel is masked, shape (batch_size, channels, height, width)
+
+        Returns:
+            th.Tensor: mask with NaN pixels excluded, 1 where the pixel is masked, 0 otherwise
+        """
+        nan_mask = th.where(image == self.nan_placeholder, th.ones_like(image), th.zeros_like(image)).float()
+        
+        # Where both mask and nan_mask are 0, assign value 1, otherwise keep the value of mask
+        return th.where((mask == 1) & (nan_mask == 1), th.zeros_like(mask), mask)
     
     def _compose_image(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) -> th.Tensor:
         """Compose the prediction and target images using the masks.
@@ -168,7 +187,8 @@ class TotalVariationLoss(nn.Module):
             inverse (bool, optional): whether to return the dilated mask or the inverse dilated mask. Defaults to False.
 
         Returns:
-            th.Tensor: _description_
+            th.Tensor: dilated mask, with 0 where the pixel is masked, 1 otherwise if not inverse.
+            The contrary if inverse is True.
         """
         kernel_size = 2 * dilation + 1
         
