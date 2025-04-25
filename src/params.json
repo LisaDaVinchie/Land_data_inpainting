@@ -3,13 +3,15 @@
         "train_perc": 0.8,
         "batch_size": 128,
         "epochs": 15,
-        "learning_rate": 0.0001,
-        "placeholder": 0.0,
+        "learning_rate": 0.001,
+        "lr_scheduler": "none",
+        "_possible_schedulers": ["none", "step"],
         "optimizer_kind": "adam",
         "loss_kind": "custom1",
         "_possible_losses": ["per_pixel", "per_pixel_mse", "tv_loss", "custom1"],
         "model_kind": "DINCAE_pconvs",
-        "_possible_model_kinds": ["simple_conv", "conv_unet", "conv_maxpool", "DINCAE_like", "DINCAE_pconvs"]
+        "_possible_model_kinds": ["simple_conv", "conv_unet", "conv_maxpool", "DINCAE_like", "DINCAE_pconvs"],
+        "placeholder": 0.0
     },
     "dataset":{
         "cutted_nrows": 128,
@@ -99,6 +101,13 @@
         "num_lines": 5,
         "min_thickness": 1,
         "max_thickness": 5
+    },
+    "lr_schedulers":
+    {
+        "step": {
+            "step_size": 1,
+            "gamma": 0.1
+        }
     }
 
 }
