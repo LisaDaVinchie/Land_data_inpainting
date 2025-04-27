@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 import os
 import sys
+import json
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from preprocessing.cut_images import CutAndMaskImage
@@ -20,15 +21,46 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         # Create dummy processed images
         self.n_images = 5
         self.x_shape_raw = 30
-        self.y_shape_raw = 30
+        self.y_shape_raw = 40
         self.n_channels = 4
         # Test parameters
         self.n_cutted_images = 8
         self.cutted_nrows = 10
-        self.cutted_ncols = 10
-        mask_percentage = 0.5
+        self.cutted_ncols = 15
+        self.mask_percentage = 0.5
         self.masked_channels = [0, 2]
         self.nan_placeholder = -2.0
+        self.nans_threshold = 0.5
+        self.mask_kind = "square"
+        
+        # Create sample json file
+        self.params = {
+            "dataset": {
+                "cutted_nrows": self.cutted_nrows,
+                "cutted_ncols": self.cutted_ncols,
+                "n_cutted_images": self.n_cutted_images,
+                "nans_threshold": self.nans_threshold,
+                "dataset_kind": "test",
+                "test": {
+                    "x_shape_raw": self.x_shape_raw,
+                    "y_shape_raw": self.y_shape_raw,
+                    "n_channels": self.n_channels,
+                },
+                "mask_kind": self.mask_kind
+            },
+            "masks": {
+                "square": {
+                   "mask_percentage": self.mask_percentage,
+                },
+             }
+        }
+        
+        # Create a temporary JSON file
+        self.temp_json = tempfile.NamedTemporaryFile(delete=False, mode='w')
+        with open(self.temp_json.name, 'w') as f:
+            json.dump(self.params, f)
+        self.temp_json.close()  # Close the file to ensure it's written and available
+        self.params_path = Path(self.temp_json.name).resolve()  # Use absolute path
         
         # Create dummy input with nans
         for i in range(self.n_images):
@@ -53,18 +85,9 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
             dummy_date = f"{years.item()}_{months.item()}_{days.item()}"
             th.save(dummy_image, self.processed_data_dir / f"{dummy_date}.pt")
             
-        self.mask_function = SquareMask(image_nrows=self.cutted_nrows,
-                                   image_ncols=self.cutted_ncols,
-                                   mask_percentage=mask_percentage)
+        self.mask_function = SquareMask(self.params_path)
             
-        self.cut_class = CutAndMaskImage(
-            original_nrows=self.x_shape_raw,
-            original_ncols=self.y_shape_raw,
-            final_nrows=self.cutted_nrows,
-            final_ncols=self.cutted_ncols,
-            nans_threshold=0.5,
-            n_cutted_images=self.n_cutted_images,
-            mask_function=self.mask_function)
+        self.cut_class = CutAndMaskImage(self.params_path)
         
         # Select random points and map them to images
         random_points = self.cut_class.select_random_points(n_points=self.n_cutted_images)
@@ -83,6 +106,32 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         """Clean up temporary directory after tests."""
         self.temp_dir.cleanup()
         
+    def test_initialization(self):
+        """Test if the CutAndMaskImage class initializes correctly."""
+        # Test if the CutAndMaskImage class initializes correctly
+        self.assertIsInstance(self.cut_class, CutAndMaskImage)
+        
+        # Check if the parameters are set correctly
+        self.assertEqual(self.cut_class.cutted_nrows, self.cutted_nrows)
+        self.assertEqual(self.cut_class.cutted_ncols, self.cutted_ncols)
+        self.assertEqual(self.cut_class.original_nrows, self.x_shape_raw)
+        self.assertEqual(self.cut_class.original_ncols, self.y_shape_raw)
+        self.assertEqual(self.cut_class.nans_threshold, self.nans_threshold)
+        self.assertEqual(self.cut_class.n_cutted_images, self.n_cutted_images)
+        self.assertEqual(self.cut_class.mask_kind, self.mask_kind)
+        self.assertIsInstance(self.cut_class.mask_function, type(self.mask_function))
+
+    def test_select_random_points(self):
+        """Test that select_random_points returns the correct number of points."""
+        
+        random_points = self.cut_class.select_random_points(n_points=self.n_cutted_images)
+        # Check that the number of points is correct
+        self.assertEqual(len(random_points), self.n_cutted_images)
+        # Check that the points are within the bounds of the original image
+        for point in random_points:
+            self.assertTrue(0 <= point[0] < self.x_shape_raw)
+            self.assertTrue(0 <= point[1] < self.y_shape_raw)
+            
     def test_generate_masked_datasets_keys(self):
         """Test that generate_masked_image_dataset returns a dictionary with the correct keys."""
         self.assertIsInstance(self.dataset, dict)
@@ -151,9 +200,6 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
                 else:
                     # Check that the non masked channels are not masked
                     self.assertTrue(th.all(masks[i, channel, :, :] == 1), f"Non masked channel has 0s in the mask")
-            
-            
-    
-        
+     
 if __name__ == "__main__":
     unittest.main()
