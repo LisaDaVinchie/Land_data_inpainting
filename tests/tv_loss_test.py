@@ -17,19 +17,21 @@ class TestTVLoss(unittest.TestCase):
             [1, 1, 1, 1],
             [1, 0, 1, 1],
             [1, 1, 1, 1]
-        ]]], dtype=th.float32)
+        ]]], dtype=th.bool)
         
         expected_mask = th.tensor([[[
             [0, 0, 0, 1],
             [0, 0, 0, 1],
             [0, 0, 0, 1]
-        ]]], dtype=th.float32)
+        ]]], dtype=th.bool)
+        
         dilated_mask = self.tvloss._dilate_mask(sample_mask, 1)
+        self.assertEqual(dilated_mask.dtype, th.bool)
         
         self.assertTrue(th.equal(dilated_mask, expected_mask))
-        
         inv_dilated_mask = self.tvloss._dilate_mask(sample_mask, 1, True)
-        self.assertTrue(th.equal(inv_dilated_mask, 1 - expected_mask))
+        self.assertTrue(th.equal(inv_dilated_mask, ~expected_mask))
+        self.assertEqual(inv_dilated_mask.dtype, th.bool)
         
     def test_image_composition(self):
         """Test that the image is composed correctly"""
@@ -51,7 +53,7 @@ class TestTVLoss(unittest.TestCase):
             [True, True, True, False],
             [True, True, True, False],
             [False, False, False, False]
-        ]]])
+        ]]], dtype=th.bool)
         
         expected_image = th.tensor([[[
             [1., 2., 3., 2.],
@@ -76,14 +78,14 @@ class TestTVLoss(unittest.TestCase):
             [0, 1, 1, 0],
             [0, 1, 1, 0],
             [0, 0, 0, 0]
-        ]]], dtype=th.float32)
+        ]]], dtype=th.bool)
         
         expected_mask = th.tensor([[[
             [0, 0, 0, 0],
             [0, 0, 1, 0],
             [0, 1, 1, 0],
             [0, 0, 0, 0]
-        ]]], dtype=th.float32)
+        ]]], dtype=th.bool)
         
         output_mask = self.tvloss._exclude_nans_from_mask(image, mask)
         
@@ -102,7 +104,7 @@ class TestTVLoss(unittest.TestCase):
             [1, 1, 1, 0],
             [1, 1, 1, 0],
             [0, 0, 0, 0]
-        ]]], dtype=th.float32)
+        ]]], dtype=th.bool)
         
         loss = self.tvloss._tv_loss(image, masks)
         
@@ -118,7 +120,7 @@ class TestTVLoss(unittest.TestCase):
         B, C, H, W = 1, 3, 4, 4
         pred = th.ones(B, C, H, W, requires_grad=True)
         target = th.zeros(B, C, H, W)
-        masks = th.zeros(B, C, H, W)  # All masked => loss calculated on all pixels
+        masks = th.zeros((B, C, H, W), dtype=th.bool)  # All masked => loss calculated on all pixels
         
         loss = self.tvloss(pred, target, masks)
         
@@ -130,7 +132,7 @@ class TestTVLoss(unittest.TestCase):
         B, C, H, W = 1, 3, 6, 6
         pred = th.rand(B, C, H, W)
         target = th.rand(B, C, H, W)
-        masks = th.ones(B, C, H, W)  # None masked => loss calculated on no pixels
+        masks = th.ones((B, C, H, W), dtype = th.bool)  # None masked => loss calculated on no pixels
         
         loss = self.tvloss(pred, target, masks)
         
@@ -155,7 +157,7 @@ class TestTVLoss(unittest.TestCase):
             [1., 0., 1., 1.],
             [1., 1., 1., 1.],
             [1., 1., 1., 1.]
-        ]]])
+        ]]], dtype=th.bool)
         
         loss = self.tvloss(pred, target, masks)
         
@@ -180,7 +182,7 @@ class TestTVLoss(unittest.TestCase):
             [1., 1., 1., 1.],
             [1., 1., 1., 1.],
             [1., 1., 1., 1.]
-        ]]])
+        ]]], dtype=th.bool)
         
         loss = self.tvloss(pred, target, masks)
         # (2 - 1 + 5 - 4 + 4 - 1 + 5 - 2) / 4 = 8 / 4 = 2
@@ -191,7 +193,7 @@ class TestTVLoss(unittest.TestCase):
         B, C, H, W = 1, 1, 3, 3
         pred = th.rand(B, C, H, W, requires_grad=True)
         target = th.rand(B, C, H, W)
-        masks = th.zeros(B, C, H, W)
+        masks = th.zeros((B, C, H, W), dtype=th.bool)  # All masked => loss calculated on all pixels
         
         loss = self.tvloss(pred, target, masks)
         self.assertTrue(loss.requires_grad)

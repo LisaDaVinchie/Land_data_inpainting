@@ -107,7 +107,7 @@ class TotalVariationLoss(nn.Module):
         Args:
             prediction (th.Tensor): output of the model, shape (batch_size, channels, height, width)
             target (th.Tensor): ground truth, shape (batch_size, channels, height, width)
-            masks (th.Tensor): binary mask with 0s for masked pixels, shape (batch_size, channels, height, width)
+            masks (th.Tensor): th.bool mask with False for masked pixels, shape (batch_size, channels, height, width)
 
         Returns:
             th.Tensor: total variation loss
@@ -121,7 +121,7 @@ class TotalVariationLoss(nn.Module):
             return prediction.sum() * 0.0 # Trick to preserve grad
         
         # Calculate the image to be used for the loss
-        image_comp = self._compose_image(prediction, target, inv_dilated_mask.bool())
+        image_comp = self._compose_image(prediction, target, inv_dilated_mask)
         
         # Exclude NaN pixels from the mask
         inv_dilated_mask = self._exclude_nans_from_mask(prediction, inv_dilated_mask)
@@ -161,15 +161,15 @@ class TotalVariationLoss(nn.Module):
 
         Args:
             image (th.Tensor): image to be used for the loss, shape (batch_size, channels, height, width)
-            mask (th.Tensor): binary mask with 1 where the pixel is masked, shape (batch_size, channels, height, width)
+            mask (th.Tensor): th.bool mask with True where the pixel is masked, shape (batch_size, channels, height, width)
 
         Returns:
-            th.Tensor: mask with NaN pixels excluded, 1 where the pixel is masked, 0 otherwise
+            th.Tensor: mask with NaN pixels excluded, True where the pixel is masked, False otherwise
         """
-        nan_mask = th.where(image == self.nan_placeholder, th.ones_like(image), th.zeros_like(image)).float()
+        nan_mask = th.where(image == self.nan_placeholder, th.ones_like(image), th.zeros_like(image)).bool() # Create a mask that is 1 where the target is the NaN placeholder and 0 otherwise
         
         # Where both mask and nan_mask are 0, assign value 1, otherwise keep the value of mask
-        return th.where((mask == 1) & (nan_mask == 1), th.zeros_like(mask), mask)
+        return th.where(mask & nan_mask, th.zeros_like(mask), mask).bool() # Invert the mask to exclude the NaN pixels
     
     def _compose_image(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) -> th.Tensor:
         """Compose the prediction and target images using the masks.
@@ -190,26 +190,26 @@ class TotalVariationLoss(nn.Module):
         """Dilate a binary mask by a given number of pixels. The epanded regions will be the 0 ones.
 
         Args:
-            masks (th.Tensor): binary mask with 0 where the pixel is masked, 1 otherwise, shape (batch_size, channels, height, width).
+            masks (th.Tensor): th.bool mask with False where the pixel is masked, True otherwise, shape (batch_size, channels, height, width).
             dilation (int): number of pixels to dilate the mask.
             inverse (bool, optional): whether to return the dilated mask or the inverse dilated mask. Defaults to False.
 
         Returns:
-            th.Tensor: dilated mask, with 0 where the pixel is masked, 1 otherwise if not inverse.
+            th.Tensor: dilated mask, with False where the pixel is masked, True otherwise if not inverse.
             The contrary if inverse is True.
         """
         kernel_size = 2 * dilation + 1
         
         B, C, H, W = masks.shape
         
-        kernel = th.ones(1, 1, kernel_size, kernel_size, dtype=th.float32, device =masks.device)
+        kernel = th.ones(1, 1, kernel_size, kernel_size, dtype=th.float32, device = masks.device)
         
-        inv_mask = (1 - masks).view(B * C, 1, H, W).float()  # Invert the mask to dilate the unmasked pixels
+        inv_mask = (~masks).view(B * C, 1, H, W).float()  # Invert the mask to dilate the unmasked pixels
         
         dilated_mask = th.nn.functional.conv2d(inv_mask, kernel, padding=dilation, groups=1) > 0.5
-        dilated_mask = dilated_mask.view(B, C, H, W).float()
+        dilated_mask = dilated_mask.view(B, C, H, W).bool()
         
-        return dilated_mask if inverse else 1 - dilated_mask
+        return dilated_mask if inverse else ~dilated_mask
    
 class CustomLoss1(nn.Module):
     def __init__(self, nan_placeholder: float, per_pixel_weight: float = 1.0, tv_weight: float = 0.1):
