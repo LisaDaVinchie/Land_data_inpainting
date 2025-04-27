@@ -64,7 +64,11 @@ class SquareMask:
     def __init__(self, params_path: Path = None, image_nrows: int = None, image_ncols: int = None, mask_percentage: float = None):
         """Initialize the SquareMask class."""
         
-        self._initialize_parameters(params_path, image_nrows, image_ncols, mask_percentage)
+        self.image_nrows = image_nrows
+        self.image_ncols = image_ncols
+        self.mask_percentage = mask_percentage
+        
+        self._initialize_parameters(params_path)
         
         self._check_parameters()
 
@@ -75,20 +79,27 @@ class SquareMask:
         if self.mask_percentage <= 0 or self.mask_percentage >= 1:
             raise ValueError("Mask percentage must be between 0 and 1.")
 
-    def _initialize_parameters(self, params_path, image_nrows, image_ncols, mask_percentage):
-        
+    def _initialize_parameters(self, params_path: Path):
+        """Initialize parameters from a JSON file if provided. Priority is given to the parameters passed in the constructor.
+
+        Args:
+            params_path (Path): Path to the JSON file containing parameters.
+
+        Raises:
+            ValueError: If any of the required parameters are None.
+        """
         if params_path is not None:
             with open(params_path, 'r') as f:
                 params = json.load(f)
-        
-        self.image_nrows = image_nrows if image_nrows is not None else params['dataset']['cutted_nrows']
-        self.image_ncols = image_ncols if image_ncols is not None else params['dataset']['cutted_ncols']
-        self.mask_percentage = mask_percentage if mask_percentage is not None else params[mask_name]['square_mask']['mask_percentage']
+
+            self.image_nrows = params['dataset']['cutted_nrows'] if self.image_nrows is None else self.image_nrows
+            self.image_ncols = params['dataset']['cutted_ncols'] if self.image_ncols is None else self.image_ncols
+            self.mask_percentage = params[mask_name]['square_mask']['mask_percentage'] if self.mask_percentage is None else self.mask_percentage
         
         if self.image_nrows is None or self.image_ncols is None or self.mask_percentage is None:
             raise ValueError("Missing one of the following required parameters: image_nrows, image_ncols, mask_percentage")
         
-    def mask(self):
+    def mask(self) -> th.Tensor:
         """Create a square mask of n_pixels in the image"""
         n_pixels = int(self.mask_percentage * self.image_nrows * self.image_ncols)
         square_nrows = int(n_pixels ** 0.5)
@@ -108,7 +119,13 @@ class SquareMask:
 class LinesMask:
     def __init__(self, params_path: Path = None, image_nrows: int = None, image_ncols: int = None, num_lines: int = None, min_thickness: int = None, max_thickness: int = None):
         
-        self._initialize_parameters(params_path, image_nrows, image_ncols, num_lines, min_thickness, max_thickness)
+        self.image_nrows = image_nrows
+        self.image_ncols = image_ncols
+        self.num_lines = num_lines
+        self.min_thickness = min_thickness
+        self.max_thickness = max_thickness
+        
+        self._initialize_parameters(params_path)
         
         self._check_parameters()
 
@@ -119,30 +136,31 @@ class LinesMask:
         if self.num_lines <= 0:
             raise ValueError("Number of lines must be a positive integer.")
         
-        if self.min_thickness <= 0 or self.max_thickness <= 0:
+        if self.min_thickness <= 0 or self.max_thickness < 0:
             raise ValueError("Line thickness must be positive integers.")
         
         if self.min_thickness > self.max_thickness:
             raise ValueError("Minimum thickness cannot be greater than maximum thickness.")
         
 
-    def _initialize_parameters(self, params_path, image_nrows, image_ncols, num_lines, min_thickness, max_thickness):
-        
+    def _initialize_parameters(self, params_path: Path):
+        """Initialize parameters from a JSON file if provided. Priority is given to the parameters passed in the constructor.
+
+        Args:
+            params_path (Path): Path to the JSON file containing parameters.
+
+        Raises:
+            ValueError: If any of the required parameters are None.
+        """
         if params_path is not None:
             with open(params_path, 'r') as f:
                 params = json.load(f)
                 
-            self.image_nrows = params['dataset']['cutted_nrows']
-            self.image_ncols = params['dataset']['cutted_ncols']
-            self.num_lines = params[mask_name]['lines_mask']['num_lines']
-            self.min_thickness = params[mask_name]['lines_mask']['min_thickness']
-            self.max_thickness = params[mask_name]['lines_mask']['max_thickness']
-        else:
-            self.image_nrows = image_nrows
-            self.image_ncols = image_ncols
-            self.num_lines = num_lines
-            self.min_thickness = min_thickness
-            self.max_thickness = max_thickness
+            self.image_nrows = params['dataset']['cutted_nrows'] if self.image_nrows is None else self.image_nrows
+            self.image_ncols = params['dataset']['cutted_ncols'] if self.image_ncols is None else self.image_ncols
+            self.num_lines = params[mask_name]['lines_mask']['num_lines'] if self.num_lines is None else self.num_lines
+            self.min_thickness = params[mask_name]['lines_mask']['min_thickness'] if self.min_thickness is None else self.min_thickness
+            self.max_thickness = params[mask_name]['lines_mask']['max_thickness'] if self.max_thickness is None else self.max_thickness
         
         if self.image_nrows is None or self.image_ncols is None or self.num_lines is None or self.min_thickness is None or self.max_thickness is None:
             raise ValueError("Missing one of the following required parameters: image_nrows, image_ncols, num_lines, min_thickness, max_thickness")
@@ -159,7 +177,7 @@ class LinesMask:
             max_thickness (int): Maximum line thickness
             
         Returns:
-            torch.Tensor: Inverted binary mask of shape (height, width)
+            torch.Tensor: Inverted binary mask of shape (nrows, ncols)
         """
         # Start with all ones (background)
         mask = th.ones((self.image_nrows, self.image_ncols), dtype=th.float32)
@@ -177,7 +195,7 @@ class LinesMask:
             
         return mask
 
-    def _generate_single_line(self, start_point: tuple, end_point: tuple, thickness: int):
+    def _generate_single_line(self, start_point: tuple, end_point: tuple, thickness: int) -> th.Tensor:
         """Helper function to generate a single line (1=line, 0=background).
 
         Args:
@@ -186,7 +204,7 @@ class LinesMask:
             thickness (int): thickness of the line, in pixels
 
         Returns:
-            _type_: _description_
+            th.Tensor: binary mask of the line, of shape (nrows, ncols)
         """
         line_mask = th.zeros((self.image_nrows, self.image_ncols), dtype=th.float32)
         
