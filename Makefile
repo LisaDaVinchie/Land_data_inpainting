@@ -9,7 +9,7 @@ RAW_DATA_DIR := $(DATA_DIR)/raw
 
 PREPROCESSING_DIR := $(SRC_DIR)/preprocessing
 
-PROCESSED_DATA_DIR := $(DATA_DIR)/processed/biochemistry
+PROCESSED_DATA_DIR := $(DATA_DIR)/processed/temperature
 PROCESSED_DATA_EXT := ".pt"
 
 RESULTS_DIR := $(DATA_DIR)/results
