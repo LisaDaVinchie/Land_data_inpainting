@@ -231,7 +231,7 @@ class CustomLoss1(nn.Module):
         Args:
             prediction (th.Tensor): output of the model, shape (batch_size, channels, height, width)
             target (th.Tensor): ground truth, shape (batch_size, channels, height, width)
-            masks (th.Tensor): binary mask with 0 where the pixel is masked, shape (batch_size, channels, height, width)
+            masks (th.Tensor): th.bool mask with False where the pixel is masked, shape (batch_size, channels, height, width)
 
         Returns:
             th.Tensor: combined loss
