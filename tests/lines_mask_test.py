@@ -3,6 +3,7 @@ from tempfile import NamedTemporaryFile
 import os
 import sys
 import json
+import torch as th
 from pathlib import Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from preprocessing.mask_data import LinesMask
@@ -68,6 +69,11 @@ class TestLinesMask(unittest.TestCase):
         """Test if the output shape of the mask is correct."""
         mask = self.lines_mask.mask()
         self.assertEqual(mask.shape, (self.image_nrows, self.image_ncols))
+        
+    def test_mask_dtype(self):
+        """Test if the mask data type is correct."""
+        mask = self.lines_mask.mask()
+        self.assertEqual(mask.dtype, th.bool)
         
 
 if __name__ == '__main__':

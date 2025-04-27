@@ -182,18 +182,18 @@ class LinesMask:
             torch.Tensor: Inverted binary mask of shape (nrows, ncols)
         """
         # Start with all ones (background)
-        mask = th.ones((self.image_nrows, self.image_ncols), dtype=th.float32)
+        mask = th.ones((self.image_nrows, self.image_ncols), dtype=th.bool)
         
         for _ in range(self.num_lines):
             # Random start and end points
-            start_point = (random.randint(0, self.image_nrows-1), random.randint(0, self.image_ncols-1))
-            end_point = (random.randint(0, self.image_nrows-1), random.randint(0, self.image_ncols-1))
+            start_point = (random.randint(0, self.image_nrows - 1), random.randint(0, self.image_ncols - 1))
+            end_point = (random.randint(0, self.image_nrows - 1), random.randint(0, self.image_ncols - 1))
             
             # Random thickness
             thickness = random.randint(self.min_thickness, self.max_thickness)
             
-            # Generate the line and subtract from mask (lines become 0)
-            mask = mask * (1 - self._generate_single_line(start_point, end_point, thickness))
+            # Generate the line and subtract from mask (lines become False)
+            mask = mask * (~self._generate_single_line(start_point, end_point, thickness))
             
         return mask
 
@@ -208,7 +208,7 @@ class LinesMask:
         Returns:
             th.Tensor: binary mask of the line, of shape (nrows, ncols)
         """
-        line_mask = th.zeros((self.image_nrows, self.image_ncols), dtype=th.float32)
+        line_mask = th.zeros((self.image_nrows, self.image_ncols), dtype=th.bool)
         
         y1, x1 = start_point
         y2, x2 = end_point
@@ -241,6 +241,6 @@ class LinesMask:
                         yi = int(th.round(y + i).item())
                         xi = int(th.round(x + j).item())
                         if 0 <= yi < self.image_nrows and 0 <= xi < self.image_ncols:
-                            line_mask[yi, xi] = 1
+                            line_mask[yi, xi] = True
                             
         return line_mask
