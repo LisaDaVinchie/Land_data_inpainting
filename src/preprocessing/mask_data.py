@@ -5,6 +5,8 @@ from pathlib import Path
 import json
 
 mask_name = "masks"
+square_mask_name = "square"
+lines_mask_name = "lines"
 
 def apply_mask_on_channel(images: th.Tensor, masks: th.Tensor, placeholder: float = None) -> th.Tensor:
     """Mask the image with the mask, using a placeholder. If the placeholder is none, use the mean of the level"""
@@ -53,9 +55,9 @@ def mask_inversemask_image(images: th.Tensor, masks: th.Tensor, placeholder: flo
 
 def initialize_mask_kind(params_path: Path, mask_kind: str):
     """Initialize the mask kind based on the provided parameters."""
-    if mask_kind == "square":
+    if mask_kind == square_mask_name:
         return SquareMask(params_path)
-    elif mask_kind == "lines":
+    elif mask_kind == lines_mask_name:
         return LinesMask(params_path)
     else:
         raise ValueError(f"Unknown mask kind: {mask_kind}")
@@ -94,7 +96,7 @@ class SquareMask:
 
             self.image_nrows = params['dataset']['cutted_nrows'] if self.image_nrows is None else self.image_nrows
             self.image_ncols = params['dataset']['cutted_ncols'] if self.image_ncols is None else self.image_ncols
-            self.mask_percentage = params[mask_name]['square_mask']['mask_percentage'] if self.mask_percentage is None else self.mask_percentage
+            self.mask_percentage = params[mask_name][square_mask_name]['mask_percentage'] if self.mask_percentage is None else self.mask_percentage
         
         if self.image_nrows is None or self.image_ncols is None or self.mask_percentage is None:
             raise ValueError("Missing one of the following required parameters: image_nrows, image_ncols, mask_percentage")
@@ -158,9 +160,9 @@ class LinesMask:
                 
             self.image_nrows = params['dataset']['cutted_nrows'] if self.image_nrows is None else self.image_nrows
             self.image_ncols = params['dataset']['cutted_ncols'] if self.image_ncols is None else self.image_ncols
-            self.num_lines = params[mask_name]['lines_mask']['num_lines'] if self.num_lines is None else self.num_lines
-            self.min_thickness = params[mask_name]['lines_mask']['min_thickness'] if self.min_thickness is None else self.min_thickness
-            self.max_thickness = params[mask_name]['lines_mask']['max_thickness'] if self.max_thickness is None else self.max_thickness
+            self.num_lines = params[mask_name][lines_mask_name]['num_lines'] if self.num_lines is None else self.num_lines
+            self.min_thickness = params[mask_name][lines_mask_name]['min_thickness'] if self.min_thickness is None else self.min_thickness
+            self.max_thickness = params[mask_name][lines_mask_name]['max_thickness'] if self.max_thickness is None else self.max_thickness
         
         if self.image_nrows is None or self.image_ncols is None or self.num_lines is None or self.min_thickness is None or self.max_thickness is None:
             raise ValueError("Missing one of the following required parameters: image_nrows, image_ncols, num_lines, min_thickness, max_thickness")
