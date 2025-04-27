@@ -176,7 +176,7 @@ class CutAndMaskImage:
             
     #     return cuts
 
-    def generate_image_dataset(self, n_channels: int, masked_channels_list: list, path_to_indices_map: dict, placeholder: float, same_mask: bool = False) -> tuple[dict, dict, th.Tensor]:
+    def generate_image_dataset(self, n_channels: int, masked_channels_list: list, path_to_indices_map: dict, placeholder: float, same_mask: bool = False) -> tuple[dict, th.Tensor]:
         """Generate a dataset of masked images, inverse masked images and masks
 
         Args:
@@ -187,17 +187,18 @@ class CutAndMaskImage:
             same_mask (bool): if True, use the same mask for all the masked channels of the image, otherwise use a different mask for each channel. Defaults to False.
 
         Returns:
-            tuple: dictionary with the masked images, inverse masked images and masks as keys and the corresponding tensors as values
-                    and dictionary with the images and masks as keys and the corresponding tensors as values
+            tuple: dictionary with the images and masks and the nans masks
         """
         
         # Initialize the two datasets
         dataset = None
         
         dataset_keys = ["images", "masks"]
-        dataset = {cls: th.empty((self.n_cutted_images, n_channels, self.cutted_nrows, self.cutted_ncols), dtype=th.float32) for cls in dataset_keys}
+        dataset_shape = (self.n_cutted_images, n_channels, self.cutted_nrows, self.cutted_ncols)
+        dataset = {dataset_keys[0]: th.empty(dataset_shape, dtype=th.float32),
+                   dataset_keys[1]: th.empty(dataset_shape, dtype=th.bool)}
             
-        nans_masks = th.ones((self.n_cutted_images, n_channels, self.cutted_nrows, self.cutted_ncols), dtype=th.float32)
+        nans_masks = th.ones((self.n_cutted_images, n_channels, self.cutted_nrows, self.cutted_ncols), dtype=th.bool)
         
         masked_channels_list = list(masked_channels_list)
         
@@ -239,10 +240,10 @@ class CutAndMaskImage:
             
             # Find where the nans are in the cutted images
             cutted_img_nans = ~th.isnan(cutted_imgs)
-            nans_masks[idx_start:idx_end, :, :, :] = cutted_img_nans.float()
+            nans_masks[idx_start:idx_end, :, :, :] = cutted_img_nans
             
             # Create square masks. 0 where the values are masked, 1 where the values are not masked
-            masks = th.ones((n_indices, n_channels, self.cutted_nrows, self.cutted_ncols), dtype=th.float32)
+            masks = th.ones((n_indices, n_channels, self.cutted_nrows, self.cutted_ncols), dtype=th.bool)
             
             if same_mask:
                 image_mask = self.mask_function.mask()
@@ -252,12 +253,8 @@ class CutAndMaskImage:
                     # Generate the mask for each channel
                     masks[:, mc, :, :] = self.mask_function.mask()
                 # all_masks = th.stack([self.mask_function.mask() for _ in masked_channels_list])
-                
-                # print("all_masks shape: ", all_masks.shape)
-                # masks[:, masked_channels_list] = all_masks.permute(1,0,2,3)  # [n_masks, H,W] -> [1, n_masks, H,W]
-            
             # Set masks to 0 where the nan mask is 0
-            masks = th.where(cutted_img_nans == 0, th.tensor(0, dtype=masks.dtype), masks)
+            masks = th.where(cutted_img_nans == False, th.tensor(False, dtype=masks.dtype), masks)
             
             # Save the images to the minimal dataset, substituting the nans with the placeholder
             dataset[dataset_keys[0]][idx_start:idx_end] = th.nan_to_num(cutted_imgs, nan=placeholder)

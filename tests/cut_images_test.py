@@ -143,15 +143,19 @@ class TestGenerateMaskedImageDataset(unittest.TestCase):
         
         # Check that each tensor has the correct shape and dtype
         expected_shape = (self.n_cutted_images, self.n_channels, self.cutted_nrows, self.cutted_ncols)
-        expected_dtype = th.float32
             
-        for key in self.dataset.keys():
-            self.assertIsInstance(self.dataset[key], th.Tensor)
-            self.assertEqual(self.dataset[key].shape, expected_shape)
-            self.assertEqual(self.dataset[key].dtype, expected_dtype)
+
+        self.assertIsInstance(self.dataset["images"], th.Tensor)
+        self.assertEqual(self.dataset["images"].shape, expected_shape)
+        self.assertEqual(self.dataset["images"].dtype, th.float32)
+        
+        self.assertIsInstance(self.dataset["masks"], th.Tensor)
+        self.assertEqual(self.dataset["masks"].shape, expected_shape)
+        self.assertEqual(self.dataset["masks"].dtype, th.bool)
             
         self.assertIsInstance(self.nans_mask, th.Tensor)
         self.assertEqual(self.nans_mask.shape, expected_shape)
+        self.assertEqual(self.nans_mask.dtype, th.bool)
         
     def test_generate_masked_datasets_values(self):
         """Test that generate_masked_image_dataset returns tensors with the correct masked channels."""
