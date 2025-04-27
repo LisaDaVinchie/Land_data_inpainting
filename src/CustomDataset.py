@@ -7,9 +7,7 @@ def create_dataloaders(dataset: dict, train_perc: float, batch_size: int) -> tup
     
     dataset_keys = list(dataset.keys())
     
-    if len(dataset_keys) ==3:
-        dataset_class = ExtendedDataset(dataset)
-    elif len(dataset_keys) == 2:
+    if len(dataset_keys) == 2:
         dataset_class = MinimalDataset(dataset)
     else:
         raise ValueError(f"Dataset keys must be 2 or 3, got {len(dataset_keys)}")
@@ -29,39 +27,6 @@ def create_dataloaders(dataset: dict, train_perc: float, batch_size: int) -> tup
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
     return train_loader, test_loader
-
-class ExtendedDataset(Dataset):
-    def __init__(self, dataset: dict):
-        """Custom dataset for inpainting
-
-        Args:
-            dataset (dict): A dictionary with the following keys: 'masked_images', 'inverse_masked_images', 'masks'
-        """
-        
-        dataset_keys = list(dataset.keys())
-        
-        self.masked_images = dataset[dataset_keys[0]]
-        self.inverse_masked_images = dataset[dataset_keys[1]]
-        self.masks = dataset[dataset_keys[2]]
-    
-    def __len__(self) -> int:
-        """Returns the length of the dataset
-
-        Returns:
-            int: The length of the dataset
-        """
-        return len(self.masked_images)
-    
-    def __getitem__(self, idx: int) -> tuple:
-        """Returns the name, image and target at the given index
-
-        Args:
-            idx (int): The index of the item to return
-
-        Returns:
-            tuple: A tuple containing the image and masked image
-        """
-        return self.masked_images[idx], self.inverse_masked_images[idx], self.masks[idx]
     
 
 class MinimalDataset(Dataset):
