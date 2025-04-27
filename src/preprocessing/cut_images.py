@@ -291,17 +291,6 @@ def main():
     params_path = args.params
     paths_path = args.paths
     
-    with open(paths_path, 'r') as paths_file:
-        json_paths = json.load(paths_file)
-        
-    processed_data_dir = Path(json_paths["data"]["processed_data_dir"])
-    next_minimal_dataset_path = Path(json_paths["data"]["next_minimal_dataset_path"])
-    dataset_specs_path = Path(json_paths["data"]["dataset_specs_path"])
-    next_nans_masks_path = Path(json_paths["data"]["next_nans_masks_path"])
-    next_minmax_path = Path(json_paths["data"]["next_minmax_path"])
-    
-    # Check if the directories exist
-    check_dirs_existance([processed_data_dir, next_minimal_dataset_path.parent, dataset_specs_path.parent, next_minmax_path.parent])
 
     with open(params_path, 'r') as params_file:
         params = json.load(params_file)
@@ -317,6 +306,18 @@ def main():
     masked_channels = list(params["dataset"][dataset_kind]["masked_channels"])
         
     print("Using placeholder value: ", nan_placeholder, flush=True)
+    
+    with open(paths_path, 'r') as paths_file:
+        json_paths = json.load(paths_file)
+    
+    processed_data_dir = Path(json_paths["data"]["processed_data_dir"][dataset_kind])
+    next_minimal_dataset_path = Path(json_paths["data"]["next_minimal_dataset_path"])
+    dataset_specs_path = Path(json_paths["data"]["dataset_specs_path"])
+    next_nans_masks_path = Path(json_paths["data"]["next_nans_masks_path"])
+    next_minmax_path = Path(json_paths["data"]["next_minmax_path"])
+    
+    # Check if the directories exist
+    check_dirs_existance([processed_data_dir, next_minimal_dataset_path.parent, dataset_specs_path.parent, next_minmax_path.parent])
 
     # Select n_images random images from the processed images
     processed_images_paths = list(processed_data_dir.glob(f"*.pt"))
