@@ -155,6 +155,8 @@ class TrainModel:
                 self.lr.append(self.optimizer.param_groups[0]['lr'])
                 self._backpropagate_and_step(loss_val)
             
+            self.scheduler.step() if self.scheduler is not None else None
+            self.lr.append(self.optimizer.param_groups[0]['lr'])
             self.train_losses.append(train_loss / len(self.train_loader))
             
             with th.no_grad():
@@ -178,8 +180,7 @@ class TrainModel:
         loss_val.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
-        self.scheduler.step() if self.scheduler is not None else None
-
+        
     def train_loop_minimal(self):
 
         for epoch in range(self.epochs):
@@ -190,9 +191,11 @@ class TrainModel:
             for (images, masks) in self.train_loader:
                 loss_val = self._calculate_loss_minimal(images, masks)
                 train_loss += loss_val.item()
-                self.lr.append(self.optimizer.param_groups[0]['lr'])
                 self._backpropagate_and_step(loss_val)
             
+            self.scheduler.step() if self.scheduler is not None else None
+            self.lr.append(self.optimizer.param_groups[0]['lr'])
+
             self.train_losses.append(train_loss / len(self.train_loader))
             
             with th.no_grad():
