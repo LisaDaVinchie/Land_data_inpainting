@@ -5,11 +5,12 @@ DATA_DIR := $(BASE_DIR)/data
 SRC_DIR := $(BASE_DIR)/src
 FIG_DIR := $(BASE_DIR)/figs
 TEST_DIR := $(BASE_DIR)/tests
-RAW_DATA_DIR := $(DATA_DIR)/raw
 
 PREPROCESSING_DIR := $(SRC_DIR)/preprocessing
 
-PROCESSED_DATA_DIR := $(DATA_DIR)/processed/temperature
+PROCESSED_DATA_DIR := $(DATA_DIR)/processed
+TEMPERATURE_DATA_DIR := $(PROCESSED_DATA_DIR)/temperature
+BIOCHEMISTRY_DATA_DIR := $(PROCESSED_DATA_DIR)/biochemistry
 PROCESSED_DATA_EXT := ".pt"
 
 RESULTS_DIR := $(DATA_DIR)/results
@@ -58,14 +59,17 @@ MINMAX_FILE_EXT := ".pt"
 # IDX_DATASET = $(shell i=0; while [ -e "$(MINIMAL_DATASETS_DIR)/$(DATASET_BASENAME)_$$i$(DATASET_FILE_EXT)" ] || [ -e "$(EXTENDED_DATASETS_DIR)/$(DATASET_BASENAME)_$$i$(DATASET_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
 IDX_DATASET := $(shell bash -c 'i=0; while [ -e "$(MINIMAL_DATASETS_DIR)/$(DATASET_BASENAME)_$$i$(DATASET_FILE_EXT)" ] || [ -e "$(EXTENDED_DATASETS_DIR)/$(DATASET_BASENAME)_$$i$(DATASET_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i"')
 IDX_DATASET_MINUS_ONE = $(shell echo $$(($(IDX_DATASET) - 1)))
-NEXT_MINIMAL_DATASET_PATH = $(MINIMAL_DATASETS_DIR)/$(DATASET_BASENAME)_$(IDX_DATASET)$(DATASET_FILE_EXT)
-NEXT_EXTENDED_DATASET_PATH = $(EXTENDED_DATASETS_DIR)/$(DATASET_BASENAME)_$(IDX_DATASET)$(DATASET_FILE_EXT)
+
 CURRENT_MINIMAL_DATASET_PATH = $(MINIMAL_DATASETS_DIR)/$(DATASET_BASENAME)_$(IDX_DATASET_MINUS_ONE)$(DATASET_FILE_EXT)
-CURRENT_EXTENDED_DATASET_PATH = $(EXTENDED_DATASETS_DIR)/$(DATASET_BASENAME)_$(IDX_DATASET_MINUS_ONE)$(DATASET_FILE_EXT)
-DATASET_SPECS_PATH = $(DATASET_SPECS_DIR)/$(DATASET_SPECS_BASENAME)_$(IDX_DATASET)$(DATASET_SPECS_FILE_EXT)
+NEXT_MINIMAL_DATASET_PATH = $(MINIMAL_DATASETS_DIR)/$(DATASET_BASENAME)_$(IDX_DATASET)$(DATASET_FILE_EXT)
+
+CURRENT_DATASET_SPECS_PATH = $(DATASET_SPECS_DIR)/$(DATASET_SPECS_BASENAME)_$(IDX_DATASET_MINUS_ONE)$(DATASET_SPECS_FILE_EXT)
+NEXT_DATASET_SPECS_PATH = $(DATASET_SPECS_DIR)/$(DATASET_SPECS_BASENAME)_$(IDX_DATASET)$(DATASET_SPECS_FILE_EXT)
+
 CURRENT_NANS_MASKS_PATH = $(NANS_MASKS_DIR)/$(NANS_MASKS_BASENAME)_$(IDX_DATASET_MINUS_ONE)$(NANS_MASKS_FILE_EXT)
 NEXT_NANS_MASKS_PATH = $(NANS_MASKS_DIR)/$(NANS_MASKS_BASENAME)_$(IDX_DATASET)$(NANS_MASKS_FILE_EXT)
-CURRENT_MIMAX_PATH = $(MINMAX_DIR)/$(MINMAX_BASENAME)_$(IDX_DATASET_MINUS_ONE)$(MINMAX_FILE_EXT)
+
+CURRENT_MINMAX_PATH = $(MINMAX_DIR)/$(MINMAX_BASENAME)_$(IDX_DATASET_MINUS_ONE)$(MINMAX_FILE_EXT)
 NEXT_MINMAX_PATH = $(MINMAX_DIR)/$(MINMAX_BASENAME)_$(IDX_DATASET)$(MINMAX_FILE_EXT)
 
 # Find the next RESULT_FILE_EXT available filename
@@ -80,26 +84,27 @@ PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
 
-.PHONY: config preprocess cut bcut train btrain test plot clean_data help
+.PHONY: config cut bcut train btrain test plot clean help
 
 config:
 	@echo "Storing paths to json..."
 	@echo "{" > $(PATHS_FILE)
 	@echo "    \"data\": {" >> $(PATHS_FILE)
-	@echo "        \"raw_data_dir\": \"$(RAW_DATA_DIR)\"," >> $(PATHS_FILE)
-	@echo "        \"processed_data_dir\": \"$(PROCESSED_DATA_DIR)\"," >> $(PATHS_FILE)
+	@echo "        \"processed_data_dir\": {" >> $(PATHS_FILE)
+	@echo "            \"temperature\": \"$(TEMPERATURE_DATA_DIR)\"," >> $(PATHS_FILE)
+	@echo "            \"biochemistry\": \"$(BIOCHEMISTRY_DATA_DIR)\"" >> $(PATHS_FILE)
+	@echo "        }," >> $(PATHS_FILE)
 	@echo "        \"processed_data_ext\": \"$(PROCESSED_DATA_EXT)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_dir\": \"$(MASKS_DIR)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_basename\": \"$(MASKS_BASENAME)\"," >> $(PATHS_FILE)
 	@echo "        \"masks_file_ext\": \"$(MASKS_FILE_EXT)\"," >> $(PATHS_FILE)
-	@echo "        \"next_extended_dataset_path\": \"$(NEXT_EXTENDED_DATASET_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"current_extended_dataset_path\": \"$(CURRENT_EXTENDED_DATASET_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"current_minimal_dataset_path\": \"$(CURRENT_MINIMAL_DATASET_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"next_minimal_dataset_path\": \"$(NEXT_MINIMAL_DATASET_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"dataset_specs_path\": \"$(DATASET_SPECS_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"current_dataset_specs_path\": \"$(CURRENT_DATASET_SPECS_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"dataset_specs_path\": \"$(NEXT_DATASET_SPECS_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"current_nans_masks_path\": \"$(CURRENT_NANS_MASKS_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"next_nans_masks_path\": \"$(NEXT_NANS_MASKS_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"current_minmax_path\": \"$(CURRENT_MIMAX_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"current_minmax_path\": \"$(CURRENT_MINMAX_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"next_minmax_path\": \"$(NEXT_MINMAX_PATH)\"" >> $(PATHS_FILE)
 	@echo "    }," >> $(PATHS_FILE)
 	@echo "    \"results\": {" >> $(PATHS_FILE)
@@ -109,10 +114,6 @@ config:
 	@echo "        \"weights_path\": \"$(WEIGHTS_PATH)\"" >> $(PATHS_FILE)   
 	@echo "    }" >> $(PATHS_FILE)
 	@echo "}" >> $(PATHS_FILE)
-
-preprocess: config
-	@echo "Preprocessing data..."
-	@$(PYTHON) $(PREPROCESSING_DIR)/netcdf_to_torch.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 cut: config
 	@echo "Cutting images..."
@@ -135,17 +136,19 @@ test:
 	@echo "Running tests..."
 	$(PYTHON) -m unittest discover -s $(TEST_DIR) -p "*_test.py"
 
-clean_data:
-	rm -rf $(MINIMAL_DATASETS_DIR)/* $(EXTENDED_DATASETS_DIR)/* $(MASKS_DIR)/* $(DATASET_SPECS_DIR)/* $(NANS_MASKS_DIR)/* $(MINMAX_DIR)/*
+clean: config
+	@echo "Removing dataset $(CURRENT_MINIMAL_DATASET_PATH)"
+	rm -rf $(CURRENT_MINIMAL_DATASET_PATH) $(CURRENT_NANS_MASKS_PATH) $(CURRENT_DATASET_SPECS_PATH) $(CURRENT_MINMAX_PATH)
 
 help:
 	@echo "Usage: make [target]"
 	@echo "Available targets:"
 	@echo "  config: Store paths to json"
-	@echo "  preprocess: Preprocess data"
 	@echo "  cut: create a dataset of images"
-	@echo "  mask: Create masks"
+	@echo "  bcut: Run the bottleneck profiler on the cut_images script"
 	@echo "  train: Train the model"
+	@echo "  btrain: Run the bottleneck profiler on the training script"
 	@echo "  test: Run tests"
-	@echo "  bottleneck: Run the bottleneck profiler on the training script"
+	@echo "  plot: Plot results"
+	@echo "  clean: Remove the last dataset and its related files"
 	@echo "  help: Display this help message"
