@@ -105,13 +105,11 @@
             "min_thickness": 1,
             "max_thickness": 5
         }
-},
-    "lr_schedulers":
-    {
+    },
+    "lr_schedulers": {
         "step": {
             "step_size": 1,
             "gamma": 0.1
         }
     }
-
 }
