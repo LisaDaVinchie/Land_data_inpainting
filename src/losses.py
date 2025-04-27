@@ -59,7 +59,11 @@ class PerPixelMSE(nn.Module):
 
 class PerPixelL1(nn.Module):
     def __init__(self, nan_placeholder: float = -2.0):
-        """Initialize the Per Pixel L1 loss module."""
+        """Initialize the Per Pixel L1 loss module.
+
+        Args:
+            nan_placeholder (float, optional): placeholder for nan pixels. Defaults to -2.0.
+        """
         super(PerPixelL1, self).__init__()
         
         self.nan_placeholder = nan_placeholder
@@ -70,15 +74,13 @@ class PerPixelL1(nn.Module):
         Args:
             prediction (th.Tensor): output of the model, shape (batch_size, channels, height, width)
             target (th.Tensor): ground truth, shape (batch_size, channels, height, width)
-            masks (th.Tensor): binary mask with 0s for masked pixels, shape (batch_size, channels, height, width)
+            masks (th.Tensor): th.bool mask with False for masked pixels, shape (batch_size, channels, height, width)
 
         Returns:
             th.Tensor: per-pixel loss
         """
         
-        bool_masks = masks.bool()
-        
-        n_valid_pixels = (~bool_masks).sum().float()
+        n_valid_pixels = (~masks).sum().float()
         n_nans = th.where(target == self.nan_placeholder, th.ones_like(target), th.zeros_like(target)).sum().float() # count the number of NaN pixels
         
         n_valid_pixels -= n_nans # Subtract the number of NaN pixels from the number of valid pixels
@@ -86,7 +88,7 @@ class PerPixelL1(nn.Module):
             return th.tensor(0.0, requires_grad=True)
         
         diff = th.abs(prediction - target)
-        masked_diff = diff.masked_fill(bool_masks, 0.0)
+        masked_diff = diff.masked_fill(masks, 0.0)
         return masked_diff.sum() / n_valid_pixels
 
 class TotalVariationLoss(nn.Module):
