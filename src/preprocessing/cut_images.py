@@ -25,7 +25,7 @@ class CutAndMaskImage:
         - save the dataset and masks
         - save info regarding the dataset, such as the number of images, the size of the images, etc.
     """
-    def __init__(self, original_nrows: int, original_ncols: int, final_nrows: int, final_ncols: int, nans_threshold: float, n_cutted_images: int, mask_function: Type =None):
+    def __init__(self, params_path: Path = None, original_nrows: int = None, original_ncols: int  = None, final_nrows: int  = None, final_ncols: int  = None, nans_threshold: float  = None, n_cutted_images: int  = None, mask_kind: str = None, mask_function: Type = None):
         """Initalize the class with the parameters needed to cut the images and generate the dataset
 
         Args:
@@ -35,18 +35,59 @@ class CutAndMaskImage:
             final_ncols (int): number of columns in the cutted image
             nans_threshold (float): maximum fraction of nans allowed in the cutted image. Must be between 0 and 1
             n_cutted_images (int): number of cutted images to generate
-            mask_function (Type): class used to generate the masks, with .mask() method. Defaults to None.
+            mask_kind (str): kind of mask to use.
+            mask_function (Type): function to use to generate the mask. If None, the function will be initialized using the mask_kind parameter
         """
         self.original_nrows = original_nrows
         self.original_ncols = original_ncols
-        self.final_nrows = final_nrows
-        self.final_ncols = final_ncols
+        self.cutted_nrows = final_nrows
+        self.cutted_ncols = final_ncols
         self.nans_threshold = nans_threshold
         self.n_cutted_images = n_cutted_images
+        self.mask_kind = mask_kind
         self.mask_function = mask_function
+        
+        self._load_parameters(params_path)
+        
+        self.mask_function = initialize_mask_kind(params_path, self.mask_kind)
+        
+        self._check_params()
+
+    def _load_parameters(self, params_path):
+        if params_path is not None:
+            with open(params_path, 'r') as params_file:
+                params = json.load(params_file)
+            
+            dataset_kind = str(params["dataset"]["dataset_kind"])
+            self.original_nrows = int(params["dataset"][dataset_kind]["x_shape_raw"]) if self.original_nrows is None else self.original_nrows
+            self.original_ncols = int(params["dataset"][dataset_kind]["y_shape_raw"]) if self.original_ncols is None else self.original_ncols
+            self.n_cutted_images = int(params["dataset"]["n_cutted_images"]) if self.n_cutted_images is None else self.n_cutted_images
+            self.cutted_nrows = int(params["dataset"]["cutted_nrows"]) if self.cutted_nrows is None else self.cutted_nrows
+            self.cutted_ncols = int(params["dataset"]["cutted_ncols"]) if self.cutted_ncols is None else self.cutted_ncols
+            self.nans_threshold = float(params["dataset"]["nans_threshold"]) if self.nans_threshold is None else self.nans_threshold
+            if self.mask_function is None:
+                self.mask_kind = str(params["dataset"]["mask_kind"]) if self.mask_kind is None else None
+                
+        if self.mask_function is None and self.mask_kind is None:
+            raise ValueError("The mask function and the mask kind are both None. Please provide one of them.")
+        
+        for param in [self.original_nrows, self.original_ncols, self.cutted_nrows, self.cutted_ncols, self.nans_threshold, self.n_cutted_images]:
+            if param is None:
+                raise ValueError("Some parameters are None. Please check the input parameters.")
+
+    def _check_params(self):
+        if self.original_nrows <=0 or self.original_ncols <= 0:
+            raise ValueError("The original image dimensions must be greater than 0.")
+        if self.cutted_nrows <=0 or self.cutted_ncols <= 0:
+            raise ValueError("The cutted image dimensions must be greater than 0.")
+        if self.nans_threshold < 0 or self.nans_threshold > 1:
+            raise ValueError("The nans threshold must be between 0 and 1.")
+        if self.n_cutted_images <= 0:
+            raise ValueError("The number of cutted images must be greater than 0.")
+        if self.cutted_nrows > self.original_nrows or self.cutted_ncols > self.original_ncols:
+            raise ValueError("The cutted image dimensions must be smaller than the original image dimensions.")
         if self.mask_function is not None and not hasattr(self.mask_function, 'mask'):
             raise AttributeError("The provided mask_function does not have a 'mask' method.")
-
 
     def select_random_points(self, n_points: int) -> th.Tensor:
         """Select random points in the original image, to use as top-left corners for the cutted images
@@ -57,8 +98,9 @@ class CutAndMaskImage:
         Returns:
             th.Tensor: tensor with the selected random points, as (x, y) coordinates
         """
-        random_x = th.randint(0, self.original_nrows - self.final_nrows, (n_points,))
-        random_y = th.randint(0, self.original_ncols - self.final_ncols, (n_points,))
+        
+        random_x = th.randint(0, self.original_nrows - self.cutted_nrows, (n_points,))
+        random_y = th.randint(0, self.original_ncols - self.cutted_ncols, (n_points,))
         random_points = th.stack([random_x, random_y], dim = 1)
         return random_points
 
@@ -73,6 +115,7 @@ class CutAndMaskImage:
             dict: dictionary with the paths to the images as keys and the points as values
         """
         
+        # Chose one image for each point. Images can be used multiple times
         chosen_paths = [random.choice(image_file_paths) for _ in range(len(selected_random_points))]
         path_to_indices = {}
         
@@ -94,40 +137,44 @@ class CutAndMaskImage:
         Returns:
             th.Tensor: cutted image, of shape (n_channels, final_nrows, final_ncols)
         """
-        cutted_img = image[:, index[0]:index[0] + self.final_nrows, index[1]:index[1] + self.final_ncols]
+        
+        cutted_img = image[:, index[0]:index[0] + self.cutted_nrows, index[1]:index[1] + self.cutted_ncols]
+       
         nan_count = th.isnan(cutted_img).sum().item()
         if nan_count > n_pixel_threshold:
             while nan_count > n_pixel_threshold:
                 index = self.select_random_points(1)[0]
-                cutted_img = image[:, index[0]:index[0] + self.final_nrows, index[1]:index[1] + self.final_ncols]
+                
+                cutted_img = image[:, index[0]:index[0] + self.cutted_nrows, index[1]:index[1] + self.cutted_ncols]
                 nan_count = th.isnan(cutted_img).sum().item()
+        
         return cutted_img
     
-    def batch_cut_images(self, image: th.Tensor, indices: list, threshold: int) -> th.Tensor:
-        """Vectorized version of cut_valid_image for multiple indices"""
-        print(indices)
-        indices_tensor = th.cat([th.tensor(idx).unsqueeze(0) for idx in indices], dim=0)  # Flatten into a single tensor
-        windows = indices_tensor.unsqueeze(1).expand(-1, 2, -1)  # Shape: [n_indices, 2, 2]
-        windows[..., 0] += self.final_nrows  # Add row offsets
-        windows[..., 1] += self.final_ncols   # Add col offsets
+    # def batch_cut_images(self, image: th.Tensor, indices: list, threshold: int) -> th.Tensor:
+    #     """Vectorized version of cut_valid_image for multiple indices"""
+    #     print(indices)
+    #     indices_tensor = th.cat([th.tensor(idx).unsqueeze(0) for idx in indices], dim=0)  # Flatten into a single tensor
+    #     windows = indices_tensor.unsqueeze(1).expand(-1, 2, -1)  # Shape: [n_indices, 2, 2]
+    #     windows[..., 0] += self.cutted_nrows  # Add row offsets
+    #     windows[..., 1] += self.cutted_ncols   # Add col offsets
         
-        # Batched slicing
-        cuts = image[:, windows[:, 0, 0]:windows[:, 0, 1], 
-                    windows[:, 1, 0]:windows[:, 1, 1]]
+    #     # Batched slicing
+    #     cuts = image[:, windows[:, 0, 0]:windows[:, 0, 1], 
+    #                 windows[:, 1, 0]:windows[:, 1, 1]]
         
-        # Vectorized NaN check
-        nan_counts = th.isnan(cuts).sum(dim=(1,2,3))
-        valid = nan_counts <= threshold
+    #     # Vectorized NaN check
+    #     nan_counts = th.isnan(cuts).sum(dim=(1,2,3))
+    #     valid = nan_counts <= threshold
         
-        # Only re-cut invalid slices
-        while not valid.all():
-            bad_idx = ~valid
-            new_indices = self.select_random_points(bad_idx.sum().item())
-            new_cuts = self.batch_cut_images(image, new_indices, threshold)
-            cuts[bad_idx] = new_cuts[bad_idx]
-            valid[bad_idx] = True
+    #     # Only re-cut invalid slices
+    #     while not valid.all():
+    #         bad_idx = ~valid
+    #         new_indices = self.select_random_points(bad_idx.sum().item())
+    #         new_cuts = self.batch_cut_images(image, new_indices, threshold)
+    #         cuts[bad_idx] = new_cuts[bad_idx]
+    #         valid[bad_idx] = True
             
-        return cuts
+    #     return cuts
 
     def generate_image_dataset(self, n_channels: int, masked_channels_list: list, path_to_indices_map: dict, placeholder: float, same_mask: bool = False) -> tuple[dict, dict, th.Tensor]:
         """Generate a dataset of masked images, inverse masked images and masks
@@ -148,9 +195,9 @@ class CutAndMaskImage:
         dataset = None
         
         dataset_keys = ["images", "masks"]
-        dataset = {cls: th.empty((self.n_cutted_images, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32) for cls in dataset_keys}
+        dataset = {cls: th.empty((self.n_cutted_images, n_channels, self.cutted_nrows, self.cutted_ncols), dtype=th.float32) for cls in dataset_keys}
             
-        nans_masks = th.ones((self.n_cutted_images, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32)
+        nans_masks = th.ones((self.n_cutted_images, n_channels, self.cutted_nrows, self.cutted_ncols), dtype=th.float32)
         
         masked_channels_list = list(masked_channels_list)
         
@@ -163,7 +210,7 @@ class CutAndMaskImage:
         idx_start = 0 # index of the first cutted image of this raw image
         idx_end = 0 # index of the last cutted image of this raw image
         n_original_channels = n_channels - 1 # The last channel is the time layer
-        n_pixels = self.final_nrows * self.final_ncols * n_original_channels # number of pixels in the raw image
+        n_pixels = self.cutted_nrows * self.cutted_ncols * n_original_channels # number of pixels in the raw image
         threshold = self.nans_threshold * n_pixels # threshold of nans in the image
         
         image_cache = {}
@@ -186,17 +233,8 @@ class CutAndMaskImage:
             
             with th.no_grad():
                 cutted_imgs = th.stack([self.cut_valid_image(image, index, threshold) for index in indices], dim=0)
-                # cutted_imgs = self.batch_cut_images(image, indices, threshold)
-            # with ThreadPoolExecutor(max_workers=4) as executor:
-            #     cutted_imgs = th.stack(
-            #         list(executor.map(
-            #             lambda idx: self.cut_valid_image(image, idx, threshold),
-            #             indices
-            #         )),
-            #         dim=0
-            #     )
             
-            time_layers = th.ones((n_indices, 1, self.final_nrows, self.final_ncols), dtype=th.float32) * encoded_time
+            time_layers = th.ones((n_indices, 1, self.cutted_nrows, self.cutted_ncols), dtype=th.float32) * encoded_time
             cutted_imgs = th.cat((cutted_imgs, time_layers), dim=1)
             
             # Find where the nans are in the cutted images
@@ -204,7 +242,7 @@ class CutAndMaskImage:
             nans_masks[idx_start:idx_end, :, :, :] = cutted_img_nans.float()
             
             # Create square masks. 0 where the values are masked, 1 where the values are not masked
-            masks = th.ones((n_indices, n_channels, self.final_nrows, self.final_ncols), dtype=th.float32)
+            masks = th.ones((n_indices, n_channels, self.cutted_nrows, self.cutted_ncols), dtype=th.float32)
             
             if same_mask:
                 image_mask = self.mask_function.mask()
@@ -269,25 +307,16 @@ def main():
         params = json.load(params_file)
         
     n_cutted_images = int(params["dataset"]["n_cutted_images"])
-    cutted_nrows = int(params["dataset"]["cutted_nrows"])
-    cutted_ncols = int(params["dataset"]["cutted_ncols"])
-    nans_threshold = float(params["dataset"]["nans_threshold"])
-    mask_kind = str(params["dataset"]["mask_kind"])
     same_mask = str(params["dataset"]["same_mask"]).lower() == "true"
     nan_placeholder = params["dataset"]["nan_placeholder"]
     if nan_placeholder == "false":
         raise ValueError("The placeholder value must be a float, not 'false'.")
     
-    
     dataset_kind = str(params["dataset"]["dataset_kind"])
-    x_shape_raw = int(params["dataset"][dataset_kind]["x_shape_raw"])
-    y_shape_raw = int(params["dataset"][dataset_kind]["y_shape_raw"])
     n_channels = int(params["dataset"][dataset_kind]["n_channels"])
     masked_channels = list(params["dataset"][dataset_kind]["masked_channels"])
         
     print("Using placeholder value: ", nan_placeholder, flush=True)
-    
-    mask_function = initialize_mask_kind(params_path, mask_kind)
 
     # Select n_images random images from the processed images
     processed_images_paths = list(processed_data_dir.glob(f"*.pt"))
@@ -297,10 +326,7 @@ def main():
 
     print(f"\nFound {len(processed_images_paths)} images in {processed_data_dir}\n", flush=True)
     
-    cut_class = CutAndMaskImage(original_nrows=x_shape_raw, original_ncols=y_shape_raw,
-                                final_nrows=cutted_nrows, final_ncols=cutted_ncols,
-                                nans_threshold=nans_threshold, n_cutted_images=n_cutted_images,
-                                mask_function=mask_function)
+    cut_class = CutAndMaskImage(params_path=params_path)
 
     # Select some random points, to use as centers for the cutted images
     idx_time = time()
@@ -334,14 +360,12 @@ def main():
 
     # Extract the "dataset" and "mask" sections
     dataset_section = params["dataset"]
-    square_mask_section = params["square_mask"]
-    lines_mask_section = params["lines_mask"]
+    masks = params["masks"]
 
     # Combine the sections into a single dictionary
     sections_to_save = {
         'dataset': dataset_section,
-        'square_mask': square_mask_section,
-        'lines_mask': lines_mask_section
+        'masks': masks
     }
 
     elapsed_time = time() - start_time
