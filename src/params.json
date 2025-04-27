@@ -22,7 +22,7 @@
         "mask_kind": "square",
         "_possible_mask_kinds": ["square", "lines"],
         "same_mask": false,
-        "dataset_kind": "biochemistry",
+        "dataset_kind": "temperature",
         "_possible_dataset_kinds": ["biochemistry", "temperature"],
         "biochemistry": {
             "n_images": 31,
@@ -97,10 +97,10 @@
         }
     },
     "masks": {
-        "square_mask": {
+        "square": {
             "mask_percentage": 0.10
         },
-        "lines_mask": {
+        "lines": {
             "num_lines": 5,
             "min_thickness": 1,
             "max_thickness": 5
