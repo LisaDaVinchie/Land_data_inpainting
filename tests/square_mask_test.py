@@ -16,7 +16,7 @@ class TestSquareMask(unittest.TestCase):
         
         self.params = {
             "masks": {
-                "square_mask": {
+                "square": {
                     "mask_percentage": self.mask_percentage
                 }
             },

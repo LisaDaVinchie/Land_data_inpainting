@@ -18,7 +18,7 @@ class TestLinesMask(unittest.TestCase):
         
         self.params = {
             "masks": {
-                "lines_mask": {
+                "lines": {
                     "num_lines": self.num_lines,
                     "min_thickness": self.min_thickness,
                     "max_thickness": self.max_thickness
