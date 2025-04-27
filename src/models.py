@@ -3,7 +3,6 @@ from torch import nn
 from pathlib import Path
 from typing import List
 import json
-from utils.import_params_json import load_config
 import math
 from PartialConv import PartialConv2d
 
