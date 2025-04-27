@@ -64,7 +64,14 @@ def initialize_mask_kind(params_path: Path, mask_kind: str):
 
 class SquareMask:
     def __init__(self, params_path: Path = None, image_nrows: int = None, image_ncols: int = None, mask_percentage: float = None):
-        """Initialize the SquareMask class."""
+        """Initialize the SquareMask class.
+
+        Args:
+            params_path (Path, optional): path to the Json file containing the parameters. Defaults to None.
+            image_nrows (int, optional): number of rows in the image to mask. Defaults to None.
+            image_ncols (int, optional): number of columns in the image to mask. Defaults to None.
+            mask_percentage (float, optional): fraction of pixels to mask, from 0 to 1. Defaults to None.
+        """
         
         self.image_nrows = image_nrows
         self.image_ncols = image_ncols
@@ -102,7 +109,11 @@ class SquareMask:
             raise ValueError("Missing one of the following required parameters: image_nrows, image_ncols, mask_percentage")
         
     def mask(self) -> th.Tensor:
-        """Create a square mask of n_pixels in the image"""
+        """Create a square mask of n_pixels in the image
+
+        Returns:
+            th.Tensor: binary mask of shape (nrows, ncols), th.bool dtype, where False=masked, True=background
+        """
         n_pixels = int(self.mask_percentage * self.image_nrows * self.image_ncols)
         square_nrows = int(n_pixels ** 0.5)
         image_mask = th.ones((self.image_nrows, self.image_ncols), dtype=th.bool)
@@ -120,7 +131,16 @@ class SquareMask:
 
 class LinesMask:
     def __init__(self, params_path: Path = None, image_nrows: int = None, image_ncols: int = None, num_lines: int = None, min_thickness: int = None, max_thickness: int = None):
-        
+        """Initialize the LinesMask class.
+
+        Args:
+            params_path (Path, optional): path to the Json file containing the parameters. Defaults to None.
+            image_nrows (int, optional): number of rows in the image to mask. Defaults to None.
+            image_ncols (int, optional): number of columns in the image to mask. Defaults to None.
+            num_lines (int, optional): number of lines to generate. Defaults to None.
+            min_thickness (int, optional): minimum line thickness. Defaults to None.
+            max_thickness (int, optional): maximum line thickness. Defaults to None.
+        """
         self.image_nrows = image_nrows
         self.image_ncols = image_ncols
         self.num_lines = num_lines
@@ -168,18 +188,10 @@ class LinesMask:
             raise ValueError("Missing one of the following required parameters: image_nrows, image_ncols, num_lines, min_thickness, max_thickness")
         
     def mask(self):
-        """
-        Generate an INVERTED binary mask with random lines (0=line, 1=background).
-        
-        Args:
-            nrows (int): Image height
-            width (int): Image width
-            num_lines (int): Number of random lines to generate
-            min_thickness (int): Minimum line thickness
-            max_thickness (int): Maximum line thickness
-            
+        """Create a mask of lines in the image
+
         Returns:
-            torch.Tensor: Inverted binary mask of shape (nrows, ncols)
+            th.Tensor: binary mask of shape (nrows, ncols), th.bool dtype, where False=masked, True=background
         """
         # Start with all ones (background)
         mask = th.ones((self.image_nrows, self.image_ncols), dtype=th.bool)
