@@ -25,7 +25,11 @@ def get_loss_function(loss_kind: str, nan_placeholder: float) -> nn.Module:
 
 class PerPixelMSE(nn.Module):
     def __init__(self, nan_placeholder: float):
-        """Initialize the Per Pixel MSE loss module."""
+        """Initialize the Per Pixel MSE loss module.
+        
+        Args:
+            nan_placeholder (float, optional): placeholder for nan pixels. Defaults to -2.0.
+        """
         super(PerPixelMSE, self).__init__()
         
         self.nan_placeholder = nan_placeholder
@@ -42,8 +46,8 @@ class PerPixelMSE(nn.Module):
         Returns:
             th.Tensor: per-pixel loss
         """
-        bool_masks = masks.bool()
-        n_valid_pixels = (~bool_masks).sum().float() # count the number of masked (0) pixels, by inverting the mask
+        
+        n_valid_pixels = (~masks).sum().float() # count the number of masked (0) pixels, by inverting the mask
         
         # Create a mask that is 1 where the target is the NaN placeholder and 0 otherwise
         # This is used to count the number of NaN pixels
@@ -54,7 +58,7 @@ class PerPixelMSE(nn.Module):
             return 0
         
         diff = (prediction - target) ** 2 # Calculate the squared difference, for each pixel
-        masked_diff = diff.masked_fill(bool_masks, 0.0) # Set the masked pixels to 0 where the mask is 1, i.e. where the pixel is not masked
+        masked_diff = diff.masked_fill(masks, 0.0) # Set the masked pixels to 0 where the mask is 1, i.e. where the pixel is not masked
         return masked_diff.sum() / n_valid_pixels # Return the mean of the squared differences over the number of valid pixels
 
 class PerPixelL1(nn.Module):
