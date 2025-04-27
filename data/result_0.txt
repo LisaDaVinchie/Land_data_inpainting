@@ -1,0 +1,277 @@
+Elapsed time [s]:
+3982.0411007404327
+
+Used dataset:
+minimal_datasets/dataset_1.pt
+
+Train losses
+13.109263598918915	13.050346851348877	13.090738892555237	13.031723529100418	13.078697800636292	13.046084582805634	13.031680971384048	13.11118757724762	13.025893211364746	13.09575629234314	13.105148643255234	13.053396493196487	13.045480519533157	13.106961399316788	13.062998712062836	
+
+Test losses
+13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	13.250160455703735	
+
+Learning rate
+0.001	0.001	0.00063	0.00063	0.00063	0.0003969	0.0003969	0.0003969	0.000250047	0.000250047	0.000250047	0.00015752961	0.00015752961	0.00015752961	9.92436543e-05	
+
+Parameters
+
+    "training": {
+        "train_perc": 0.8,
+        "batch_size": 128,
+        "epochs": 15,
+        "learning_rate": 0.001,
+        "lr_scheduler": "step",
+        "_possible_schedulers": [
+            "none",
+            "step"
+        ],
+        "optimizer_kind": "adam",
+        "loss_kind": "custom1",
+        "_possible_losses": [
+            "per_pixel",
+            "per_pixel_mse",
+            "tv_loss",
+            "custom1"
+        ],
+        "model_kind": "DINCAE_pconvs",
+        "_possible_model_kinds": [
+            "simple_conv",
+            "conv_unet",
+            "conv_maxpool",
+            "DINCAE_like",
+            "DINCAE_pconvs"
+        ],
+        "placeholder": 0.0
+    },
+    "dataset": {
+        "cutted_nrows": 128,
+        "cutted_ncols": 128,
+        "n_cutted_images": 5000,
+        "nans_threshold": 0.3,
+        "nan_placeholder": -2.0,
+        "mask_kind": "square",
+        "_possible_mask_kinds": [
+            "square",
+            "lines"
+        ],
+        "same_mask": false,
+        "dataset_kind": "temperature",
+        "_possible_dataset_kinds": [
+            "biochemistry",
+            "temperature"
+        ],
+        "biochemistry": {
+            "n_images": 31,
+            "n_channels": 13,
+            "x_shape_raw": 681,
+            "y_shape_raw": 1440,
+            "masked_channels": [
+                0,
+                3
+            ],
+            "channels_to_keep": [
+                "spco2",
+                "no3",
+                "si",
+                "fe",
+                "phyc"
+            ],
+            "channels_list": [
+                "nppv",
+                "o2",
+                "ph",
+                "dissic",
+                "talk",
+                "spco2",
+                "no3",
+                "po4",
+                "si",
+                "fe",
+                "phyc",
+                "chl"
+            ]
+        },
+        "temperature": {
+            "n_images": 31,
+            "n_channels": 5,
+            "x_shape_raw": 1600,
+            "y_shape_raw": 3600,
+            "masked_channels": [
+                0,
+                1
+            ],
+            "channels_to_keep": [
+                "sea_surface_temperature",
+                "sea_surface_temperature_stddev",
+                "or_latitude",
+                "or_longitude"
+            ],
+            "channels_list": [
+                "crs",
+                "sea_surface_temperature",
+                "or_number_of_pixels",
+                "sea_surface_temperature_stddev",
+                "quality_level",
+                "sses_bias",
+                "sses_standard_deviation",
+                "satellite_zenith_angle",
+                "or_latitude",
+                "or_longitude",
+                "adjusted_sea_surface_temperature",
+                "solar_zenith_angle",
+                "bias_to_reference_sst",
+                "sources_of_sst",
+                "sst_dtime"
+            ]
+        }
+    },
+    "models": {
+        "DINCAE_pconvs": {
+            "middle_channels": [
+                16,
+                30,
+                58,
+                110,
+                209
+            ],
+            "kernel_sizes": [
+                3,
+                3,
+                3,
+                3,
+                3
+            ],
+            "pooling_sizes": [
+                2,
+                2,
+                2,
+                2,
+                2
+            ],
+            "interp_mode": "bilinear",
+            "_possible_interpolation_modes": [
+                "nearest",
+                "linear",
+                "bilinear",
+                "bicubic",
+                "trilinear"
+            ]
+        },
+        "DINCAE_like": {
+            "middle_channels": [
+                16,
+                30,
+                58,
+                110,
+                209
+            ],
+            "kernel_sizes": [
+                3,
+                3,
+                3,
+                3,
+                3
+            ],
+            "pooling_sizes": [
+                2,
+                2,
+                2,
+                2,
+                2
+            ],
+            "output_size": 15,
+            "interp_mode": "bilinear",
+            "_possible_interpolation_modes": [
+                "nearest",
+                "linear",
+                "bilinear",
+                "bicubic",
+                "trilinear"
+            ]
+        },
+        "simple_conv": {
+            "middle_channels": [
+                32,
+                64,
+                128
+            ],
+            "kernel_size": [
+                3,
+                3,
+                3
+            ],
+            "stride": [
+                1,
+                1,
+                1
+            ],
+            "padding": [
+                1,
+                1,
+                1
+            ],
+            "output_padding": [
+                0,
+                0,
+                0
+            ]
+        },
+        "conv_unet": {
+            "middle_channels": [
+                32,
+                64,
+                128
+            ],
+            "kernel_size": [
+                3,
+                3,
+                3
+            ],
+            "stride": [
+                1,
+                1,
+                1
+            ],
+            "padding": [
+                1,
+                1,
+                1
+            ],
+            "output_padding": [
+                0,
+                0,
+                0
+            ]
+        },
+        "conv_maxpool": {
+            "middle_channels": [
+                32,
+                64,
+                128,
+                256,
+                512
+            ],
+            "kernel_size": 3,
+            "stride": 1,
+            "pool_size": 2,
+            "up_kernel": 3,
+            "up_stride": 2,
+            "print_sizes": false
+        }
+    },
+    "masks": {
+        "square": {
+            "mask_percentage": 0.1
+        },
+        "lines": {
+            "num_lines": 5,
+            "min_thickness": 1,
+            "max_thickness": 5
+        }
+    },
+    "lr_schedulers": {
+        "step": {
+            "step_size": 3,
+            "gamma": 0.63
+        }
+    }
