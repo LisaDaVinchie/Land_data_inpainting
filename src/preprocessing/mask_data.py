@@ -105,7 +105,7 @@ class SquareMask:
         """Create a square mask of n_pixels in the image"""
         n_pixels = int(self.mask_percentage * self.image_nrows * self.image_ncols)
         square_nrows = int(n_pixels ** 0.5)
-        image_mask = th.ones((self.image_nrows, self.image_ncols), dtype=th.float32)
+        image_mask = th.ones((self.image_nrows, self.image_ncols), dtype=th.bool)
         
         # Get a random top-left corner for the square
         row_idx = th.randint(0, self.image_ncols - square_nrows, (1,)).item()
@@ -114,7 +114,7 @@ class SquareMask:
         image_mask[
             row_idx: row_idx + square_nrows,
             col_idx: col_idx + square_nrows
-        ] = 0
+        ] = False
         
         return image_mask
 
