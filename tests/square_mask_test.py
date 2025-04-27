@@ -5,23 +5,19 @@ import sys
 import json
 from pathlib import Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from preprocessing.mask_data import LinesMask
+from preprocessing.mask_data import SquareMask
 
-class TestLinesMask(unittest.TestCase):
+class TestSquareMask(unittest.TestCase):
     
     def setUp(self):
         self.image_nrows = 10
-        self.image_ncols = 10
-        self.num_lines = 5
-        self.min_thickness = 1
-        self.max_thickness = 3
+        self.image_ncols = 15
+        self.mask_percentage = 0.10
         
         self.params = {
             "masks": {
-                "lines_mask": {
-                    "num_lines": self.num_lines,
-                    "min_thickness": self.min_thickness,
-                    "max_thickness": self.max_thickness
+                "square_mask": {
+                    "mask_percentage": self.mask_percentage
                 }
             },
             "dataset": {
@@ -36,7 +32,7 @@ class TestLinesMask(unittest.TestCase):
         self.params_path = Path(self.temp_json.name).resolve()  # Use absolute path
         
         # Create a LinesMask instance
-        self.lines_mask = LinesMask(params_path=self.params_path)
+        self.lines_mask = SquareMask(params_path=self.params_path)
         
     def tearDown(self):
         # Remove the temporary file
@@ -46,26 +42,30 @@ class TestLinesMask(unittest.TestCase):
         """Test if the LinesMask class initializes correctly."""
         self.assertEqual(self.lines_mask.image_nrows, self.image_nrows)
         self.assertEqual(self.lines_mask.image_ncols, self.image_ncols)
-        self.assertEqual(self.lines_mask.num_lines, self.num_lines)
-        self.assertEqual(self.lines_mask.min_thickness, self.min_thickness)
-        self.assertEqual(self.lines_mask.max_thickness, self.max_thickness)
+        self.assertEqual(self.lines_mask.mask_percentage, self.mask_percentage)
         
-    def test_invalid_params(self):
-        """Test if the LinesMask class raises an error with invalid parameters."""
+    def test_invalid_parameters(self):
+        """Test if the LinesMask class raises errors for invalid parameters."""
         with self.assertRaises(ValueError):
-            LinesMask(params_path=self.params_path, num_lines=-1)
+            SquareMask(params_path=self.params_path, image_nrows=-1)
         
         with self.assertRaises(ValueError):
-            LinesMask(params_path=self.params_path, min_thickness=-2)
+            SquareMask(params_path=self.params_path, image_ncols=-1)
         
         with self.assertRaises(ValueError):
-            LinesMask(params_path=self.params_path, max_thickness=0)
-            
-        with self.assertRaises(ValueError):
-            LinesMask(params_path=self.params_path, min_thickness=5, max_thickness=3)
+            SquareMask(params_path=self.params_path, mask_percentage=1.5)
         
-    def test_output_shape(self):
-        """Test if the output shape of the mask is correct."""
+        with self.assertRaises(ValueError):
+            SquareMask(params_path=self.params_path, mask_percentage=-0.5)
+        with self.assertRaises(ValueError):
+            SquareMask(params_path=self.params_path, image_nrows=0)
+        with self.assertRaises(ValueError):
+            SquareMask(params_path=self.params_path, image_ncols=0)
+        with self.assertRaises(ValueError):
+            SquareMask(params_path=self.params_path, mask_percentage=0)
+    
+    def test_mask_shape(self):
+        """Test if the mask shape is correct."""
         mask = self.lines_mask.mask()
         self.assertEqual(mask.shape, (self.image_nrows, self.image_ncols))
         
