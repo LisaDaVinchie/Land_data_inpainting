@@ -170,7 +170,7 @@ class TrainModel:
         return self.train_losses, self.test_losses
 
     def _calculate_loss_extended(self, placeholder, image, mask):
-        masked_image, _ = mask_inversemask_image(image, mask, placeholder)
+        masked_image, _ = mask_inversemask_image(image, mask.float(), placeholder)
         masked_image = masked_image.to(self.device)
         output = self.model(masked_image)
         loss_val = self.loss_function(output, image, mask)
@@ -211,7 +211,7 @@ class TrainModel:
     def _calculate_loss_minimal(self, images, masks):
         images = images.to(self.device)
         masks = masks.to(self.device)
-        output, _ = self.model(images, masks)
+        output, _ = self.model(images, masks.float())
         loss_val = self.loss_function(output, images, masks)
         return loss_val
     
