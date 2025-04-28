@@ -8,7 +8,7 @@ from tempfile import NamedTemporaryFile
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from train import track_memory, change_dataset_idx, validate_paths, train_loop_extended, train_loop_minimal
+from train import track_memory, change_dataset_idx, validate_paths, TrainModel
 from models import simple_conv, DINCAE_pconvs
 from CustomDataset import create_dataloaders
 from losses import get_loss_function
@@ -40,7 +40,7 @@ class TestTrainingFunctions(unittest.TestCase):
                     "padding": self.padding_e,
                     "output_padding": self.output_padding_e
                     }
-            },  
+                },  
             "dataset": {
                 "dataset_kind": "test",
                 "test": {
@@ -84,10 +84,11 @@ class TestTrainingFunctions(unittest.TestCase):
         
         self.reduced_model = DINCAE_pconvs(params_path=self.reduced_params_path)
         
+        img_shape = (self.dataset_len, self.n_channels, self.nrows, self.ncols)
         
-        images = th.randn(self.dataset_len, self.n_channels, self.nrows, self.ncols)
-        masks = th.ones(self.dataset_len, self.n_channels, self.nrows, self.ncols)
-        masks[th.randint(0, 2, (self.dataset_len, self.n_channels, self.nrows, self.ncols)) == 0] = 0
+        images = th.randn(img_shape)
+        masks = th.ones(img_shape, dtype=th.bool)
+        masks[th.randint(0, 2, img_shape) == 0] = False
         test_dataset = {
             "images": images,
             "masks": masks
@@ -136,22 +137,23 @@ class TestTrainingFunctions(unittest.TestCase):
         
         optimizer = th.optim.Adam(self.extended_model.parameters())
         
-        initial_weights = {k: v.clone() for k, v in self.extended_model.state_dict().items()}
-
-        # Call the function
-        model, train_losses, test_losses = train_loop_extended(
-            epochs=self.epochs,
-            placeholder=0.0,
+        train = TrainModel(
             model=self.extended_model,
+            epochs=self.epochs,
             device=th.device("cpu"),
             train_loader=self.train_loader,
             test_loader=self.test_loader,
             loss_function=self.loss_function,
             optimizer=optimizer,
-        )
+            scheduler=None)
         
-        model.eval()
-        final_weights = {k: v.clone() for k, v in model.state_dict().items()}
+        initial_weights = {k: v.clone() for k, v in self.extended_model.state_dict().items()}
+
+        # Call the function
+        train_losses, test_losses = train.train_loop_extended(self.nan_placeholder)
+        
+        train.model.eval()
+        final_weights = {k: v.clone() for k, v in train.model.state_dict().items()}
 
         # Check the outputs
         for i in range(len(train_losses)):
@@ -159,7 +161,7 @@ class TestTrainingFunctions(unittest.TestCase):
             self.assertIsInstance(test_losses[i], float)
         self.assertEqual(len(train_losses), self.epochs)  # 2 epochs
         self.assertEqual(len(test_losses), self.epochs)  # 2 epochs
-        self.assertIsInstance(model, th.nn.Module)
+        self.assertIsInstance(train.model, th.nn.Module)
         
         
         # Check that the model has been trained
@@ -172,18 +174,20 @@ class TestTrainingFunctions(unittest.TestCase):
         
         optimizer = th.optim.Adam(self.reduced_model.parameters())
         
-        initial_weights = {k: v.clone() for k, v in self.reduced_model.state_dict().items()}
-
-        # Call the function
-        model, train_losses, test_losses = train_loop_minimal(
-            epochs=self.epochs,
+        train = TrainModel(
             model=self.reduced_model,
-            device = th.device("cpu"),
+            epochs=self.epochs,
+            device=th.device("cpu"),
             train_loader=self.train_loader,
             test_loader=self.test_loader,
             loss_function=self.loss_function,
             optimizer=optimizer,
-        )
+            scheduler=None)
+        
+        initial_weights = {k: v.clone() for k, v in self.reduced_model.state_dict().items()}
+
+        # Call the function
+        train_losses, test_losses = train.train_loop_minimal()
 
         # Check the outputs
         for i in range(len(train_losses)):
@@ -191,9 +195,9 @@ class TestTrainingFunctions(unittest.TestCase):
             self.assertIsInstance(test_losses[i], float)
         self.assertEqual(len(train_losses), self.epochs)  # 2 epochs
         self.assertEqual(len(test_losses), self.epochs)  # 2 epochs
-        self.assertIsInstance(model, th.nn.Module)
+        self.assertIsInstance(train.model, th.nn.Module)
         
-        final_weights = {k: v.clone() for k, v in model.state_dict().items()}
+        final_weights = {k: v.clone() for k, v in train.model.state_dict().items()}
         # Check that the model has been trained
         updated = any(not th.equal(initial_weights[k], final_weights[k]) for k in initial_weights)
         self.assertTrue(updated, "Weights did not update after training!")
