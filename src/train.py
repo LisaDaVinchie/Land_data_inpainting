@@ -80,57 +80,183 @@ def main():
     
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     
+    scheduler = None
     if lr_scheduler == "step":
-        step_size = int(params["training"]["step_size"])
-        gamma = float(params["training"]["gamma"])
+        step_size = int(params["lr_schedulers"][lr_scheduler]["step_size"])
+        gamma = float(params["lr_schedulers"][lr_scheduler]["gamma"])
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
 
     training_time = time()
     track_memory("Before training")
+    training_class = TrainModel(model, epochs, device, train_loader, test_loader, loss_function, optimizer, scheduler)
     if dataset_kind == "extended":
-        model, train_losses, test_losses = train_loop_extended(epochs, placeholder, model, device, train_loader, test_loader, loss_function, optimizer)
+        train_losses, test_losses = training_class.train_loop_extended(placeholder)
     elif dataset_kind == "minimal":
-        model, train_losses, test_losses = train_loop_minimal(epochs, model, device, train_loader, test_loader, loss_function, optimizer)
+        train_losses, test_losses = training_class.train_loop_minimal()
     else:
         raise ValueError(f"Dataset kind {dataset_kind} not recognized")
     track_memory("After training")
     print(f"Training completed in {time() - training_time:.2f} seconds", flush = True)
+    
+    model = training_class.model
 
     # Save the model
-    th.save(model.state_dict(), weights_path)
+    training_class.save_weights(weights_path)
     print(f"Weights saved to {weights_path}\n", flush = True)
 
-    with open(params_path, 'r') as f:
-        params = json.load(f)
-        
-    json_str = json.dumps(params, indent=4)[1: -1]
-    
     elapsed_time = time() - start_time
     print(f"Elapsed time: {elapsed_time:.2f} seconds")
-
-    # Save the train losses to a txt file
-    with open(results_path, 'w') as f:
-        f.write("Elapsed time [s]:\n")
-        f.write(f"{elapsed_time}\n\n")
-        f.write("Used dataset:\n")
-        f.write(f"{dataset_path.relative_to(dataset_path.parent.parent)}\n\n")
-        f.write("Train losses\n")
-        for i, loss_function in enumerate(train_losses):
-            f.write(f"{loss_function}\t")
-        f.write("\n\n")
-        f.write("Test losses\n")
-        for i, loss_function in enumerate(test_losses):
-            f.write(f"{loss_function}\t")
-        f.write("\n\n")
-        f.write("Parameters\n")
-        f.write(json_str)
     
+    
+    # Save the results
+    training_class.save_results(params_path, elapsed_time, dataset_path, results_path)
     print(f"Results saved to {results_path}\n", flush = True)
+
+class TrainModel:
+    def __init__(self, model: th.nn.Module, epochs: int, device, train_loader: DataLoader, test_loader: DataLoader, loss_function: nn.Module, optimizer: optim.Optimizer, scheduler: optim.lr_scheduler):
+        """Initialize the training model class.
+
+        Args:
+            model (th.nn.Module): _description_
+            epochs (int): _description_
+            device (_type_): _description_
+            train_loader (DataLoader): _description_
+            test_loader (DataLoader): _description_
+            loss_function (nn.Module): _description_
+            optimizer (optim.Optimizer): _description_
+        """
+        self.model = model
+        self.epochs = epochs
+        self.device = device
+        self.train_loader = train_loader
+        self.test_loader = test_loader
+        self.loss_function = loss_function
+        self.optimizer = optimizer
+        self.scheduler = scheduler
         
-def track_memory(stage=""):
-    process = psutil.Process(os.getpid())
-    mem_info = process.memory_info().rss / 1e6  # Convert to MB
-    print(f"[Memory] {stage}: {mem_info:.2f} MB\n", flush=True)
+        self.train_losses = []
+        self.test_losses = []
+        self.lr = []
+    
+    def train_loop_extended(self, placeholder: float):
+        """Training loop for the extended dataset.
+        Args:
+            placeholder (float): value to replace the masked pixels in the image
+        """
+
+        for epoch in range(self.epochs):
+            print(f"\nEpoch {epoch + 1}/{self.epochs}\n", flush=True)
+            self.model.train()
+            
+            train_loss = 0
+            for i, (image, mask) in enumerate(self.train_loader):
+                loss_val = self._calculate_loss_extended(placeholder, image, mask)
+                train_loss += loss_val.item()
+                self.lr.append(self.optimizer.param_groups[0]['lr'])
+                self._backpropagate_and_step(loss_val)
+            
+            self.scheduler.step() if self.scheduler is not None else None
+            self.lr.append(self.optimizer.param_groups[0]['lr'])
+            self.train_losses.append(train_loss / len(self.train_loader))
+            
+            with th.no_grad():
+                self.model.eval()
+                test_loss = 0
+                for i, (image, mask) in enumerate(self.test_loader):
+                    loss_val = self._calculate_loss_extended(placeholder, image, mask)
+                    test_loss += loss_val.item()
+                
+                self.test_losses.append(test_loss / len(self.test_loader))
+        return self.train_losses, self.test_losses
+
+    def _calculate_loss_extended(self, placeholder, image, mask):
+        masked_image, _ = mask_inversemask_image(image, mask.float(), placeholder)
+        masked_image = masked_image.to(self.device)
+        output = self.model(masked_image)
+        loss_val = self.loss_function(output, image, mask)
+        return loss_val
+
+    def _backpropagate_and_step(self, loss_val):
+        loss_val.backward()
+        self.optimizer.step()
+        self.optimizer.zero_grad()
+        
+    def train_loop_minimal(self):
+
+        for epoch in range(self.epochs):
+            print(f"\nEpoch {epoch + 1}/{self.epochs}\n", flush=True)
+            
+            self.model.train()
+            train_loss = 0
+            for (images, masks) in self.train_loader:
+                loss_val = self._calculate_loss_minimal(images, masks)
+                train_loss += loss_val.item()
+                self._backpropagate_and_step(loss_val)
+            
+            self.scheduler.step() if self.scheduler is not None else None
+            self.lr.append(self.optimizer.param_groups[0]['lr'])
+
+            self.train_losses.append(train_loss / len(self.train_loader))
+            
+            with th.no_grad():
+                self.model.eval()
+                test_loss = 0
+                for (images, masks) in self.test_loader:
+                    loss_val = self._calculate_loss_minimal(images, masks)
+                    test_loss += loss_val.item()
+                
+                self.test_losses.append(test_loss / len(self.test_loader))
+        return self.train_losses, self.test_losses
+
+    def _calculate_loss_minimal(self, images, masks):
+        images = images.to(self.device)
+        masks = masks.to(self.device)
+        output, _ = self.model(images, masks.float())
+        loss_val = self.loss_function(output, images, masks)
+        return loss_val
+    
+    def save_weights(self, path: Path):
+        """Save the model weights to a file.
+
+        Args:
+            path (Path): path to save the weights
+        """
+        th.save(self.model.state_dict(), path)
+        
+    def save_results(self, params_path: Path, elapsed_time: float, dataset_path: Path, results_path: Path):
+        """Save the training results to a file.
+
+        Args:
+            params_path (Path): path to the parameters Json file
+            elapsed_time (float): elapsed time of the training
+            dataset_path (Path): path to the dataset
+            results_path (Path): path to save the results
+        """
+        with open(params_path, 'r') as f:
+            params = json.load(f)
+        
+        json_str = json.dumps(params, indent=4)[1: -1]
+        
+        # Save the train losses to a txt file
+        with open(results_path, 'w') as f:
+            f.write("Elapsed time [s]:\n")
+            f.write(f"{elapsed_time}\n\n")
+            f.write("Used dataset:\n")
+            f.write(f"{dataset_path.relative_to(dataset_path.parent.parent)}\n\n")
+            f.write("Train losses\n")
+            for loss in self.train_losses:
+                f.write(f"{loss}\t")
+            f.write("\n\n")
+            f.write("Test losses\n")
+            for loss in self.test_losses:
+                f.write(f"{loss}\t")
+            f.write("\n\n")
+            f.write("Learning rate\n")
+            for lr in self.lr:
+                f.write(f"{lr}\t")
+            f.write("\n\n")
+            f.write("Parameters\n")
+            f.write(json_str)
     
 def change_dataset_idx(dataset_idx: int, dataset_path: Path) -> Path:
     """Take the latest dataset path by default, or change the dataset index if specified.
@@ -160,77 +286,11 @@ def validate_paths(paths: list):
     for path in paths:
         if not path.exists():
             raise FileNotFoundError(f"Path {path} does not exist.")
-        
-def train_loop_extended(epochs: int, placeholder: float, model: th.nn.Module, device, train_loader: DataLoader, test_loader: DataLoader, loss_function: nn.Module, optimizer: optim.Optimizer):
-    """Training loop for the extended dataset."""
-    train_losses = []
-    test_losses = []
 
-    for epoch in range(epochs):
-        print(f"\nEpoch {epoch + 1}/{epochs}\n", flush=True)
-        model.train()
-        
-        train_loss = 0
-        for i, (image, mask) in enumerate(train_loader):
-            masked_image, _ = mask_inversemask_image(image, mask, placeholder)
-            masked_image = masked_image.to(device)
-            output = model(masked_image)
-            loss_val = loss_function(output, image, mask)
-            train_loss += loss_val.item()
-            
-            optimizer.zero_grad()
-            loss_val.backward()
-            optimizer.step()
-        
-        train_losses.append(train_loss / len(train_loader))
-        
-        with th.no_grad():
-            model.eval()
-            test_loss = 0
-            for i, (image, mask) in enumerate(test_loader):
-                masked_image, _ = mask_inversemask_image(image, mask, placeholder)
-                output = model(masked_image)
-                loss_val = loss_function(output, image, mask)
-                test_loss += loss_val.item()
-            
-            test_losses.append(test_loss / len(test_loader))
-    return model, train_losses, test_losses
-
-def train_loop_minimal(epochs: int, model: th.nn.Module, device, train_loader: DataLoader, test_loader: DataLoader, loss_function: nn.Module, optimizer: optim.Optimizer):
-    train_losses = []
-    test_losses = []
-
-    for epoch in range(epochs):
-        print(f"\nEpoch {epoch + 1}/{epochs}\n", flush=True)
-        
-        model.train()
-        train_loss = 0
-        for (images, masks) in train_loader:
-            images = images.to(device)
-            masks = masks.to(device)
-            output, output_masks = model(images, masks)
-            
-            loss_val = loss_function(output, images, masks)
-            train_loss += loss_val.item()
-
-            optimizer.zero_grad()
-            loss_val.backward()
-            optimizer.step()
-        
-        train_losses.append(train_loss / len(train_loader))
-        
-        with th.no_grad():
-            model.eval()
-            test_loss = 0
-            for (images, masks) in test_loader:
-                images = images.to(device)
-                masks = masks.to(device)
-                output, output_masks = model(images, masks)
-                loss_val = loss_function(output, images, masks)
-                test_loss += loss_val.item()
-            
-            test_losses.append(test_loss / len(test_loader))
-    return model, train_losses, test_losses
+def track_memory(stage=""):
+    process = psutil.Process(os.getpid())
+    mem_info = process.memory_info().rss / 1e6  # Convert to MB
+    print(f"[Memory] {stage}: {mem_info:.2f} MB\n", flush=True)
         
 if __name__ == "__main__":
     main()
