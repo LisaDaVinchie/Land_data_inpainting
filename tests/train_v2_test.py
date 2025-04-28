@@ -84,10 +84,11 @@ class TestTrainingFunctions(unittest.TestCase):
         
         self.reduced_model = DINCAE_pconvs(params_path=self.reduced_params_path)
         
+        img_shape = (self.dataset_len, self.n_channels, self.nrows, self.ncols)
         
-        images = th.randn(self.dataset_len, self.n_channels, self.nrows, self.ncols)
-        masks = th.ones(self.dataset_len, self.n_channels, self.nrows, self.ncols)
-        masks[th.randint(0, 2, (self.dataset_len, self.n_channels, self.nrows, self.ncols)) == 0] = 0
+        images = th.randn(img_shape)
+        masks = th.ones(img_shape, dtype=th.bool)
+        masks[th.randint(0, 2, img_shape) == 0] = False
         test_dataset = {
             "images": images,
             "masks": masks
