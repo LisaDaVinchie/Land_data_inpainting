@@ -32,7 +32,7 @@ class PCC(th.nn.Module):
         # Count the number of valid pixels
         n_valid_pixels = valid_mask.sum().float()
         
-        inv_valid_pixels = 1.0 / n_valid_pixels
+        n_valid_pixels_inv = 1.0 / n_valid_pixels
         
         if n_valid_pixels == 0: # if all pixels are masked, return 0
             return 0
@@ -47,21 +47,21 @@ class PCC(th.nn.Module):
         y_flat = target.view(target.shape[0], target.shape[1], -1)
         
         # Compute the mean for each channel, shape (B, C, 1)
-        x_mean = th.nansum(x_flat, dim=2, keepdim=True) * inv_valid_pixels
-        y_mean = th.nansum(y_flat, dim=2, keepdim=True) * inv_valid_pixels
+        x_mean = th.nansum(x_flat, dim=2, keepdim=True) * n_valid_pixels_inv
+        y_mean = th.nansum(y_flat, dim=2, keepdim=True) * n_valid_pixels_inv
         
         # Center the tensors by subtracting the mean
         x_flat -= x_mean
         y_flat -= y_mean
         
         # cov = (x_centered * y_centered).mean(dim=2)
-        cov = th.nansum(x_flat * y_flat, dim=2) * inv_valid_pixels
+        cov = th.nansum(x_flat * y_flat, dim=2) * n_valid_pixels_inv
         
         # x_std = th.sqrt((x_flat ** 2).sum(dim=2))
         # y_std = th.sqrt((x_flat ** 2).sum(dim=2))
         
-        x_std = th.sqrt(th.nansum(x_flat ** 2, dim=2) * inv_valid_pixels)
-        y_std = th.sqrt(th.nansum(y_flat ** 2, dim=2) * inv_valid_pixels)
+        x_std = th.sqrt(th.nansum(x_flat ** 2, dim=2) * n_valid_pixels_inv)
+        y_std = th.sqrt(th.nansum(y_flat ** 2, dim=2) * n_valid_pixels_inv)
         
         if th.any(x_std == 0) or th.any(y_std == 0):
             raise ValueError("Standard deviation is zero, cannot compute PCC.")
