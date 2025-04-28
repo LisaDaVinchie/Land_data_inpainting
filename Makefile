@@ -120,7 +120,7 @@ cut: config
 	@$(PYTHON) $(PREPROCESSING_DIR)/cut_images.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 train: config
-	@$(PYTHON) $(SRC_DIR)/train_v2.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+	@$(PYTHON) $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 btrain: config
 	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
