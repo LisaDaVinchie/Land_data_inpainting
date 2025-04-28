@@ -10,7 +10,7 @@ def create_dataloaders(dataset: dict, train_perc: float, batch_size: int) -> tup
     if len(dataset_keys) == 2:
         dataset_class = MinimalDataset(dataset)
     else:
-        raise ValueError(f"Dataset keys must be 2 or 3, got {len(dataset_keys)}")
+        raise ValueError(f"Dataset keys must be 2, got {len(dataset_keys)}")
     
     len_dataset = len(dataset[dataset_keys[0]])
     for key in dataset_keys:
