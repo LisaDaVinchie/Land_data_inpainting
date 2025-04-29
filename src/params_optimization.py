@@ -31,28 +31,24 @@ def main():
     # Optimize the objective function
     study.optimize(obj.objective, n_trials=5)  # Run 50 trials
 
-    # Print best trial
-    print("Best trial:")
-    trial = study.best_trial
-
-    print(f"  Value (test loss): {trial.value}")
-    print("  Params:")
-    for key, value in trial.params.items():
-        print(f"    {key}: {value}")
+    # Save the best hyperparameters
+    obj.save_optim_specs(study.best_trial)
+    
+    print("Elapsed time:", time() - start_time, "seconds", flush = True)
 
 class Objective():
     def __init__(self, params_path: Path, paths_path: Path):
         # Load default config
         with open(params_path, "r") as f:
-            params = json.load(f)
+            self.train_params = json.load(f)
         with open(paths_path, "r") as f:
             paths = json.load(f)
             
-        self.train_perc = params["training"]["train_perc"]
-        loss_kind = params["training"]["loss_kind"]
-        model_kind = params["training"]["model_kind"]
-        self.placeholder = params["training"]["placeholder"]
-        nan_placeholder = params["dataset"]["nan_placeholder"]
+        self.train_perc = self.train_params["training"]["train_perc"]
+        loss_kind = self.train_params["training"]["loss_kind"]
+        model_kind = self.train_params["training"]["model_kind"]
+        self.placeholder = self.train_params["training"]["placeholder"]
+        nan_placeholder = self.train_params["dataset"]["nan_placeholder"]
         print("Parameters imported\n", flush = True)
         
         current_minimal_dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
@@ -71,9 +67,9 @@ class Objective():
         self.loss_function = get_loss_function(loss_kind, nan_placeholder)
         self.dataset = th.load(dataset_path)
         
-        self.batch_size_values = [2, 4]
+        self.batch_size_values = [32, 64, 128, 256]
         self.learning_rate_range = [1e-5, 1e-2]
-        self.epochs_range = [3, 5]
+        self.epochs_range = [5, 20]
         
     def objective(self, trial):
         # Suggest hyperparameters
@@ -102,13 +98,10 @@ class Objective():
 
         return test_losses[-1]  # Optuna minimizes this
     
-    def save_optim_specs(self, trial, training_params_path: Path):
+    def save_optim_specs(self, trial):
         # Save the best hyperparameters
         
-        with open(training_params_path, "r") as f:
-            params = json.load(f)
-        
-        json_str = json.dumps(params, indent=4)[1: -1]
+        json_str = json.dumps(self.train_params, indent=4)[1: -1]
         
         best_params = {
             "batch_size": trial.params["batch_size"],
@@ -120,11 +113,14 @@ class Objective():
             f.write("Search range:\n")
             f.write("\n")
             f.write("Batch size Values:\n")
-            f.write(f"{self.batch_size_values}\n")
+            for val in self.batch_size_values:
+                f.write(f"{val}")
+            f.write("\n\n")
             f.write("Learning rate range:\n")
-            f.write(f"{self.learning_rate_range}\n")
+            f.write(f"{self.learning_rate_range[0]}\t{self.learning_rate_range[1]}\n")
+            f.write("\n")
             f.write("Epochs range:\n")
-            f.write(f"{self.epochs_range}\n")
+            f.write(f"{self.epochs_range[0]}\t{self.epochs_range[1]}\n")
             f.write("\n")
             f.write("Best hyperparameters:\n")
             f.write(f"{json.dumps(best_params, indent=4)}\n")
