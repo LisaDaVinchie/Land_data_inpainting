@@ -43,6 +43,7 @@ def main():
 
     train_losses, test_losses = read_results(results_path)
 
+    print("Plotting results from", results_path, flush=True)
     # Plotting the results
     plt.figure(figsize=(10, 5))
     plt.plot(train_losses, label='Train Loss', color='blue')
@@ -52,6 +53,7 @@ def main():
     plt.ylabel('Loss')
     plt.legend()
     plt.savefig(figs_path)
+    print("Plot saved to", figs_path, flush=True)
     
 if __name__ == "__main__":
     main()
