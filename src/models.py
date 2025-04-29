@@ -32,6 +32,7 @@ def initialize_model_and_dataset_kind(params_path: Path, model_kind: str) -> tup
     Returns:
         tuple[nn.Module, str]: model and dataset kind
     """
+    
     if model_kind == "simple_conv":
         model = simple_conv(params_path)
         dataset_kind = "extended"
@@ -52,7 +53,7 @@ def initialize_model_and_dataset_kind(params_path: Path, model_kind: str) -> tup
     
     return model, dataset_kind
 class DINCAE_like(nn.Module):
-    def __init__(self, params_path: Path = None, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None, output_size: int = None):
+    def __init__(self, params_path: Path = None, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None):
         super(DINCAE_like, self).__init__()
         
         self.model_name: str = "DINCAE_like"
@@ -67,8 +68,6 @@ class DINCAE_like(nn.Module):
         self.interp_mode = interp_mode
         
         self._load_configurations(params_path)
-        
-        self.output_size = self.n_channels
         
         w, h = self._calculate_sizes()
         
@@ -98,7 +97,7 @@ class DINCAE_like(nn.Module):
         self.interp4 = nn.Upsample(size=(w[1], h[1]), mode=self.interp_mode)
         self.deconv4 = nn.Conv2d(self.middle_channels[1], self.middle_channels[0], self.kernel_sizes[1], padding='same')
         self.interp5 = nn.Upsample(size=(self.image_nrows, self.image_ncols), mode=self.interp_mode)
-        self.deconv5 = nn.Conv2d(self.middle_channels[0], self.output_size, self.kernel_sizes[0], padding='same')
+        self.deconv5 = nn.Conv2d(self.middle_channels[0], self.n_channels, self.kernel_sizes[0], padding='same')
         
     def _load_configurations(self, params_path: Path):
         if params_path is not None:
@@ -113,10 +112,9 @@ class DINCAE_like(nn.Module):
             self.kernel_sizes = params[model_cathegory_string][self.model_name].get("kernel_sizes", [2, 2, 2, 2, 2])
             self.pooling_sizes = params[model_cathegory_string][self.model_name].get("pooling_sizes", [7, 7, 7, 7, 7])
             self.interp_mode = params[model_cathegory_string][self.model_name].get("interp_mode", "bilinear")
-            self.output_size = params[model_cathegory_string][self.model_name].get("output_size", 2)
             
         
-        for var in [self.n_channels, self.image_nrows, self.image_ncols, self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode, self.output_size]:
+        for var in [self.n_channels, self.image_nrows, self.image_ncols, self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode]:
             if var is None:
                 raise ValueError(f"Variable {var} is None. Please provide a value for it.")
 
