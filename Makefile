@@ -38,6 +38,10 @@ DATASET_SPECS_DIR := $(DATA_DIR)/datasets_specs
 DATASET_SPECS_BASENAME := "dataset_specs"
 DATASET_SPECS_FILE_EXT := ".txt"
 
+OPTIM_DIR = $(DATA_DIR)/optim
+OPTIM_BASENAME = "optim"
+OPTIM_FILE_EXT = ".txt"
+
 CUTTED_IMAGES_DIR := $(DATA_DIR)/cutted_images
 CUTTED_IMAGES_BASENAME := "cutted_images"
 CUTTED_TXT_NAME := "explanatory"
@@ -80,11 +84,15 @@ CURRENT_RESULT_PATH = $(RESULTS_DIR)/$(RESULT_BASENAME)_$(IDX_MINUS_ONE)$(RESULT
 FIGS_PATH = $(FIG_RESULTS_DIR)/$(FIGS_BASENAME)_$(IDX_MINUS_ONE)$(FIG_FILE_EXT)
 WEIGHTS_PATH = $(WEIGHTS_DIR)/$(WEIGHTS_BASENAME)_$(IDX)$(WEIGHTS_FILE_EXT)
 
+# Find the next available optimization index
+IDX=$(shell i=0; while [ -e "$(OPTIM_DIR)/$(OPTIM_BASENAME)_$$i$(OPTIM_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
+OPTIM_NEXT_PATH = $(OPTIM_DIR)/$(OPTIM_BASENAME)_$(IDX)$(OPTIM_FILE_EXT)
+
 PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 
 
-.PHONY: config cut bcut train btrain test plot clean help
+.PHONY: config cut bcut train btrain optim test plot clean help
 
 config:
 	@echo "Storing paths to json..."
@@ -111,7 +119,8 @@ config:
 	@echo "        \"results_path\": \"$(NEXT_RESULT_PATH)\", " >> $(PATHS_FILE)
 	@echo "        \"current_results_path\": \"$(CURRENT_RESULT_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"figs_path\": \"$(FIGS_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"weights_path\": \"$(WEIGHTS_PATH)\"" >> $(PATHS_FILE)   
+	@echo "        \"weights_path\": \"$(WEIGHTS_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"optim_next_path\": \"$(OPTIM_NEXT_PATH)\"" >> $(PATHS_FILE)
 	@echo "    }" >> $(PATHS_FILE)
 	@echo "}" >> $(PATHS_FILE)
 
@@ -131,6 +140,10 @@ bcut: config
 plot:config
 	@echo "Plotting results..."
 	@$(PYTHON) $(SRC_DIR)/plot_results.py --paths $(PATHS_FILE)
+
+optim: config
+	@echo "Optimizing model..."
+	@$(PYTHON) $(SRC_DIR)/params_optimization.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 test:
 	@echo "Running tests..."
