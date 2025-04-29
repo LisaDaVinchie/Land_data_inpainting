@@ -97,8 +97,6 @@ def main():
         raise ValueError(f"Dataset kind {dataset_kind} not recognized")
     track_memory("After training")
     print(f"Training completed in {time() - training_time:.2f} seconds", flush = True)
-    
-    model = training_class.model
 
     # Save the model
     training_class.save_weights(weights_path)
