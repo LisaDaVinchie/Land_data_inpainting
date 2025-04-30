@@ -48,6 +48,18 @@ def main():
     results_path = Path(paths["results"]["results_path"])
     weights_path = Path(paths["results"]["weights_path"])
     current_minimal_dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
+    current_dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
+    
+    # Check if the paths exist
+    if not results_path.parent.exists():
+        raise FileNotFoundError(f"Results directory {results_path} does not exist.")
+    if not weights_path.parent.exists():
+        raise FileNotFoundError(f"Weights directory {weights_path} does not exist.")
+    if not current_minimal_dataset_path.exists():
+        raise FileNotFoundError(f"Dataset path {current_minimal_dataset_path} does not exist.")
+    if not current_dataset_specs_path.exists():
+        raise FileNotFoundError(f"Dataset specs path {current_dataset_specs_path} does not exist.")
+    print("Paths imported\n", flush = True)
     
     track_memory("Before loading model")
     model, dataset_kind = initialize_model_and_dataset_kind(params_path, model_kind)
@@ -107,7 +119,7 @@ def main():
     
     
     # Save the results
-    training_class.save_results(params_path, elapsed_time, dataset_path, results_path)
+    training_class.save_results(params_path, elapsed_time, dataset_path, results_path, current_dataset_specs_path)
     print(f"Results saved to {results_path}\n", flush = True)
 
 class TrainModel:
@@ -115,13 +127,14 @@ class TrainModel:
         """Initialize the training model class.
 
         Args:
-            model (th.nn.Module): _description_
-            epochs (int): _description_
-            device (_type_): _description_
-            train_loader (DataLoader): _description_
-            test_loader (DataLoader): _description_
-            loss_function (nn.Module): _description_
-            optimizer (optim.Optimizer): _description_
+            model (th.nn.Module): model to be trained
+            epochs (int): number of epochs
+            device (_type_): device to use for training
+            train_loader (DataLoader): Train dataloader
+            test_loader (DataLoader): Test dataloader
+            loss_function (nn.Module): loss function, accepting output, target, and mask
+            optimizer (optim.Optimizer): optimizer
+            scheduler (optim.lr_scheduler): learning rate scheduler
         """
         self.model = model
         self.epochs = epochs
@@ -136,14 +149,15 @@ class TrainModel:
         self.test_losses = []
         self.lr = []
     
-    def train_loop_extended(self, placeholder: float):
+    def train_loop_extended(self, placeholder: float, print_epoch: bool = True):
         """Training loop for the extended dataset.
         Args:
             placeholder (float): value to replace the masked pixels in the image
         """
 
         for epoch in range(self.epochs):
-            print(f"\nEpoch {epoch + 1}/{self.epochs}\n", flush=True)
+            if print_epoch:
+                print(f"\nEpoch {epoch + 1}/{self.epochs}\n", flush=True)
             self.model.train()
             
             train_loss = 0
@@ -179,10 +193,11 @@ class TrainModel:
         self.optimizer.step()
         self.optimizer.zero_grad()
         
-    def train_loop_minimal(self):
+    def train_loop_minimal(self, print_epoch: bool = True):
 
         for epoch in range(self.epochs):
-            print(f"\nEpoch {epoch + 1}/{self.epochs}\n", flush=True)
+            if print_epoch:
+                print(f"\nEpoch {epoch + 1}/{self.epochs}\n", flush=True)
             
             self.model.train()
             train_loss = 0
@@ -221,7 +236,7 @@ class TrainModel:
         """
         th.save(self.model.state_dict(), path)
         
-    def save_results(self, params_path: Path, elapsed_time: float, dataset_path: Path, results_path: Path):
+    def save_results(self, params_path: Path, elapsed_time: float, dataset_path: Path, results_path: Path, dataset_specs_path: Path):
         """Save the training results to a file.
 
         Args:
@@ -255,6 +270,10 @@ class TrainModel:
             f.write("\n\n")
             f.write("Parameters\n")
             f.write(json_str)
+            f.write("\n\n")
+            f.write("\nDataset specifications from original file:\n\n")
+            with open(dataset_specs_path, "r") as dataset_file:
+                f.write(dataset_file.read())
     
 def change_dataset_idx(dataset_idx: int, dataset_path: Path) -> Path:
     """Take the latest dataset path by default, or change the dataset index if specified.

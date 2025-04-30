@@ -150,7 +150,7 @@ class TestTrainingFunctions(unittest.TestCase):
         initial_weights = {k: v.clone() for k, v in self.extended_model.state_dict().items()}
 
         # Call the function
-        train_losses, test_losses = train.train_loop_extended(self.nan_placeholder)
+        train_losses, test_losses = train.train_loop_extended(self.nan_placeholder, False)
         
         train.model.eval()
         final_weights = {k: v.clone() for k, v in train.model.state_dict().items()}
@@ -187,7 +187,7 @@ class TestTrainingFunctions(unittest.TestCase):
         initial_weights = {k: v.clone() for k, v in self.reduced_model.state_dict().items()}
 
         # Call the function
-        train_losses, test_losses = train.train_loop_minimal()
+        train_losses, test_losses = train.train_loop_minimal(False)
 
         # Check the outputs
         for i in range(len(train_losses)):
