@@ -1,9 +1,9 @@
 {
     "optimization": {
-        "n_trials": 3,
+        "n_trials": 20,
         "batch_size_values": [10, 20],
         "learning_rate_range": [0.00001, 0.001],
-        "epochs_range": [3, 5]
+        "epochs_range": [5, 20]
     },
     "training":{
         "train_perc": 0.8,
@@ -23,6 +23,7 @@
     "dataset":{
         "cutted_nrows": 128,
         "cutted_ncols": 128,
+        "nan_placeholder": -2.0,
         "dataset_kind": "temperature",
         "_possible_dataset_kinds": ["biochemistry", "temperature"],
         "biochemistry": {
@@ -30,11 +31,46 @@
         },
         "temperature": {
             "n_channels": 5
+        }
+    },
+    "models":{
+        "DINCAE_pconvs": {
+            "middle_channels": [16, 30, 58, 110, 209],
+            "kernel_sizes": [3, 3, 3, 3, 3],
+            "pooling_sizes": [2, 2, 2, 2, 2],
+            "interp_mode": "bilinear",
+            "_possible_interpolation_modes": ["nearest", "linear", "bilinear", "bicubic", "trilinear"]
         },
-        "n_cutted_images": 200,
-        "nans_threshold": 0.3,
-        "mask_kind": "square",
-        "_possible_mask_kinds": ["square", "lines"],
-        "same_mask": false
+        "DINCAE_like": {
+            "middle_channels": [16, 30, 58, 110, 209],
+            "kernel_sizes": [3, 3, 3, 3, 3],
+            "pooling_sizes": [2, 2, 2, 2, 2],
+            "output_size": 15,
+            "interp_mode": "bilinear",
+            "_possible_interpolation_modes": ["nearest", "linear", "bilinear", "bicubic", "trilinear"]
+        },
+        "simple_conv":{
+            "middle_channels": [32, 64, 128],
+            "kernel_size": [3, 3, 3],
+            "stride": [1, 1, 1],
+            "padding": [1, 1, 1],
+            "output_padding": [0, 0, 0]
+        },
+        "conv_unet": {
+            "middle_channels": [32, 64, 128],
+            "kernel_size": [3, 3, 3],
+            "stride": [1, 1, 1],
+            "padding": [1, 1, 1],
+            "output_padding": [0, 0, 0]
+        },
+        "conv_maxpool": {
+            "middle_channels": [32, 64, 128, 256, 512],
+            "kernel_size": 3,
+            "stride": 1,
+            "pool_size": 2,
+            "up_kernel": 3,
+            "up_stride": 2,
+            "print_sizes": false
+        }
     }
 }
