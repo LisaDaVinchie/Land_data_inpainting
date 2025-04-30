@@ -72,6 +72,25 @@ class Test_DINCAE_model(unittest.TestCase):
         self.assertEqual(self.model.image_nrows, self.nrows)
         self.assertEqual(self.model.image_ncols, self.ncols)
         self.assertEqual(self.model.interp_mode, self.interp_mode)
+    
+    def test_initalization_priority(self):
+        """Test that input is preferred over the Json file."""
+        
+        model = DINCAE_like(self.params_path,
+                                   n_channels = self.n_channels + 1,
+                                   image_nrows= self.nrows + 1,
+                                   image_ncols= self.ncols + 1,
+                                   middle_channels = self.middle_channels + [1],
+                                   kernel_sizes = self.kernel_sizes + [1],
+                                   pooling_sizes = self.pooling_sizes + [1],
+                                   interp_mode = "bilinear")
+        # Check that the network has the correct attributes
+        self.assertEqual(model.n_channels, self.n_channels + 1)
+        self.assertEqual(model.image_ncols, self.ncols + 1)
+        self.assertEqual(model.middle_channels, self.middle_channels + [1])
+        self.assertEqual(model.kernel_sizes, self.kernel_sizes + [1])
+        self.assertEqual(model.pooling_sizes, self.pooling_sizes + [1])
+        self.assertEqual(model.interp_mode, "bilinear")
         
     def test_forward_pass(self):
         """Test if the forward pass of the model works correctly"""

@@ -18,6 +18,7 @@ image_nrows_string = "cutted_nrows"
 image_ncols_string = "cutted_ncols"
 
 model_cathegory_string: str = "models"
+dataset_cathegory_string: str = "dataset"
 
 def initialize_model_and_dataset_kind(params_path: Path, model_kind: str) -> tuple[nn.Module, str]:
     """Initialize the model and dataset kind from the json file.
@@ -103,15 +104,23 @@ class DINCAE_like(nn.Module):
         if params_path is not None:
             with open(params_path, 'r') as f:
                 params = json.load(f)
-            self.image_nrows = params["dataset"].get(image_nrows_string, 64)
-            self.image_ncols = params["dataset"].get(image_ncols_string, 64)
-            dataset_kind = params["dataset"].get("dataset_kind", "temperature")
-            self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 3)
+                
+            if self.image_nrows is None:
+                self.image_nrows = params[dataset_cathegory_string].get(image_nrows_string, None)
+            if self.image_ncols is None:
+                self.image_ncols = params[dataset_cathegory_string].get(image_ncols_string, None)
+            if self.n_channels is None:
+                dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
+                self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, None)
+            if self.middle_channels is None:
+                self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", None)
+            if self.kernel_sizes is None:
+                self.kernel_sizes = params[model_cathegory_string][self.model_name].get("kernel_sizes", None)
             
-            self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", [10, 10, 10, 10, 10])
-            self.kernel_sizes = params[model_cathegory_string][self.model_name].get("kernel_sizes", [2, 2, 2, 2, 2])
-            self.pooling_sizes = params[model_cathegory_string][self.model_name].get("pooling_sizes", [7, 7, 7, 7, 7])
-            self.interp_mode = params[model_cathegory_string][self.model_name].get("interp_mode", "bilinear")
+            if self.pooling_sizes is None:
+                self.pooling_sizes = params[model_cathegory_string][self.model_name].get("pooling_sizes", None)
+            if self.interp_mode is None:
+                self.interp_mode = params[model_cathegory_string][self.model_name].get("interp_mode", None)
             
         
         for var in [self.n_channels, self.image_nrows, self.image_ncols, self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode]:
@@ -208,19 +217,27 @@ class DINCAE_pconvs(nn.Module):
         self.interp5 = nn.Upsample(size=(self.image_nrows, self.image_ncols), mode=self.interp_mode)
         self.pdeconv5 = PartialConv2d(self.middle_channels[0], self.n_channels, kernel_size=self.kernel_sizes[0], padding='same')
 
-    def _load_configurations(self, params_path):
+    def _load_configurations(self, params_path: Path):
         if params_path is not None:
             with open(params_path, 'r') as f:
                 params = json.load(f)
-            self.image_nrows = params["dataset"].get(image_nrows_string, 0)
-            self.image_ncols = params["dataset"].get(image_ncols_string, 0)
-            dataset_kind = params["dataset"].get("dataset_kind", "temperature")
-            self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 0)
+                
+            if self.image_nrows is None:
+                self.image_nrows = params[dataset_cathegory_string].get(image_nrows_string, None)
+            if self.image_ncols is None:
+                self.image_ncols = params[dataset_cathegory_string].get(image_ncols_string, None)
+            if self.n_channels is None:
+                dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
+                self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, None)
+            if self.middle_channels is None:
+                self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", None)
+            if self.kernel_sizes is None:
+                self.kernel_sizes = params[model_cathegory_string][self.model_name].get("kernel_sizes", None)
             
-            self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", [0, 0, 0, 0, 0])
-            self.kernel_sizes = params[model_cathegory_string][self.model_name].get("kernel_sizes", [0, 0, 0, 0, 0])
-            self.pooling_sizes = params[model_cathegory_string][self.model_name].get("pooling_sizes", [0, 0, 0, 0, 0])
-            self.interp_mode = params[model_cathegory_string][self.model_name].get("interp_mode", "bilinear")
+            if self.pooling_sizes is None:
+                self.pooling_sizes = params[model_cathegory_string][self.model_name].get("pooling_sizes", None)
+            if self.interp_mode is None:
+                self.interp_mode = params[model_cathegory_string][self.model_name].get("interp_mode", None)
             
         
         for var in [self.n_channels, self.image_nrows, self.image_ncols, self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode]:
@@ -342,8 +359,8 @@ class simple_conv(nn.Module):
             with open(params_path, 'r') as f:
                 params = json.load(f)
     
-            dataset_kind = params["dataset"].get("dataset_kind", "temperature")
-            self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 3)
+            dataset_kind = params[dataset_cathegory_string].get("dataset_kind", "temperature")
+            self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, 3)
             
             self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", [10, 10, 10])
             self.kernel_size = params[model_cathegory_string][self.model_name].get("kernel_size", [2, 2, 2])
@@ -387,8 +404,8 @@ class conv_unet(nn.Module):
         if params_path is not None:
             with open(params_path, 'r') as f:
                 params = json.load(f)
-            dataset_kind = params["dataset"].get("dataset_kind", "temperature")
-            self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 3)
+            dataset_kind = params[dataset_cathegory_string].get("dataset_kind", "temperature")
+            self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, 3)
             
             self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", [10, 10, 10])
             self.kernel_size = params[model_cathegory_string][self.model_name].get("kernel_size", [7, 7, 7])
@@ -471,8 +488,8 @@ class conv_maxpool(nn.Module):
             with open(params_path, 'r') as f:
                 params = json.load(f)
             
-            dataset_kind = params["dataset"].get("dataset_kind", "temperature")
-            self.n_channels = params["dataset"][dataset_kind].get(n_channels_string, 3)
+            dataset_kind = params[dataset_cathegory_string].get("dataset_kind", "temperature")
+            self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, 3)
             
             self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", [12, 12, 12, 12, 12])
             self.kernel_size = params[model_cathegory_string][self.model_name].get("kernel_size", 5)
