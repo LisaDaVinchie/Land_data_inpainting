@@ -112,15 +112,15 @@ class Objective():
             f.write("\n")
             f.write("Batch size Values:\n")
             for val in self.batch_size_values:
-                f.write(f"{val}")
+                f.write(f"{val}\t")
             f.write("\n\n")
             f.write("Learning rate range:\n")
             for lr in self.learning_rate_range:
-                f.write(f"{lr}")
+                f.write(f"{lr}\t")
             f.write("\n\n")
             f.write("Epochs range:\n")
             for epoch in self.epochs_range:
-                f.write(f"{epoch}")
+                f.write(f"{epoch}\t")
             f.write("\n\n")
             f.write("Best trial:\n")
             f.write(f"{json.dumps(trial.params, indent=4)}\n")
