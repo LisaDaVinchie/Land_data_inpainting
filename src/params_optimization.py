@@ -52,6 +52,7 @@ def main():
     
     # Register the signal handler
     signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler) # For SLURM jobs
     
     try:
         # Optimize the objective function
