@@ -90,6 +90,7 @@ WEIGHTS_PATH = $(WEIGHTS_DIR)/$(WEIGHTS_BASENAME)_$(NEXT_RESULT_IDX)$(WEIGHTS_FI
 # Find the next available optimization index
 IDX=$(shell i=0; while [ -e "$(OPTIM_DIR)/$(OPTIM_BASENAME)_$$i$(OPTIM_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
 OPTIM_NEXT_PATH = $(OPTIM_DIR)/$(OPTIM_BASENAME)_$(IDX)$(OPTIM_FILE_EXT)
+STUDY_NEXT_PATH = $(OPTIM_DIR)/study_$(IDX).db
 
 PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
@@ -124,7 +125,8 @@ config:
 	@echo "        \"current_results_path\": \"$(CURRENT_RESULT_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"figs_path\": \"$(FIGS_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"weights_path\": \"$(WEIGHTS_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"optim_next_path\": \"$(OPTIM_NEXT_PATH)\"" >> $(PATHS_FILE)
+	@echo "        \"optim_next_path\": \"$(OPTIM_NEXT_PATH)\"," >> $(PATHS_FILE)
+	@echo "        \"study_next_path\": \"$(STUDY_NEXT_PATH)\"" >> $(PATHS_FILE)
 	@echo "    }" >> $(PATHS_FILE)
 	@echo "}" >> $(PATHS_FILE)
 
