@@ -40,8 +40,8 @@ def main():
     # Create a study to minimize the objective function
     study = optuna.create_study(direction="minimize",
                                 storage=storage,
-                                study_name=obj.study_name,
-                                load_if_exists=True)
+                                study_name=Path(obj.storage_path).stem,
+                                load_if_exists=False)
     
     # Define a signal handler to save the best hyperparameters on interrupt
     def signal_handler(signum, frame):
