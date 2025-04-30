@@ -40,7 +40,7 @@ def main():
     # Create a study to minimize the objective function
     study = optuna.create_study(direction="minimize",
                                 storage=storage,
-                                study_name="hyperparameter_optimization",
+                                study_name=obj.study_name,
                                 load_if_exists=True)
     
     # Define a signal handler to save the best hyperparameters on interrupt
@@ -85,6 +85,9 @@ class Objective():
         
         # Cache for dataloaders to avoid recreating them for the same batch size
         self.dataloader_cache: Dict[int, Tuple[Any, Any]] = {}
+        
+        study_idx = self.optim_next_path.stem.split("_")[-1]
+        self.study_name = f"hyperparameter_optimization_{study_idx}"
 
     def _import_params(self, params_path):
         with open(params_path, "r") as f:
@@ -149,6 +152,9 @@ class Objective():
             train_losses, test_losses = training_class.train_loop_minimal()
         else:
             raise ValueError(f"Dataset kind {self.dataset_kind} not recognized")
+        
+        trial.set_user_attr("train_losses", train_losses)
+        trial.set_user_attr("test_losses", test_losses)
 
         return test_losses[-1]  # Optuna minimizes this
     
@@ -163,6 +169,12 @@ class Objective():
             f.write("\n")
             f.write("Best trial value:\n")
             f.write(f"{trial.value}\n")
+            f.write("\n")
+            f.write("Best trial train loss:\n")
+            f.write(f"{trial.user_attrs['train_losses']}\n")
+            f.write("\n")
+            f.write("All trials: \n")
+            f.write(f"{json.dumps(trial.study.trials_dataframe().to_dict(orient='records'), indent=4)}\n")
             f.write("\n")
             f.write("Training parameters:\n")
             f.write(f"{json_str}\n")
