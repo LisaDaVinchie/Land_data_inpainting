@@ -147,7 +147,7 @@ plot:config
 
 optim: config
 	@echo "Optimizing model..."
-	@$(PYTHON) $(SRC_DIR)/params_optimization.py --params $(PARAMS_FILE) --paths $(PATHS_FILE) --optim $(OPTIM_PARAMS_FILE)
+	@$(PYTHON) $(SRC_DIR)/params_optimization.py --params $(OPTIM_PARAMS_FILE) --paths $(PATHS_FILE)
 
 test:
 	@echo "Running tests..."
