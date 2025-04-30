@@ -145,18 +145,13 @@ class Objective():
     
         optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         
-        training_class = TrainModel(self.model, epochs, self.device, train_loader, test_loader, self.loss_function, optimizer, None)
-        if self.dataset_kind == "extended":
-            train_losses, test_losses = training_class.train_loop_extended(self.placeholder)
-        elif self.dataset_kind == "minimal":
-            train_losses, test_losses = training_class.train_loop_minimal()
-        else:
-            raise ValueError(f"Dataset kind {self.dataset_kind} not recognized")
+        train = TrainModel(self.model, self.dataset_kind, epochs, self.device, train_loader, test_loader, self.loss_function, optimizer, None, self.placeholder)
+        train.train()
         
-        trial.set_user_attr("train_losses", train_losses)
-        trial.set_user_attr("test_losses", test_losses)
+        trial.set_user_attr("train_losses", train.train_losses)
+        trial.set_user_attr("test_losses", train.test_losses)
 
-        return test_losses[-1]  # Optuna minimizes this
+        return train.test_losses[-1]  # Optuna minimizes this
     
     def save_optim_specs(self, trial):
         # Save the best hyperparameters

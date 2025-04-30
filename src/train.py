@@ -100,13 +100,8 @@ def main():
 
     training_time = time()
     track_memory("Before training")
-    training_class = TrainModel(model, epochs, device, train_loader, test_loader, loss_function, optimizer, scheduler)
-    if dataset_kind == "extended":
-        train_losses, test_losses = training_class.train_loop_extended(placeholder)
-    elif dataset_kind == "minimal":
-        train_losses, test_losses = training_class.train_loop_minimal()
-    else:
-        raise ValueError(f"Dataset kind {dataset_kind} not recognized")
+    training_class = TrainModel(model, dataset_kind, epochs, device, train_loader, test_loader, loss_function, optimizer, scheduler, placeholder)
+    training_class.train()
     track_memory("After training")
     print(f"Training completed in {time() - training_time:.2f} seconds", flush = True)
 
@@ -123,7 +118,7 @@ def main():
     print(f"Results saved to {results_path}\n", flush = True)
 
 class TrainModel:
-    def __init__(self, model: th.nn.Module, epochs: int, device, train_loader: DataLoader, test_loader: DataLoader, loss_function: nn.Module, optimizer: optim.Optimizer, scheduler: optim.lr_scheduler):
+    def __init__(self, model: th.nn.Module, dataset_kind: str,  epochs: int, device, train_loader: DataLoader, test_loader: DataLoader, loss_function: nn.Module, optimizer: optim.Optimizer, scheduler: optim.lr_scheduler, placeholder: float):
         """Initialize the training model class.
 
         Args:
@@ -137,6 +132,7 @@ class TrainModel:
             scheduler (optim.lr_scheduler): learning rate scheduler
         """
         self.model = model
+        self.dataset_kind = dataset_kind
         self.epochs = epochs
         self.device = device
         self.train_loader = train_loader
@@ -144,12 +140,21 @@ class TrainModel:
         self.loss_function = loss_function
         self.optimizer = optimizer
         self.scheduler = scheduler
+        self.placeholder = placeholder
         
         self.train_losses = []
         self.test_losses = []
         self.lr = []
     
-    def train_loop_extended(self, placeholder: float, print_epoch: bool = True):
+    def train(self):
+        if self.dataset_kind == "extended":
+            self._train_loop_extended(self.placeholder)
+        elif self.dataset_kind == "minimal":
+            self._train_loop_minimal()
+        else:
+            raise ValueError(f"Dataset kind {self.dataset_kind} not recognized")
+    
+    def _train_loop_extended(self, placeholder: float, print_epoch: bool = True):
         """Training loop for the extended dataset.
         Args:
             placeholder (float): value to replace the masked pixels in the image
@@ -179,7 +184,6 @@ class TrainModel:
                     test_loss += loss_val.item()
                 
                 self.test_losses.append(test_loss / len(self.test_loader))
-        return self.train_losses, self.test_losses
 
     def _calculate_loss_extended(self, placeholder, image, mask):
         masked_image, _ = mask_inversemask_image(image, mask.float(), placeholder)
@@ -193,7 +197,7 @@ class TrainModel:
         self.optimizer.step()
         self.optimizer.zero_grad()
         
-    def train_loop_minimal(self, print_epoch: bool = True):
+    def _train_loop_minimal(self, print_epoch: bool = True):
 
         for epoch in range(self.epochs):
             if print_epoch:
@@ -219,7 +223,6 @@ class TrainModel:
                     test_loss += loss_val.item()
                 
                 self.test_losses.append(test_loss / len(self.test_loader))
-        return self.train_losses, self.test_losses
 
     def _calculate_loss_minimal(self, images, masks):
         images = images.to(self.device)

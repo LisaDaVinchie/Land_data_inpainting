@@ -145,22 +145,24 @@ class TestTrainingFunctions(unittest.TestCase):
             test_loader=self.test_loader,
             loss_function=self.loss_function,
             optimizer=optimizer,
-            scheduler=None)
+            scheduler=None,
+            dataset_kind="extended",
+            placeholder=0.0)
         
         initial_weights = {k: v.clone() for k, v in self.extended_model.state_dict().items()}
 
         # Call the function
-        train_losses, test_losses = train.train_loop_extended(self.nan_placeholder, False)
+        train._train_loop_extended(self.nan_placeholder, False)
         
         train.model.eval()
         final_weights = {k: v.clone() for k, v in train.model.state_dict().items()}
 
         # Check the outputs
-        for i in range(len(train_losses)):
-            self.assertIsInstance(train_losses[i], float)
-            self.assertIsInstance(test_losses[i], float)
-        self.assertEqual(len(train_losses), self.epochs)  # 2 epochs
-        self.assertEqual(len(test_losses), self.epochs)  # 2 epochs
+        for i in range(len(train.train_losses)):
+            self.assertIsInstance(train.train_losses[i], float)
+            self.assertIsInstance(train.test_losses[i], float)
+        self.assertEqual(len(train.train_losses), self.epochs)  # 2 epochs
+        self.assertEqual(len(train.test_losses), self.epochs)  # 2 epochs
         self.assertIsInstance(train.model, th.nn.Module)
         
         
@@ -182,19 +184,21 @@ class TestTrainingFunctions(unittest.TestCase):
             test_loader=self.test_loader,
             loss_function=self.loss_function,
             optimizer=optimizer,
-            scheduler=None)
+            scheduler=None,
+            dataset_kind="minimal",
+            placeholder=0.0)
         
         initial_weights = {k: v.clone() for k, v in self.reduced_model.state_dict().items()}
 
         # Call the function
-        train_losses, test_losses = train.train_loop_minimal(False)
+        train._train_loop_minimal(False)
 
         # Check the outputs
-        for i in range(len(train_losses)):
-            self.assertIsInstance(train_losses[i], float)
-            self.assertIsInstance(test_losses[i], float)
-        self.assertEqual(len(train_losses), self.epochs)  # 2 epochs
-        self.assertEqual(len(test_losses), self.epochs)  # 2 epochs
+        for i in range(len(train.train_losses)):
+            self.assertIsInstance(train.train_losses[i], float)
+            self.assertIsInstance(train.test_losses[i], float)
+        self.assertEqual(len(train.train_losses), self.epochs)  # 2 epochs
+        self.assertEqual(len(train.test_losses), self.epochs)  # 2 epochs
         self.assertIsInstance(train.model, th.nn.Module)
         
         final_weights = {k: v.clone() for k, v in train.model.state_dict().items()}
