@@ -41,6 +41,8 @@ DATASET_SPECS_FILE_EXT := ".txt"
 OPTIM_DIR = $(DATA_DIR)/optim
 OPTIM_BASENAME = "optim"
 OPTIM_FILE_EXT = ".txt"
+STUDY_BASENAME = "study"
+STUDY_FILE_EXT = ".db"
 
 CUTTED_IMAGES_DIR := $(DATA_DIR)/cutted_images
 CUTTED_IMAGES_BASENAME := "cutted_images"
@@ -88,9 +90,9 @@ FIGS_PATH = $(FIG_RESULTS_DIR)/$(FIGS_BASENAME)_$(CURRENT_RESULT_IDX)$(FIG_FILE_
 WEIGHTS_PATH = $(WEIGHTS_DIR)/$(WEIGHTS_BASENAME)_$(NEXT_RESULT_IDX)$(WEIGHTS_FILE_EXT)
 
 # Find the next available optimization index
-IDX=$(shell i=0; while [ -e "$(OPTIM_DIR)/$(OPTIM_BASENAME)_$$i$(OPTIM_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
+IDX=$(shell i=0; while [ -e "$(OPTIM_DIR)/$(STUDY_BASENAME)_$$i$(STUDY_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
 OPTIM_NEXT_PATH = $(OPTIM_DIR)/$(OPTIM_BASENAME)_$(IDX)$(OPTIM_FILE_EXT)
-STUDY_NEXT_PATH = $(OPTIM_DIR)/study_$(IDX).db
+STUDY_NEXT_PATH = $(OPTIM_DIR)/$(STUDY_BASENAME)_$(IDX)$(STUDY_FILE_EXT)
 
 PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
