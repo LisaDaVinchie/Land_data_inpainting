@@ -11,6 +11,7 @@ import json
 import signal
 from typing import Dict, Any, Tuple
 import os
+import sys
 
 from CustomDataset import create_dataloaders
 from models import initialize_model_and_dataset_kind
@@ -37,6 +38,7 @@ def signal_handler(signum, frame):
             print("Best hyperparameters saved before exit.", flush=True)
         except Exception as e:
             print(f"Failed to save best trial: {e}", flush=True)
+    sys.exit(0)
 
 
 def main():
