@@ -2,8 +2,8 @@
     "optimization": {
         "n_trials": 20,
         "batch_size_values": [64, 128, 256],
-        "learning_rate_range": [0.00001, 0.001],
-        "epochs_range": [5, 10]
+        "learning_rate_range": [0.000001, 0.001],
+        "epochs_range": [6, 20]
     },
     "training":{
         "train_perc": 0.8,
@@ -24,7 +24,7 @@
         "cutted_nrows": 128,
         "cutted_ncols": 128,
         "nan_placeholder": -2.0,
-        "dataset_kind": "temperature",
+        "dataset_kind": "biochemistry",
         "_possible_dataset_kinds": ["biochemistry", "temperature"],
         "biochemistry": {
             "n_channels": 13
