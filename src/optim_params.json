@@ -1,9 +1,9 @@
 {
     "optimization": {
         "n_trials": 20,
-        "batch_size_values": [64, 128, 256],
+        "batch_size_values": [10, 20, 30],
         "learning_rate_range": [0.00001, 0.001],
-        "epochs_range": [5, 20]
+        "epochs_range": [2, 3]
     },
     "training":{
         "train_perc": 0.8,
