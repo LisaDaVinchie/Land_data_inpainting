@@ -113,6 +113,16 @@ class Objective():
             
         loss_kind, model_kind, nan_placeholder = self._import_params(params_path)
         
+        print("Using model kind:", model_kind, flush = True)
+        print("Using loss kind:", loss_kind, flush = True)
+        print("Using nan placeholder:", nan_placeholder, flush = True)
+        print("Using placeholder:", self.placeholder, flush = True)
+        print("Using training percentage:", self.train_perc, flush = True)
+        print("Using number of trials:", self.n_trials, flush = True)
+        print("Using batch size values:", self.batch_size_values, flush = True)
+        print("Using learning rate range:", self.learning_rate_range, flush = True)
+        print("Using epochs range:", self.epochs_range, flush = True)
+        
         dataset_path = self._import_paths(paths_path)
         print("Using dataset path:", dataset_path, flush = True)
 
@@ -125,8 +135,6 @@ class Objective():
         
         # Cache for dataloaders to avoid recreating them for the same batch size
         self.dataloader_cache: Dict[int, Tuple[Any, Any]] = {}
-        
-        study_idx = self.optim_next_path.stem.split("_")[-1]
 
     def _import_params(self, params_path):
         with open(params_path, "r") as f:
