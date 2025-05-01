@@ -10,10 +10,34 @@ from time import time
 import json
 import signal
 from typing import Dict, Any, Tuple
+import os
 
 from CustomDataset import create_dataloaders
 from models import initialize_model_and_dataset_kind
 from losses import get_loss_function
+
+terminate_early = False
+study = None
+obj = None
+terminate_early = False
+
+# # Define a signal handler to save the best hyperparameters on interrupt
+# def signal_handler(signum, frame):
+#     global terminate_early
+#     print("Signal received, stopping optimization...", flush = True)
+#     terminate_early = True
+
+def signal_handler(signum, frame):
+    global terminate_early, study, obj
+    print("Signal received, stopping optimization...", flush=True)
+    terminate_early = True
+    if study is not None:
+        try:
+            obj.save_optim_specs(study.best_trial, study)
+            print("Best hyperparameters saved before exit.", flush=True)
+        except Exception as e:
+            print(f"Failed to save best trial: {e}", flush=True)
+
 
 def main():
     parser = argparse.ArgumentParser(description='Train a CNN model on a dataset')
@@ -33,6 +57,7 @@ def main():
     if not paths_path.exists():
         raise FileNotFoundError(f"Paths path {paths_path} does not exist.")
     
+    global study, obj
     obj = Objective(params_path, paths_path)
     
     storage = obj.create_storage()
@@ -41,31 +66,43 @@ def main():
     study = optuna.create_study(direction="minimize",
                                 storage=storage,
                                 study_name=Path(obj.storage_path).stem,
-                                load_if_exists=False)
-    
-    # Define a signal handler to save the best hyperparameters on interrupt
-    def signal_handler(signum, frame):
-        print("Signal received, stopping optimization...", flush = True)
-        obj.save_optim_specs(study.best_trial)
-        print("Best hyperparameters saved. Exiting...", flush = True)
-        exit(0)
+                                load_if_exists=False)    
+
     
     # Register the signal handler
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler) # For SLURM jobs
     
+    # try:
+    #     # Optimize the objective function
+    #     study.optimize(obj.objective,
+    #                    n_trials=obj.n_trials,
+    #                    gc_after_trial=True, # Clean memory after each trial
+    #                    show_progress_bar=True)
+    # except Exception as e:
+    #     print(f"An error occurred during optimization: {e}", flush = True)
+    # finally:
+    #     # Save the best hyperparameters
+    #     obj.save_optim_specs(study.best_trial)
+    #     print(f"\nElapsed time: {time() - start_time} seconds\n", flush = True)
+    
     try:
-        # Optimize the objective function
-        study.optimize(obj.objective,
-                       n_trials=obj.n_trials,
-                       gc_after_trial=True, # Clean memory after each trial
-                       show_progress_bar=True)
+        # Optimize in small chunks so we can handle early termination
+        completed_trials = 0
+        while not terminate_early and completed_trials < obj.n_trials:
+            study.optimize(obj.objective, n_trials=1, gc_after_trial=True, catch=(Exception,))
+            completed_trials += 1
+
+            # Checkpoint: Save intermediate best trial
+            print("Checkpoint: Saving intermediate best trial...", flush=True)
+            obj.save_optim_specs(study.best_trial, study)
+
     except Exception as e:
-        print(f"An error occurred during optimization: {e}", flush = True)
+        print(f"An error occurred during optimization: {e}", flush=True)
     finally:
-        # Save the best hyperparameters
-        obj.save_optim_specs(study.best_trial)
-        print(f"\nElapsed time: {time() - start_time} seconds\n", flush = True)
+        if study.best_trial is not None:
+            obj.save_optim_specs(study.best_trial, study)
+        print(f"\nElapsed time: {time() - start_time:.2f} seconds\n", flush=True)
 
 class Objective():
     def __init__(self, params_path: Path, paths_path: Path):
@@ -88,7 +125,6 @@ class Objective():
         self.dataloader_cache: Dict[int, Tuple[Any, Any]] = {}
         
         study_idx = self.optim_next_path.stem.split("_")[-1]
-        self.study_name = f"hyperparameter_optimization_{study_idx}"
 
     def _import_params(self, params_path):
         with open(params_path, "r") as f:
@@ -154,29 +190,50 @@ class Objective():
 
         return train.test_losses[-1]  # Optuna minimizes this
     
-    def save_optim_specs(self, trial):
+    def save_optim_specs(self, trial, study: optuna.Study):
         # Save the best hyperparameters
         
         json_str = json.dumps(self.params, indent=4)[1: -1]
         
+        all_trials = []
+        for t in study.trials:
+            trial_info = {
+                "number": t.number,
+                "value": t.value,
+                "params": t.params,
+                "state": str(t.state),
+                "start_time": str(t.datetime_start) if t.datetime_start else None,
+                "end_time": str(t.datetime_complete) if t.datetime_complete else None,
+                "user_attrs": t.user_attrs
+            }
+            all_trials.append(trial_info)
+        
+
+        
         with open(self.optim_next_path, "w") as f:
-            f.write("Best trial:\n")
+            f.write("Best trial parameters:\n")
             f.write(f"{json.dumps(trial.params, indent=4)}\n")
             f.write("\n")
             f.write("Best trial value:\n")
             f.write(f"{trial.value}\n")
             f.write("\n")
-            f.write("Best trial train loss:\n")
+            f.write("Best trial train losses:\n")
+            f.write(f"{trial.user_attrs['train_losses']}\n")
+            f.write("Best trial test losses:\n")
             f.write(f"{trial.user_attrs['train_losses']}\n")
             f.write("\n")
             f.write("All trials: \n")
-            f.write(f"{json.dumps(trial.study.trials_dataframe().to_dict(orient='records'), indent=4)}\n")
+            f.write(json.dumps(all_trials, indent=4))
             f.write("\n")
             f.write("Training parameters:\n")
             f.write(f"{json_str}\n")
             f.write("\nDataset specifications from original file:\n\n")
             with open(self.current_dataset_specs_path, "r") as dataset_file:
                 f.write(dataset_file.read())
+                
+            # Flush and sync to disk
+            f.flush()
+            os.fsync(f.fileno())
         
         print(f"Best hyperparameters saved to {self.optim_next_path}", flush = True)
 
