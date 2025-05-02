@@ -374,7 +374,8 @@ class simple_conv(nn.Module):
             if var is None:
                 raise ValueError(f"Variable {var} is None. Please provide a value for it.")
 
-    def forward(self, x: th.Tensor):
-        encoded = self.encoder(x)
+    def forward(self, x: th.Tensor, masks: th.Tensor) -> th.Tensor:
+        images, _ = mask_inversemask_image(x, masks, 0.0)
+        encoded = self.encoder(images)
         decoded = self.decoder(encoded)
         return decoded
