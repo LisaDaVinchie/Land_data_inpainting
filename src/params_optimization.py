@@ -22,12 +22,6 @@ study = None
 obj = None
 terminate_early = False
 
-# # Define a signal handler to save the best hyperparameters on interrupt
-# def signal_handler(signum, frame):
-#     global terminate_early
-#     print("Signal received, stopping optimization...", flush = True)
-#     terminate_early = True
-
 def signal_handler(signum, frame):
     global terminate_early, study, obj
     print("Signal received, stopping optimization...", flush=True)
@@ -74,19 +68,6 @@ def main():
     # Register the signal handler
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler) # For SLURM jobs
-    
-    # try:
-    #     # Optimize the objective function
-    #     study.optimize(obj.objective,
-    #                    n_trials=obj.n_trials,
-    #                    gc_after_trial=True, # Clean memory after each trial
-    #                    show_progress_bar=True)
-    # except Exception as e:
-    #     print(f"An error occurred during optimization: {e}", flush = True)
-    # finally:
-    #     # Save the best hyperparameters
-    #     obj.save_optim_specs(study.best_trial)
-    #     print(f"\nElapsed time: {time() - start_time} seconds\n", flush = True)
     
     try:
         # Optimize in small chunks so we can handle early termination
@@ -192,7 +173,11 @@ class Objective():
     
         optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         
-        train = TrainModel(self.model, self.dataset_kind, epochs, self.device, train_loader, test_loader, self.loss_function, optimizer, None, self.placeholder)
+        train = TrainModel(model=self.model, dataset_kind=self.dataset_kind,
+                           epochs=epochs, device=self.device,
+                           train_loader=train_loader, test_loader=test_loader,
+                           loss_function=self.loss_function, optimizer=optimizer,
+                           scheduler=None, placeholder=self.placeholder)
         train.train()
         
         trial.set_user_attr("train_losses", train.train_losses)
@@ -228,10 +213,13 @@ class Objective():
             f.write(f"{trial.value}\n")
             f.write("\n")
             f.write("Best trial train losses:\n")
-            f.write(f"{trial.user_attrs['train_losses']}\n")
+            for i, loss in enumerate(trial.user_attrs["train_losses"]):
+                f.write(f"{loss}\t")
+            f.write("\n\n")
             f.write("Best trial test losses:\n")
-            f.write(f"{trial.user_attrs['train_losses']}\n")
-            f.write("\n")
+            for i, loss in enumerate(trial.user_attrs["test_losses"]):
+                f.write(f"{loss}\t")
+            f.write("\n\n")
             f.write("All trials: \n")
             f.write(json.dumps(all_trials, indent=4))
             f.write("\n")
