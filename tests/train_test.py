@@ -1,77 +1,33 @@
 import unittest
-from unittest.mock import patch
 import torch as th
 from pathlib import Path
 import json
-from tempfile import NamedTemporaryFile
-
+import tempfile
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from train import track_memory, change_dataset_idx, validate_paths, TrainModel
-from models import simple_conv, DINCAE_pconvs
-from CustomDataset import create_dataloaders
-from losses import get_loss_function
+from train import TrainModel
+from CustomDataset_v2 import CreateDataloaders
 
-class TestTrainingFunctions(unittest.TestCase):
+class TestTrainingScript(unittest.TestCase):
     def setUp(self):
-        """Create a temporary JSON file with parameters."""
-        self.batch_size = 64
-        self.dataset_len = 100
-        self.n_channels = 3
-        self.ncols = 64
-        self.nrows = 64
+        # Create temporary directories and files for testing
+        self.temp_dir = tempfile.TemporaryDirectory()
+        
+        self.train_perc = 0.8
+        self.batch_size = 32
+        self.nan_placeholder = -1.0
+        self.lr = 0.001
         self.epochs = 3
-        self.nan_placeholder = -2.0
-        self.placeholder = 0.0
         self.save_every = 5
+        self.n_channels = 3
+        self.nrows = 128
+        self.ncols = 128
         
-        self.middle_channels_e = [12, 24, 36]
-        self.kernel_sizes_e = [3, 3, 3]
-        self.stride_e = [2, 2, 2]
-        self.padding_e = [1, 1, 1]
-        self.output_padding_e = [1, 1, 1]
-        
-        
-        self.extended_model_params = {
-            "training": {
-                "epochs": self.epochs,
-                "save_every": self.save_every,
-                "placeholder": self.placeholder,
-            },
-            "models": {
-                "simple_conv": {
-                    "middle_channels": self.middle_channels_e,
-                    "kernel_size": self.kernel_sizes_e,
-                    "stride": self.stride_e,
-                    "padding": self.padding_e,
-                    "output_padding": self.output_padding_e
-                    }
-                },  
+        # Create dummy JSON files
+        self.params_content = {
             "dataset": {
-                "dataset_kind": "test",
-                "test": {
-                    "n_channels": self.n_channels,
-                }
-            }
-        }
-        
-        
-        # Create a temporary file
-        self.temp_json = NamedTemporaryFile(delete=False, mode='w')
-        json.dump(self.extended_model_params, self.temp_json)
-        self.temp_json.close()  # Close the file to ensure it's written and available
-        self.extended_params_path = Path(self.temp_json.name).resolve()  # Use absolute path
-        
-        self.extended_model = simple_conv(params=self.extended_params_path)
-        
-        self.reduced_model_params = {
-            "training": {
-                "epochs": self.epochs,
-                "save_every": self.save_every,
-                "placeholder": self.placeholder,
-            },
-            "dataset": {
+                "nan_placeholder": self.nan_placeholder,
                 "cutted_nrows": self.nrows,
                 "cutted_ncols": self.ncols,
                 "dataset_kind": "test",
@@ -79,166 +35,149 @@ class TestTrainingFunctions(unittest.TestCase):
                     "n_channels": self.n_channels,
                 }
             },
-            "models": {
+            "training": {
+                "train_perc": self.train_perc,
+                "batch_size": self.batch_size,
+                "model_kind": "DINCAE_pconvs",
+                "loss_kind": "per_pixel_mse",
+                "learning_rate": self.lr,
+                "lr_scheduler": "step",
+                "epochs": self.epochs,
+                "save_every": self.save_every,
+            },
+            "lr_schedulers": {
+                "step": {
+                    "step_size": 5,
+                    "gamma": 0.1
+                }
+            },
+            "models":{
                 "DINCAE_pconvs": {
-                    "middle_channels": [16, 16, 16, 16, 16],
-                    "kernel_sizes": [5, 3, 5, 3, 5],
+                    "middle_channels": [16, 30, 58, 110, 209],
+                    "kernel_sizes": [3, 3, 3, 3, 3],
                     "pooling_sizes": [2, 2, 2, 2, 2],
-                    "interp_mode": "nearest"
+                    "interp_mode": "bilinear",
+                    "_possible_interpolation_modes": ["nearest", "linear", "bilinear", "bicubic", "trilinear"]
+                },
+                "DINCAE_like": {
+                    "middle_channels": [16, 30, 58, 110, 209],
+                    "kernel_sizes": [3, 3, 3, 3, 3],
+                    "pooling_sizes": [2, 2, 2, 2, 2],
+                    "output_size": 15,
+                    "interp_mode": "bilinear",
+                    "_possible_interpolation_modes": ["nearest", "linear", "bilinear", "bicubic", "trilinear"]
                 }
             }
         }
         
-        self.temp_json = NamedTemporaryFile(delete=False, mode='w')
-        json.dump(self.reduced_model_params, self.temp_json)
-        self.temp_json.close()  # Close the file to ensure it's written and available
-        self.reduced_params_path = Path(self.temp_json.name).resolve()  # Use absolute path
-        
-        self.reduced_model = DINCAE_pconvs(params=self.reduced_params_path)
-        
-        img_shape = (self.dataset_len, self.n_channels, self.nrows, self.ncols)
-        
-        images = th.randn(img_shape)
-        masks = th.ones(img_shape, dtype=th.bool)
-        masks[th.randint(0, 2, img_shape) == 0] = False
-        test_dataset = {
-            "images": images,
-            "masks": masks
+        self.paths_content = {
+            "data": {
+                "current_minimal_dataset_path": "dataset.pt",
+                "current_dataset_specs_path": "specs.txt"
+            },
+            "results": {
+                "weights_path": "weights.pth",
+                "results_path": "results.txt"
             }
+        }
         
-        self.train_loader, self.test_loader = create_dataloaders(test_dataset, 0.8, batch_size=self.batch_size)
+        # Write files to temp dir
+        self.params_path = Path(self.temp_dir.name) / "params.json"
+        self.paths_path = Path(self.temp_dir.name) / "paths.json"
+        self.dataset_path = Path(self.temp_dir.name) / "dataset.pt"
+        self.specs_path = Path(self.temp_dir.name) / "specs.txt"
         
-        # Create dummy paths for the dataset
-        self.dataset_path = NamedTemporaryFile(delete=False)
-        th.save(test_dataset, self.dataset_path.name)
-        self.dataset_path = Path(self.dataset_path.name).resolve()
-        
-
-        # Use a real loss function and optimizer
-        self.loss_function = get_loss_function("per_pixel_mse", self.nan_placeholder)
-        
-    def tearDown(self):
-        """Remove the temporary JSON file."""
-        if os.path.exists(self.extended_params_path):
-            os.remove(self.extended_params_path)
-        if os.path.exists(self.reduced_params_path):
-            os.remove(self.reduced_params_path)
-        
-    def test_track_memory(self):
-        """Test that track_memory logs memory usage."""
-        with patch("psutil.Process") as mock_process:
-            mock_process.return_value.memory_info.return_value.rss = 100 * 1e6  # 100 MB
-            with patch("builtins.print") as mock_print:
-                track_memory("Test Stage")
-                mock_print.assert_called_with("[Memory] Test Stage: 100.00 MB\n", flush=True)
-                
-    def test_initialization(self):
-        """Test that the model initializes correctly."""
-        self.assertIsInstance(self.extended_model, simple_conv)
-        self.assertIsInstance(self.reduced_model, DINCAE_pconvs)
-        
-        # Check that the model parameters are set correctly
-        self.assertEqual(self.extended_model.training_params["epochs"], self.epochs)
-        self.assertEqual(self.reduced_model.training_params["epochs"], self.epochs)
-
-    def test_change_dataset_idx(self):
-        """Test that change_dataset_idx updates the dataset path correctly."""
-        dataset_path = Path("/data/dataset_0.pt")
-        
-        # Test with a specified index
-        new_path = change_dataset_idx(1, dataset_path)
-        self.assertEqual(new_path, Path("/data/dataset_1.pt"))
-        
-        # Test with no index (should return the original path)
-        new_path = change_dataset_idx(None, dataset_path)
-        self.assertEqual(new_path, dataset_path)
-
-    def test_validate_paths(self):
-        """Test that validate_paths raises FileNotFoundError for missing paths."""
-        with patch("pathlib.Path.exists") as mock_exists:
-            mock_exists.return_value = False
-            with self.assertRaises(FileNotFoundError):
-                validate_paths([Path("/fake/path")])
+        with open(self.params_path, 'w') as f:
+            json.dump(self.params_content, f)
             
-            mock_exists.return_value = True
-            try:
-                validate_paths([Path("/real/path")])
-            except FileNotFoundError:
-                self.fail("validate_paths raised FileNotFoundError unexpectedly")
+        with open(self.paths_path, 'w') as f:
+            json.dump(self.paths_content, f)
+            
+        # Create dummy dataset
+        dummy_dataset = {
+            'images': th.randn(20, self.n_channels, self.nrows, self.ncols),
+            'masks': th.ones((20, self.n_channels, self.nrows, self.ncols), dtype=th.bool)
+        }
+        th.save(dummy_dataset, self.dataset_path)
+        
+        # Create dummy specs file
+        with open(self.specs_path, 'w') as f:
+            f.write("Dataset specifications\n")
+        
+        self.weights_path = "weights.pt"
+        self.results_path = "results.txt"
+        self.dataset_specs_path = "specs.txt"
 
-    def test_train_loop_extended(self):
-        """Test that train_loop_extended trains the model and returns losses."""
+    def tearDown(self):
+        self.temp_dir.cleanup()
+    
+    def test_initialize_train_model(self):
+        # Test initialization of TrainModel
+        train_model = TrainModel(self.params_content, self.weights_path, self.results_path, self.dataset_specs_path)
         
-        optimizer = th.optim.Adam(self.extended_model.parameters())
+        # Check if model and dataset are initialized correctly
+        self.assertIsNotNone(train_model.model)
+        self.assertIsNotNone(train_model.dataset_kind)
         
-        train = TrainModel(
-            model=self.extended_model,
-            device=th.device("cpu"),
-            train_loader=self.train_loader,
-            test_loader=self.test_loader,
-            loss_function=self.loss_function,
-            optimizer=optimizer,
-            scheduler=None,
-            dataset_kind="extended",
-            paths_path= 
-            params_path=self.extended_params_path)
+        # Check if loss function is initialized correctly
+        self.assertIsNotNone(train_model.loss_function)
         
-        initial_weights = {k: v.clone() for k, v in self.extended_model.state_dict().items()}
+        # Check if optimizer is initialized correctly
+        self.assertIsNotNone(train_model.optimizer)
+        
+        # Check if scheduler is initialized correctly
+        self.assertIsNotNone(train_model.scheduler)
+        
+        # Check if training parameters are set correctly
+        self.assertEqual(train_model.epochs, self.epochs)
+        self.assertEqual(train_model.save_every, self.save_every)
 
-        # Call the function
-        train._train_loop_extended(self.nan_placeholder, False)
+    def test_train_model_invalid_epochs(self):
+        # Test invalid epochs parameter
+        invalid_params = self.params_content.copy()
+        invalid_params["training"]["epochs"] = 0
         
-        train.model.eval()
-        final_weights = {k: v.clone() for k, v in train.model.state_dict().items()}
+        with self.assertRaises(ValueError):
+            TrainModel(invalid_params, self.weights_path, self.results_path, self.dataset_specs_path)
 
-        # Check the outputs
-        for i in range(len(train.train_losses)):
-            self.assertIsInstance(train.train_losses[i], float)
-            self.assertIsInstance(train.test_losses[i], float)
-        self.assertEqual(len(train.train_losses), self.epochs)  # 2 epochs
-        self.assertEqual(len(train.test_losses), self.epochs)  # 2 epochs
-        self.assertIsInstance(train.model, th.nn.Module)
+    def test_train_model_invalid_save_every(self):
+        # Test invalid save_every parameter
+        invalid_params = self.params_content.copy()
+        invalid_params["training"]["save_every"] = 0
         
-        
-        # Check that the model has been trained
-        updated = any(not th.equal(initial_weights[k], final_weights[k]) for k in initial_weights)
-        self.assertTrue(updated, "Weights did not update after training!")
+        with self.assertRaises(ValueError):
+            TrainModel(invalid_params, self.weights_path, self.results_path, self.dataset_specs_path)
 
+    def test_train_model_invalid_lr_scheduler(self):
+        # Test invalid lr_scheduler parameter
+        invalid_params = self.params_content.copy()
+        invalid_params["training"]["lr_scheduler"] = "invalid"
         
-    def test_train_loop_minimal(self):
-        """Test that train_loop_extended trains the model and returns losses."""
-        
-        optimizer = th.optim.Adam(self.reduced_model.parameters())
-        
-        train = TrainModel(
-            model=self.reduced_model,
-            epochs=self.epochs,
-            device=th.device("cpu"),
-            train_loader=self.train_loader,
-            test_loader=self.test_loader,
-            loss_function=self.loss_function,
-            optimizer=optimizer,
-            scheduler=None,
-            dataset_kind="minimal",
-            placeholder=0.0)
-        
-        initial_weights = {k: v.clone() for k, v in self.reduced_model.state_dict().items()}
+        with self.assertRaises(ValueError):
+            TrainModel(invalid_params, self.weights_path, self.results_path, self.dataset_specs_path)
 
-        # Call the function
-        train._train_loop_minimal(False)
-
-        # Check the outputs
-        for i in range(len(train.train_losses)):
-            self.assertIsInstance(train.train_losses[i], float)
-            self.assertIsInstance(train.test_losses[i], float)
-        self.assertEqual(len(train.train_losses), self.epochs)  # 2 epochs
-        self.assertEqual(len(train.test_losses), self.epochs)  # 2 epochs
-        self.assertIsInstance(train.model, th.nn.Module)
+    def test_train_model_no_scheduler(self):
+        # Test no scheduler case
+        no_scheduler_params = self.params_content.copy()
+        no_scheduler_params["training"]["lr_scheduler"] = "none"
         
-        final_weights = {k: v.clone() for k, v in train.model.state_dict().items()}
-        # Check that the model has been trained
-        updated = any(not th.equal(initial_weights[k], final_weights[k]) for k in initial_weights)
-        self.assertTrue(updated, "Weights did not update after training!")
+        train_model = TrainModel(no_scheduler_params, self.weights_path, self.results_path, self.dataset_specs_path)
+        self.assertIsNone(train_model.scheduler)
 
-if __name__ == "__main__":
+    def test_train_method(self):
+        # Test the train method
+        
+        dl = CreateDataloaders(self.dataset_path, self.train_perc, self.batch_size)
+        mock_train_loader, mock_test_loader = dl.create()
+        
+        # Run training
+        train_model = TrainModel(self.params_content, self.weights_path, self.results_path, self.dataset_specs_path)
+        train_model.train(mock_train_loader, mock_test_loader)
+        
+        # Check results
+        self.assertEqual(len(train_model.train_losses), self.epochs)
+        self.assertEqual(len(train_model.test_losses), self.epochs)
+        self.assertEqual(len(train_model.lr), self.epochs)
+
+if __name__ == '__main__':
     unittest.main()

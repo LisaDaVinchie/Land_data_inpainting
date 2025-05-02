@@ -1,264 +1,187 @@
 import torch as th
-import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
 from pathlib import Path
 import argparse
 from time import time
 import json
-import psutil
-import os
 
-from CustomDataset import create_dataloaders
 from models import initialize_model_and_dataset_kind
-from preprocessing.mask_data import mask_inversemask_image
 from losses import get_loss_function
+from CustomDataset_v2 import CreateDataloaders
 
 def main():
+    """Main function to train a model on a dataset."""
+    start_time = time()
+    
     parser = argparse.ArgumentParser(description='Train a CNN model on a dataset')
     parser.add_argument('--paths', type=Path, help='Path to the JSON file with data paths')
     parser.add_argument('--params', type=Path, help='Path to the JSON file with model parameters')
-    parser.add_argument('--dataset_idx', type=int, help='Index of the dataset to use', required=False)
-
+    
     args = parser.parse_args()
     
-    start_time = time()
-
-    params_path = args.params
-    paths_path = args.paths
-    
-    with open(params_path, 'r') as f:
+    params_file_path = args.params
+    paths_file_path = args.paths
+    if not params_file_path.exists():
+        raise FileNotFoundError(f"Parameters file not found: {params_file_path}")
+    if not paths_file_path.exists():
+        raise FileNotFoundError(f"Paths file not found: {paths_file_path}")
+    with open(params_file_path, 'r') as f:
         params = json.load(f)
-    
-    train_perc = params["training"]["train_perc"]
-    epochs = params["training"]["epochs"]
-    batch_size = params["training"]["batch_size"]
-    learning_rate = params["training"]["learning_rate"]
-    optimizer_kind = params["training"]["optimizer_kind"]
-    lr_scheduler = params["training"]["lr_scheduler"]
-    loss_kind = params["training"]["loss_kind"]
-    model_kind = params["training"]["model_kind"]
-    placeholder = params["training"]["placeholder"]
-    nan_placeholder = params["dataset"]["nan_placeholder"]
-    print("Parameters imported\n", flush = True)
-    
-    with open(paths_path, 'r') as f:
+    with open(paths_file_path, 'r') as f:
         paths = json.load(f)
     
-    results_path = Path(paths["results"]["results_path"])
-    weights_path = Path(paths["results"]["weights_path"])
-    current_minimal_dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
-    current_dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
+    train_perc = float(params["training"]["train_perc"])
+    batch_size = int(params["training"]["batch_size"])
     
-    # Check if the paths exist
-    if not results_path.parent.exists():
-        raise FileNotFoundError(f"Results directory {results_path} does not exist.")
-    if not weights_path.parent.exists():
-        raise FileNotFoundError(f"Weights directory {weights_path} does not exist.")
-    if not current_minimal_dataset_path.exists():
-        raise FileNotFoundError(f"Dataset path {current_minimal_dataset_path} does not exist.")
-    if not current_dataset_specs_path.exists():
-        raise FileNotFoundError(f"Dataset specs path {current_dataset_specs_path} does not exist.")
-    print("Paths imported\n", flush = True)
+    weights_path, results_path, dataset_specs_path, dataset_path = configure_file_paths(paths)
+        
+    dl = CreateDataloaders(dataset_path, train_perc, batch_size)
+    train_loader, test_loader = dl.create()
+        
+    train = TrainModel(params, weights_path, results_path, dataset_specs_path)
     
-    track_memory("Before loading model")
-    model, dataset_kind = initialize_model_and_dataset_kind(params_path, model_kind)
-    device = th.device("cuda" if th.cuda.is_available() else "cpu")
-    model = model.to(device)
-    track_memory("After loading model")
-    print("Model initialized\n", flush = True)
+    train.train(train_loader, test_loader)
     
-    dataset_path = current_minimal_dataset_path
-    idx = args.dataset_idx
-    dataset_path = change_dataset_idx(idx, dataset_path)
-    print("Using dataset path:", dataset_path, flush = True)
-    
-    validate_paths([dataset_path, results_path.parent, weights_path.parent])
-    print("\nPaths imported\n", flush = True)
-
-    dataset_start_time = time()
-    track_memory("Before loading dataset")
-    dataset = th.load(dataset_path)
-    track_memory("After loading dataset")
-    print(f"Dataset loaded in {time() - dataset_start_time:.2f} seconds", flush = True)
-
-    track_memory("Before creating dataloaders")
-    train_loader, test_loader = create_dataloaders(dataset, train_perc, batch_size)
-    del dataset
-    print("Dataloaders created\n", flush = True)
-    track_memory("After creating dataloaders")
-    
-    loss_function = get_loss_function(loss_kind, nan_placeholder)
-    
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    
-    scheduler = None
-    if lr_scheduler == "step":
-        step_size = int(params["lr_schedulers"][lr_scheduler]["step_size"])
-        gamma = float(params["lr_schedulers"][lr_scheduler]["gamma"])
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
-
-    training_time = time()
-    track_memory("Before training")
-    training_class = TrainModel(model, dataset_kind, epochs, device, train_loader, test_loader, loss_function, optimizer, scheduler, placeholder)
-    training_class.train()
-    track_memory("After training")
-    print(f"Training completed in {time() - training_time:.2f} seconds", flush = True)
-
-    # Save the model
-    training_class.save_weights(weights_path)
-    print(f"Weights saved to {weights_path}\n", flush = True)
-
     elapsed_time = time() - start_time
-    print(f"Elapsed time: {elapsed_time:.2f} seconds")
+    print(flush=True)
+    train.save_weights()
+    print(f"Model weights saved at {weights_path}", flush=True)
     
+    print(flush=True)
+    train.save_results(elapsed_time)
+    print(f"Results saved at {results_path}", flush=True)
     
-    # Save the results
-    training_class.save_results(params_path, elapsed_time, dataset_path, results_path, current_dataset_specs_path)
-    print(f"Results saved to {results_path}\n", flush = True)
-
+    print(f"\nTraining completed in {elapsed_time:.2f} seconds", flush=True)
+    
+def configure_file_paths(paths):
+    weights_path = Path(paths["results"]["weights_path"])
+    dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
+    results_path = Path(paths["results"]["results_path"])
+    dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
+    
+    if not [dataset_specs_path.exists(), dataset_path.exists()]:
+        raise FileNotFoundError(f"File not found at path {dataset_specs_path}")
+    
+    for path in [weights_path, results_path]:
+        if not path.parent.exists():
+            raise FileNotFoundError(f"Directory {path.parent} does not exist")
+    
+    return weights_path, results_path, dataset_specs_path, dataset_path
+    
 class TrainModel:
-    def __init__(self, model: th.nn.Module, dataset_kind: str,  epochs: int, device, train_loader: DataLoader, test_loader: DataLoader, loss_function: nn.Module, optimizer: optim.Optimizer, scheduler: optim.lr_scheduler, placeholder: float):
-        """Initialize the training model class.
-
-        Args:
-            model (th.nn.Module): model to be trained
-            epochs (int): number of epochs
-            device (_type_): device to use for training
-            train_loader (DataLoader): Train dataloader
-            test_loader (DataLoader): Test dataloader
-            loss_function (nn.Module): loss function, accepting output, target, and mask
-            optimizer (optim.Optimizer): optimizer
-            scheduler (optim.lr_scheduler): learning rate scheduler
-        """
-        self.model = model
-        self.dataset_kind = dataset_kind
-        self.epochs = epochs
-        self.device = device
-        self.train_loader = train_loader
-        self.test_loader = test_loader
-        self.loss_function = loss_function
-        self.optimizer = optimizer
-        self.scheduler = scheduler
-        self.placeholder = placeholder
+    def __init__(self, params, weights_path, results_path, dataset_specs_path):
+        self.params = params
+        self.device = th.device("cuda" if th.cuda.is_available() else "cpu")
+        
+        self._configure_training_parameters(params)
         
         self.train_losses = []
         self.test_losses = []
         self.lr = []
-    
-    def train(self):
-        if self.dataset_kind == "extended":
-            self._train_loop_extended(self.placeholder)
-        elif self.dataset_kind == "minimal":
-            self._train_loop_minimal()
-        else:
-            raise ValueError(f"Dataset kind {self.dataset_kind} not recognized")
-    
-    def _train_loop_extended(self, placeholder: float, print_epoch: bool = True):
-        """Training loop for the extended dataset.
-        Args:
-            placeholder (float): value to replace the masked pixels in the image
-        """
-
-        for epoch in range(self.epochs):
-            if print_epoch:
-                print(f"\nEpoch {epoch + 1}/{self.epochs}\n", flush=True)
-            self.model.train()
-            
-            train_loss = 0
-            for i, (image, mask) in enumerate(self.train_loader):
-                loss_val = self._calculate_loss_extended(placeholder, image, mask)
-                train_loss += loss_val.item()
-                self.lr.append(self.optimizer.param_groups[0]['lr'])
-                self._backpropagate_and_step(loss_val)
-            
-            self.scheduler.step() if self.scheduler is not None else None
-            self.lr.append(self.optimizer.param_groups[0]['lr'])
-            self.train_losses.append(train_loss / len(self.train_loader))
-            
-            with th.no_grad():
-                self.model.eval()
-                test_loss = 0
-                for i, (image, mask) in enumerate(self.test_loader):
-                    loss_val = self._calculate_loss_extended(placeholder, image, mask)
-                    test_loss += loss_val.item()
-                
-                self.test_losses.append(test_loss / len(self.test_loader))
-
-    def _calculate_loss_extended(self, placeholder, image, mask):
-        masked_image, _ = mask_inversemask_image(image, mask.float(), placeholder)
-        masked_image = masked_image.to(self.device)
-        output = self.model(masked_image)
-        loss_val = self.loss_function(output, image, mask)
-        return loss_val
-
-    def _backpropagate_and_step(self, loss_val):
-        loss_val.backward()
-        self.optimizer.step()
-        self.optimizer.zero_grad()
         
-    def _train_loop_minimal(self, print_epoch: bool = True):
+        self.weights_path = weights_path
+        self.results_path = results_path
+        self.dataset_specs_path = dataset_specs_path
 
+    def _configure_training_parameters(self, params):
+        training_params = params["training"]
+        
+        model_kind = training_params["model_kind"]
+        self.model, self.dataset_kind = initialize_model_and_dataset_kind(self.params, model_kind)
+        
+        loss_kind = str(training_params["loss_kind"])
+        nan_placeholder = float(params["dataset"]["nan_placeholder"])
+        self.loss_function = get_loss_function(loss_kind, nan_placeholder)
+        
+        lr = training_params['learning_rate']
+        self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
+        
+        lr_scheduler = training_params["lr_scheduler"]
+        self.scheduler = None
+        if lr_scheduler == "step":
+            step_size = int(params["lr_schedulers"][lr_scheduler]["step_size"])
+            gamma = float(params["lr_schedulers"][lr_scheduler]["gamma"])
+            self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=step_size, gamma=gamma)
+        elif lr_scheduler != "none":
+            raise ValueError(f"Unknown lr_scheduler: {lr_scheduler}")
+        
+        self.epochs = training_params['epochs']
+        
+        if self.epochs <= 0:
+            raise ValueError("Number of epochs must be positive.")
+        
+        self.save_every = training_params['save_every']
+        if self.save_every <= 0:
+            raise ValueError("Save interval must be positive.")
+        
+    def train(self, train_loader: th.utils.data.DataLoader, test_loader: th.utils.data.DataLoader):
+        """Train the model on the dataset.
+
+        Args:
+            train_loader (th.utils.data.DataLoader): training dataloader
+            test_loader (th.utils.data.DataLoader): testing dataloader
+        """
+        len_train_inv = 1 / len(train_loader)
+        len_test_inv = len(test_loader)
+        print(flush=True)
         for epoch in range(self.epochs):
-            if print_epoch:
-                print(f"\nEpoch {epoch + 1}/{self.epochs}\n", flush=True)
-            
+            print(f"Epoch {epoch + 1}/{self.epochs}\n", flush=True)
             self.model.train()
-            train_loss = 0
-            for (images, masks) in self.train_loader:
-                loss_val = self._calculate_loss_minimal(images, masks)
-                train_loss += loss_val.item()
-                self._backpropagate_and_step(loss_val)
-            
-            self.scheduler.step() if self.scheduler is not None else None
-            self.lr.append(self.optimizer.param_groups[0]['lr'])
+            epoch_loss = 0.0
+            for (images, masks) in train_loader:
+                loss = self._compute_loss(images, masks)
+                epoch_loss += loss.item()
+                
+                loss.backward()
+                self.optimizer.step()
+                self.optimizer.zero_grad()
 
-            self.train_losses.append(train_loss / len(self.train_loader))
+            self.lr.append(self.optimizer.param_groups[0]['lr'])
+            self.scheduler.step() if self.scheduler is not None else None
+            
+            self.train_losses.append(epoch_loss * len_train_inv)
             
             with th.no_grad():
                 self.model.eval()
-                test_loss = 0
-                for (images, masks) in self.test_loader:
-                    loss_val = self._calculate_loss_minimal(images, masks)
-                    test_loss += loss_val.item()
+                epoch_loss = 0.0
+                for (images, masks) in test_loader:
+                    loss = self._compute_loss(images, masks)
+                    epoch_loss += loss.item()
+                self.test_losses.append(epoch_loss * len_test_inv)
+            
+            if (epoch + 1) % self.save_every == 0:
+                self.save_weights()
+                self.save_results()
+                print(f"\nModel weights and results saved at epoch {epoch + 1}\n", flush=True)
                 
-                self.test_losses.append(test_loss / len(self.test_loader))
-
-    def _calculate_loss_minimal(self, images, masks):
+        print(flush=True)
+                
+    def _compute_loss(self, images, masks):
         images = images.to(self.device)
         masks = masks.to(self.device)
-        output, _ = self.model(images, masks.float())
-        loss_val = self.loss_function(output, images, masks)
-        return loss_val
+                
+        output = self.model(images, masks.float())
+        loss = self.loss_function(output, images, masks)
+        return loss
     
-    def save_weights(self, path: Path):
-        """Save the model weights to a file.
-
-        Args:
-            path (Path): path to save the weights
-        """
-        th.save(self.model.state_dict(), path)
+    def save_weights(self):
+        """Save the model weights to a file."""
+        th.save(self.model.state_dict(), self.weights_path)
         
-    def save_results(self, params_path: Path, elapsed_time: float, dataset_path: Path, results_path: Path, dataset_specs_path: Path):
+    def save_results(self, elapsed_time: float = None):
         """Save the training results to a file.
 
         Args:
-            params_path (Path): path to the parameters Json file
             elapsed_time (float): elapsed time of the training
-            dataset_path (Path): path to the dataset
-            results_path (Path): path to save the results
         """
-        with open(params_path, 'r') as f:
-            params = json.load(f)
         
-        json_str = json.dumps(params, indent=4)[1: -1]
+        json_str = json.dumps(self.params, indent=4)[1: -1]
         
         # Save the train losses to a txt file
-        with open(results_path, 'w') as f:
-            f.write("Elapsed time [s]:\n")
-            f.write(f"{elapsed_time}\n\n")
-            f.write("Used dataset:\n")
-            f.write(f"{dataset_path.relative_to(dataset_path.parent.parent)}\n\n")
+        with open(self.results_path, 'w') as f:
+            if elapsed_time is not None:
+                f.write("Elapsed time [s]:\n")
+                f.write(f"{elapsed_time}\n\n")
             f.write("Train losses\n")
             for loss in self.train_losses:
                 f.write(f"{loss}\t")
@@ -275,42 +198,8 @@ class TrainModel:
             f.write(json_str)
             f.write("\n\n")
             f.write("\nDataset specifications from original file:\n\n")
-            with open(dataset_specs_path, "r") as dataset_file:
+            with open(self.dataset_specs_path, "r") as dataset_file:
                 f.write(dataset_file.read())
-    
-def change_dataset_idx(dataset_idx: int, dataset_path: Path) -> Path:
-    """Take the latest dataset path by default, or change the dataset index if specified.
 
-    Args:
-        dataset_idx (int): desired dataset index
-        dataset_path (Path): path to the dataset
-
-    Returns:
-        Path: path to the dataset with the desired index
-    """
-    
-    if dataset_idx is None:
-        return dataset_path
-    
-    dataset_basepath = dataset_path.stem.split("_")[0]
-    dataset_ext = dataset_path.suffix
-    dataset_path = dataset_path.parent / f"{dataset_basepath}_{dataset_idx}{dataset_ext}"
-    return dataset_path
-
-def validate_paths(paths: list):
-    """Check if the paths exist.
-
-    Raises:
-        FileNotFoundError: if any of the paths do not exist, raise an error
-    """
-    for path in paths:
-        if not path.exists():
-            raise FileNotFoundError(f"Path {path} does not exist.")
-
-def track_memory(stage=""):
-    process = psutil.Process(os.getpid())
-    mem_info = process.memory_info().rss / 1e6  # Convert to MB
-    print(f"[Memory] {stage}: {mem_info:.2f} MB\n", flush=True)
-        
 if __name__ == "__main__":
     main()
