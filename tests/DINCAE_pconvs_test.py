@@ -84,24 +84,24 @@ class TestSimplePartialConv(unittest.TestCase):
         """Test that the forward pass works and produces outputs of the correct shape."""
 
         # Perform forward pass
-        output_img, output_mask = self.model(self.dummy_input, self.dummy_mask)
+        output_img = self.model(self.dummy_input, self.dummy_mask)
 
         # Check that the output has the correct shape
         self.assertEqual(output_img.shape, self.dummy_input.shape)
-        self.assertEqual(output_mask.shape, self.dummy_mask.shape)
+        self.assertEqual(self.model.output_mask.shape, self.dummy_mask.shape)
     
     def test_forward_pass_output_nans(self):
         """Test that the forward pass works and produces outputs with nans in the right places."""
         
         # Perform forward pass
-        output_img, output_mask = self.model(self.dummy_input, self.dummy_mask)
+        output_img = self.model(self.dummy_input, self.dummy_mask)
         
         # print("input mask: ", self.dummy_mask)
         # print("output nans mask: ", th.isnan(output_img))
         
         # Check that the output has the correct nans
         self.assertTrue(th.isnan(output_img).any())
-        self.assertFalse(th.isnan(output_mask).any())
+        self.assertFalse(th.isnan(self.model.output_mask).any())
         
 
 
