@@ -36,7 +36,7 @@ DATASET_FILE_EXT := .pt
 
 DATASET_SPECS_DIR := $(DATA_DIR)/datasets_specs
 DATASET_SPECS_BASENAME := "dataset_specs"
-DATASET_SPECS_FILE_EXT := ".txt"
+DATASET_SPECS_FILE_EXT := ".json"
 
 OPTIM_DIR = $(DATA_DIR)/optim
 OPTIM_BASENAME = "optim"
