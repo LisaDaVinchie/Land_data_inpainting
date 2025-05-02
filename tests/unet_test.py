@@ -2,9 +2,7 @@ import unittest
 import sys
 import os
 import torch as th
-from pathlib import Path
 import json
-from tempfile import NamedTemporaryFile
 
 # Add the parent directory to the path so that we can import the game module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
@@ -33,22 +31,10 @@ class TestCNNModel(unittest.TestCase):
             }    
         }
         
-        
-        # Create a temporary file
-        self.temp_json = NamedTemporaryFile(delete=False, mode='w')
-        json.dump(self.model_params, self.temp_json)
-        self.temp_json.close()  # Close the file to ensure it's written and available
-        self.params_path = Path(self.temp_json.name).resolve()  # Use absolute path
-        
-        self.model = conv_unet(params_path=self.params_path)
+        self.model = conv_unet(params=self.model_params)
         
         self.batch_size = 2
         self.input_tensor = th.rand(self.batch_size, self.model.n_channels, 64, 64)
-        
-    
-    def tearDown(self):
-        """Delete the temporary JSON file after tests."""
-        Path(self.temp_json.name).unlink()
         
     def test_model_initialization(self):
         """Test if the model initializes correctly"""

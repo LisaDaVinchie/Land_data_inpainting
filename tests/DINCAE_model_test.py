@@ -2,9 +2,6 @@ import unittest
 import sys
 import os
 import torch as th
-from pathlib import Path
-import json
-from tempfile import NamedTemporaryFile
 
 # Add the parent directory to the path so that we can import the game module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
@@ -44,21 +41,9 @@ class Test_DINCAE_model(unittest.TestCase):
             }
         }
         
-        
-        # Create a temporary file
-        self.temp_json = NamedTemporaryFile(delete=False, mode='w')
-        json.dump(self.model_params, self.temp_json)
-        self.temp_json.close()  # Close the file to ensure it's written and available
-        self.params_path = Path(self.temp_json.name).resolve()  # Use absolute path
-        
-        self.model = DINCAE_like(params_path=self.params_path)
+        self.model = DINCAE_like(params=self.model_params)
         
         self.input_tensor = th.rand(self.batch_size, self.model.n_channels, self.nrows, self.ncols)
-        
-    
-    def tearDown(self):
-        """Delete the temporary JSON file after tests."""
-        Path(self.temp_json.name).unlink()
         
     def test_model_initialization(self):
         """Test if the model initializes correctly"""
@@ -76,7 +61,7 @@ class Test_DINCAE_model(unittest.TestCase):
     def test_initalization_priority(self):
         """Test that input is preferred over the Json file."""
         
-        model = DINCAE_like(self.params_path,
+        model = DINCAE_like(self.model_params,
                                    n_channels = self.n_channels + 1,
                                    image_nrows= self.nrows + 1,
                                    image_ncols= self.ncols + 1,

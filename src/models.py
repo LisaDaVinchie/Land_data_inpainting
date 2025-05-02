@@ -1,6 +1,5 @@
 import torch as th
 from torch import nn
-from pathlib import Path
 from typing import List
 import json
 import math
@@ -20,11 +19,11 @@ image_ncols_string = "cutted_ncols"
 model_cathegory_string: str = "models"
 dataset_cathegory_string: str = "dataset"
 
-def initialize_model_and_dataset_kind(params_path: Path, model_kind: str) -> tuple[nn.Module, str]:
+def initialize_model_and_dataset_kind(params, model_kind: str) -> tuple[nn.Module, str]:
     """Initialize the model and dataset kind from the json file.
 
     Args:
-        params_path (Path): path to the json file containing the parameters
+        params: json file with parameters
         model_kind (str): kind of model to initialize
 
     Raises:
@@ -35,26 +34,26 @@ def initialize_model_and_dataset_kind(params_path: Path, model_kind: str) -> tup
     """
     
     if model_kind == "simple_conv":
-        model = simple_conv(params_path)
+        model = simple_conv(params)
         dataset_kind = "extended"
     elif model_kind == "conv_maxpool":
-        model = conv_maxpool(params_path)
+        model = conv_maxpool(params)
         dataset_kind = "extended"
     elif model_kind == "conv_unet":
-        model = conv_unet(params_path)
+        model = conv_unet(params)
         dataset_kind = "extended"
     elif model_kind == "DINCAE_like":
-        model = DINCAE_like(params_path)
+        model = DINCAE_like(params)
         dataset_kind = "extended"
     elif model_kind == "DINCAE_pconvs":
-        model = DINCAE_pconvs(params_path)
+        model = DINCAE_pconvs(params)
         dataset_kind = "minimal"
     else:
         raise ValueError(f"Model kind {model_kind} not recognized")
     
     return model, dataset_kind
 class DINCAE_like(nn.Module):
-    def __init__(self, params_path: Path = None, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None):
+    def __init__(self, params, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None):
         super(DINCAE_like, self).__init__()
         
         self.model_name: str = "DINCAE_like"
@@ -68,7 +67,7 @@ class DINCAE_like(nn.Module):
         self.pooling_sizes = pooling_sizes
         self.interp_mode = interp_mode
         
-        self._load_configurations(params_path)
+        self._load_configurations(params)
         
         w, h = self._calculate_sizes()
         
@@ -100,10 +99,8 @@ class DINCAE_like(nn.Module):
         self.interp5 = nn.Upsample(size=(self.image_nrows, self.image_ncols), mode=self.interp_mode)
         self.deconv5 = nn.Conv2d(self.middle_channels[0], self.n_channels, self.kernel_sizes[0], padding='same')
         
-    def _load_configurations(self, params_path: Path):
-        if params_path is not None:
-            with open(params_path, 'r') as f:
-                params = json.load(f)
+    def _load_configurations(self, params):
+        if params is not None:
                 
             if self.image_nrows is None:
                 self.image_nrows = params[dataset_cathegory_string].get(image_nrows_string, None)
@@ -164,7 +161,7 @@ class DINCAE_like(nn.Module):
         return dec5
 
 class DINCAE_pconvs(nn.Module):
-    def __init__(self, params_path: Path = None, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None):
+    def __init__(self, params, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None):
         super(DINCAE_pconvs, self).__init__()
         
         self.model_name = "DINCAE_pconvs"
@@ -178,7 +175,7 @@ class DINCAE_pconvs(nn.Module):
         self.pooling_sizes = pooling_sizes
         self.interp_mode = interp_mode
         
-        self._load_configurations(params_path)
+        self._load_configurations(params)
         
         self.output_size = self.n_channels
         
@@ -218,10 +215,8 @@ class DINCAE_pconvs(nn.Module):
         self.interp5 = nn.Upsample(size=(self.image_nrows, self.image_ncols), mode=self.interp_mode)
         self.pdeconv5 = PartialConv2d(self.middle_channels[0], self.n_channels, kernel_size=self.kernel_sizes[0], padding='same')
 
-    def _load_configurations(self, params_path: Path):
-        if params_path is not None:
-            with open(params_path, 'r') as f:
-                params = json.load(f)
+    def _load_configurations(self, params):
+        if params is not None:
                 
             if self.image_nrows is None:
                 self.image_nrows = params[dataset_cathegory_string].get(image_nrows_string, None)
@@ -322,7 +317,7 @@ class DINCAE_pconvs(nn.Module):
         return dec5, dmask5
 
 class simple_conv(nn.Module):
-    def __init__(self, params_path: Path = None, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
+    def __init__(self, params, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
         super(simple_conv, self).__init__()
         
         self.model_name: str = "simple_conv"
@@ -333,7 +328,7 @@ class simple_conv(nn.Module):
         self.padding = padding
         self.output_padding = output_padding
         
-        self._load_configurations(params_path)
+        self._load_configurations(params)
         
         
         # Encoder
@@ -355,10 +350,8 @@ class simple_conv(nn.Module):
             nn.Sigmoid()  # Output between 0 and 1
         )
         
-    def _load_configurations(self, params_path):
-        if params_path is not None:
-            with open(params_path, 'r') as f:
-                params = json.load(f)
+    def _load_configurations(self, params):
+        if params is not None:
     
             dataset_kind = params[dataset_cathegory_string].get("dataset_kind", "temperature")
             self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, 3)
@@ -379,7 +372,7 @@ class simple_conv(nn.Module):
         return decoded
 
 class conv_unet(nn.Module):
-    def __init__(self, params_path: Path = None, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
+    def __init__(self, params, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
         super(conv_unet, self).__init__()
         
         self.model_name: str = "conv_unet"
@@ -390,7 +383,7 @@ class conv_unet(nn.Module):
         self.padding = padding
         self.output_padding = output_padding
         
-        self._load_configurations(params_path)
+        self._load_configurations(params)
         
         self.encoder1 = nn.Conv2d(self.n_channels, self.middle_channels[0], kernel_size=self.kernel_size[0], stride=self.stride[0], padding=self.padding[0])  # 64x64 -> 32x32
         self.encoder2 = nn.Conv2d(self.middle_channels[0], self.middle_channels[1], kernel_size=self.kernel_size[1], stride=self.stride[1], padding=self.padding[1])  # 32x32 -> 16x16
@@ -402,10 +395,8 @@ class conv_unet(nn.Module):
         
         self.relu = nn.ReLU()
 
-    def _load_configurations(self, params_path):
-        if params_path is not None:
-            with open(params_path, 'r') as f:
-                params = json.load(f)
+    def _load_configurations(self, params):
+        if params is not None:
             dataset_kind = params[dataset_cathegory_string].get("dataset_kind", "temperature")
             self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, 3)
             
@@ -431,7 +422,7 @@ class conv_unet(nn.Module):
         return dec3
 
 class conv_maxpool(nn.Module):
-    def __init__(self, params_path: Path, n_channels: int = None, middle_channels: list = None, kernel_size: int = None, stride: int = None, pool_size: int = None, up_kernel: int = None, up_stride: int = None, print_sizes: bool = None):
+    def __init__(self, params, n_channels: int = None, middle_channels: list = None, kernel_size: int = None, stride: int = None, pool_size: int = None, up_kernel: int = None, up_stride: int = None, print_sizes: bool = None):
         super(conv_maxpool, self).__init__()
         
         self.model_name: str = "conv_maxpool"
@@ -444,7 +435,7 @@ class conv_maxpool(nn.Module):
         self.up_stride = up_stride
         self.print_sizes = print_sizes
         
-        self._load_configurations(params_path)
+        self._load_configurations(params)
         
         assert self.kernel_size % 2 == 1, "Kernel size must be an odd number"
         
@@ -485,10 +476,8 @@ class conv_maxpool(nn.Module):
         self.output_conv = nn.Conv2d(self.middle_channels[1], self.n_channels, self.kernel_size, self.stride, padding=(self.kernel_size - 1) // 2)
         self.sigmoid = nn.Sigmoid()
 
-    def _load_configurations(self, params_path):
-        if params_path is not None:
-            with open(params_path, 'r') as f:
-                params = json.load(f)
+    def _load_configurations(self, params):
+        if params is not None:
             
             dataset_kind = params[dataset_cathegory_string].get("dataset_kind", "temperature")
             self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, 3)

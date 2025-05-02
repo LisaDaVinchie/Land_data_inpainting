@@ -42,7 +42,7 @@ class TestCNNModel(unittest.TestCase):
         self.temp_json.close()  # Close the file to ensure it's written and available
         self.params_path = Path(self.temp_json.name).resolve()  # Use absolute path
         
-        self.model = conv_maxpool(params_path=self.params_path)
+        self.model = conv_maxpool(params=self.params_path)
         
         self.batch_size = 2
         self.input_tensor = th.rand(self.batch_size, self.model.n_channels, 128, 128)
