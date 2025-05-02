@@ -2,20 +2,15 @@ import optuna
 from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend
 from train import TrainModel
-import torch as th
-import torch.optim as optim
 from pathlib import Path
 import argparse
 from time import time
 import json
 import signal
-from typing import Dict, Any, Tuple
 import os
 import sys
 
-from CustomDataset import create_dataloaders
-from models import initialize_model_and_dataset_kind
-from losses import get_loss_function
+from CustomDataset_v2 import CreateDataloaders
 
 terminate_early = False
 study = None
@@ -39,7 +34,6 @@ def main():
     parser = argparse.ArgumentParser(description='Train a CNN model on a dataset')
     parser.add_argument('--paths', type=Path, help='Path to the JSON file with data paths')
     parser.add_argument('--params', type=Path, help='Path to the JSON file with model parameters')
-    parser.add_argument('--dataset_idx', type=int, help='Index of the dataset to use', required=False)
     
     args = parser.parse_args()
     
@@ -54,7 +48,14 @@ def main():
         raise FileNotFoundError(f"Paths path {paths_path} does not exist.")
     
     global study, obj
-    obj = Objective(params_path, paths_path)
+    
+    with open(params_path, 'r') as f:
+        params = json.load(f)
+    with open(paths_path, 'r') as f:
+        paths = json.load(f)
+        
+        
+    obj = Objective(params, paths)
     
     storage = obj.create_storage()
     
@@ -88,69 +89,37 @@ def main():
         print(f"\nElapsed time: {time() - start_time:.2f} seconds\n", flush=True)
 
 class Objective():
-    def __init__(self, params_path: Path, paths_path: Path):
+    def __init__(self, params, paths):
         # Load default config
         
-            
-        loss_kind, model_kind, nan_placeholder = self._import_params(params_path)
+        self.params = params
+        self._import_paths(paths)
+        self._import_params()
         
-        print("Using model kind:", model_kind, flush = True)
-        print("Using loss kind:", loss_kind, flush = True)
-        print("Using nan placeholder:", nan_placeholder, flush = True)
-        print("Using placeholder:", self.placeholder, flush = True)
-        print("Using training percentage:", self.train_perc, flush = True)
-        print("Using number of trials:", self.n_trials, flush = True)
-        print("Using batch size values:", self.batch_size_values, flush = True)
-        print("Using learning rate range:", self.learning_rate_range, flush = True)
-        print("Using epochs range:", self.epochs_range, flush = True)
-        
-        dataset_path = self._import_paths(paths_path)
-        print("Using dataset path:", dataset_path, flush = True)
+        self.dataloader_cache = {}
 
-        self.model, self.dataset_kind = initialize_model_and_dataset_kind(params_path, model_kind)
-        self.device = th.device("cuda" if th.cuda.is_available() else "cpu")
-        self.model = self.model.to(self.device)
-        
-        self.loss_function = get_loss_function(loss_kind, nan_placeholder)
-        self.dataset = th.load(dataset_path)
-        
-        # Cache for dataloaders to avoid recreating them for the same batch size
-        self.dataloader_cache: Dict[int, Tuple[Any, Any]] = {}
-
-    def _import_params(self, params_path):
-        with open(params_path, "r") as f:
-            self.params = json.load(f)
-            
-        self.train_perc = self.params["training"]["train_perc"]
-        loss_kind = self.params["training"]["loss_kind"]
-        model_kind = self.params["training"]["model_kind"]
-        self.placeholder = self.params["training"]["placeholder"]
-        nan_placeholder = self.params["dataset"]["nan_placeholder"]
+    def _import_params(self):
         self.n_trials = self.params["optimization"]["n_trials"]
         self.batch_size_values = self.params["optimization"]["batch_size_values"]
         self.learning_rate_range = self.params["optimization"]["learning_rate_range"]
         self.epochs_range = self.params["optimization"]["epochs_range"]
+        self.train_perc = self.params["training"]["train_perc"]
         print("Parameters imported\n", flush = True)
-        return loss_kind, model_kind, nan_placeholder
 
-    def _import_paths(self, paths_path: Path):
-        
-        with open(paths_path, "r") as f:
-            paths = json.load(f)
-        current_minimal_dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
+    def _import_paths(self, paths: Path):
+        self.dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
         self.current_dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
         self.optim_next_path = Path(paths["results"]["optim_next_path"])
         self.storage_path = str(paths["results"]["study_next_path"])
         
-        if not current_minimal_dataset_path.exists():
-            raise FileNotFoundError(f"Dataset path {current_minimal_dataset_path} does not exist.")
+        if not self.dataset_path.exists():
+            raise FileNotFoundError(f"Dataset path {self.dataset_path} does not exist.")
         if not self.current_dataset_specs_path.exists():
             raise FileNotFoundError(f"Dataset specs path {self.current_dataset_specs_path} does not exist.")
         if not self.optim_next_path.parent.exists():
             raise FileNotFoundError(f"Optimization results dir {self.optim_next_path.parent} does not exist.")
         if not Path(self.storage_path).parent.exists():
             raise FileNotFoundError(f"Storage path {self.storage_path} does not exist.")
-        return current_minimal_dataset_path
     
     def create_storage(self):
         return JournalStorage(JournalFileBackend(self.storage_path))
@@ -158,9 +127,9 @@ class Objective():
     def _get_dataloaders(self, batch_size: int):
         """Get dataloaders with caching."""
         if batch_size not in self.dataloader_cache:
-            self.dataloader_cache[batch_size] = create_dataloaders(
-                self.dataset, self.train_perc, batch_size
-            )
+            dl = CreateDataloaders(self.dataset_path, self.train_perc, batch_size)
+            train_loader, test_loader = dl.create()
+            self.dataloader_cache[batch_size] = (train_loader, test_loader)
         return self.dataloader_cache[batch_size]
         
     def objective(self, trial):
@@ -170,15 +139,12 @@ class Objective():
         epochs = trial.suggest_int("epochs", self.epochs_range[0], self.epochs_range[1])
         
         train_loader, test_loader = self._get_dataloaders(batch_size)
-    
-        optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         
-        train = TrainModel(model=self.model, dataset_kind=self.dataset_kind,
-                           epochs=epochs, device=self.device,
-                           train_loader=train_loader, test_loader=test_loader,
-                           loss_function=self.loss_function, optimizer=optimizer,
-                           scheduler=None, placeholder=self.placeholder)
-        train.train()
+        train = TrainModel(self.params, Path("weights.pt"), Path("results.txt"), self.current_dataset_specs_path)
+        train.lr = learning_rate
+        train._initialize_training_components(lr = learning_rate)
+        
+        train.train(train_loader, test_loader, epochs)
         
         trial.set_user_attr("train_losses", train.train_losses)
         trial.set_user_attr("test_losses", train.test_losses)
@@ -202,8 +168,6 @@ class Objective():
                 "user_attrs": t.user_attrs
             }
             all_trials.append(trial_info)
-        
-
         
         with open(self.optim_next_path, "w") as f:
             f.write("Best trial parameters:\n")
