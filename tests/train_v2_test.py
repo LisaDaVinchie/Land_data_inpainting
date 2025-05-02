@@ -95,8 +95,8 @@ class TestTrainingScript(unittest.TestCase):
             
         # Create dummy dataset
         dummy_dataset = {
-            'images': th.randn(100, self.n_channels, self.nrows, self.ncols),
-            'masks': th.ones((100, self.n_channels, self.nrows, self.ncols), dtype=th.bool)
+            'images': th.randn(20, self.n_channels, self.nrows, self.ncols),
+            'masks': th.ones((20, self.n_channels, self.nrows, self.ncols), dtype=th.bool)
         }
         th.save(dummy_dataset, self.dataset_path)
         
