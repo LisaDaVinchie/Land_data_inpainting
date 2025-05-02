@@ -55,7 +55,7 @@ class PerPixelMSE(nn.Module):
         # Subtract the number of NaN pixels from the number of valid pixels
         n_valid_pixels -= n_nans 
         if n_valid_pixels == 0: # if all pixels are masked, return 0
-            return 0
+            return th.tensor(0.0, requires_grad=True)
         
         diff = (prediction - target) ** 2 # Calculate the squared difference, for each pixel
         masked_diff = diff.masked_fill(masks, 0.0) # Set the masked pixels to 0 where the mask is 1, i.e. where the pixel is not masked
