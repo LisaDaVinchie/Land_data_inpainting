@@ -365,15 +365,10 @@ def main():
         'dataset': dataset_section,
         'masks': masks
     }
-
-    elapsed_time = time() - start_time
     
     # Save the combined sections to a text file
-    with open(dataset_specs_path, 'w') as txt_file:
-        txt_file.write("# Dataset specifications\n")
-        txt_file.write(f"Elapsed time:\n{elapsed_time:.2f} seconds\n")
-        txt_file.write("Dataset and mask specifications:\n")
-        json.dump(sections_to_save, txt_file, indent=4)
+    with open(dataset_specs_path, 'w') as f:
+        json.dump(sections_to_save, f, indent=4)
 
     print("Elapsed time: {:.2f} seconds\n".format(time() - start_time), flush=True)
     
