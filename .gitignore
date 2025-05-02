@@ -2,6 +2,8 @@
 data/*
 !data/result_*.txt
 !data/weights_*.pt
+!data/optim_*.txt
+!data/study_*.db
 
 # Slurm logs
 logs/
