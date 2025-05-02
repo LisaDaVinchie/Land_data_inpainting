@@ -73,38 +73,27 @@ class TrainModel:
         self.params = params
         self.device = th.device("cuda" if th.cuda.is_available() else "cpu")
         
-        self._configure_training_parameters(params)
+        self._configure_training_parameters()
+        self._initialize_training_components()
         
         self.train_losses = []
         self.test_losses = []
-        self.lr = []
+        self.training_lr = []
         
         self.weights_path = weights_path
         self.results_path = results_path
         self.dataset_specs_path = dataset_specs_path
 
-    def _configure_training_parameters(self, params):
-        training_params = params["training"]
+    def _configure_training_parameters(self):
+        training_params = self.params["training"]
         
-        model_kind = training_params["model_kind"]
-        self.model, self.dataset_kind = initialize_model_and_dataset_kind(self.params, model_kind)
+        self.model_kind = training_params["model_kind"]
         
-        loss_kind = str(training_params["loss_kind"])
-        nan_placeholder = float(params["dataset"]["nan_placeholder"])
-        self.loss_function = get_loss_function(loss_kind, nan_placeholder)
         
-        lr = training_params['learning_rate']
-        self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
-        
-        lr_scheduler = training_params["lr_scheduler"]
-        self.scheduler = None
-        if lr_scheduler == "step":
-            step_size = int(params["lr_schedulers"][lr_scheduler]["step_size"])
-            gamma = float(params["lr_schedulers"][lr_scheduler]["gamma"])
-            self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=step_size, gamma=gamma)
-        elif lr_scheduler != "none":
-            raise ValueError(f"Unknown lr_scheduler: {lr_scheduler}")
-        
+        self.loss_kind = str(training_params["loss_kind"])
+        self.nan_placeholder = float(self.params["dataset"]["nan_placeholder"])
+        self.lr = training_params['learning_rate']
+        self.lr_scheduler = training_params["lr_scheduler"]
         self.epochs = training_params['epochs']
         
         if self.epochs <= 0:
@@ -113,19 +102,44 @@ class TrainModel:
         self.save_every = training_params['save_every']
         if self.save_every <= 0:
             raise ValueError("Save interval must be positive.")
+
+    def _initialize_training_components(self, lr = None, lr_scheduler = None, loss_kind = None, nan_placeholder = None, model_kind = None):
         
-    def train(self, train_loader: th.utils.data.DataLoader, test_loader: th.utils.data.DataLoader):
+        lr = lr if lr is not None else self.lr
+        lr_scheduler = lr_scheduler if lr_scheduler is not None else self.lr_scheduler
+        loss_kind = loss_kind if loss_kind is not None else self.loss_kind
+        nan_placeholder = nan_placeholder if nan_placeholder is not None else self.nan_placeholder
+        model_kind = model_kind if model_kind is not None else self.model_kind
+        
+        self.model, self.dataset_kind = initialize_model_and_dataset_kind(self.params, model_kind)
+        
+        self.loss_function = get_loss_function(loss_kind, nan_placeholder)
+        
+        self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
+        
+        self.scheduler = None
+        if lr_scheduler == "step":
+            step_size = int(self.params["lr_schedulers"][lr_scheduler]["step_size"])
+            gamma = float(self.params["lr_schedulers"][lr_scheduler]["gamma"])
+            self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=step_size, gamma=gamma)
+        elif lr_scheduler != "none":
+            raise ValueError(f"Unknown lr_scheduler: {lr_scheduler}")
+        
+    def train(self, train_loader: th.utils.data.DataLoader, test_loader: th.utils.data.DataLoader, epochs: int = None):
         """Train the model on the dataset.
 
         Args:
             train_loader (th.utils.data.DataLoader): training dataloader
             test_loader (th.utils.data.DataLoader): testing dataloader
         """
+        
+        epochs = epochs if epochs is not None else self.epochs
+        
         len_train_inv = 1 / len(train_loader)
         len_test_inv = len(test_loader)
         print(flush=True)
-        for epoch in range(self.epochs):
-            print(f"Epoch {epoch + 1}/{self.epochs}\n", flush=True)
+        for epoch in range(epochs):
+            print(f"Epoch {epoch + 1}/{epochs}\n", flush=True)
             self.model.train()
             epoch_loss = 0.0
             for (images, masks) in train_loader:
@@ -136,7 +150,7 @@ class TrainModel:
                 self.optimizer.step()
                 self.optimizer.zero_grad()
 
-            self.lr.append(self.optimizer.param_groups[0]['lr'])
+            self.training_lr.append(self.optimizer.param_groups[0]['lr'])
             self.scheduler.step() if self.scheduler is not None else None
             
             self.train_losses.append(epoch_loss * len_train_inv)
@@ -191,7 +205,7 @@ class TrainModel:
                 f.write(f"{loss}\t")
             f.write("\n\n")
             f.write("Learning rate\n")
-            for lr in self.lr:
+            for lr in self.training_lr:
                 f.write(f"{lr}\t")
             f.write("\n\n")
             f.write("Parameters\n")
