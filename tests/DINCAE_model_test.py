@@ -27,7 +27,8 @@ class Test_DINCAE_model(unittest.TestCase):
                 "dataset_kind": "test",
                 "test": {
                     "n_channels": self.n_channels,
-                }
+                },
+                "placeholder": 0.0
             },
             "models": {
                 "DINCAE_like": {
@@ -44,6 +45,8 @@ class Test_DINCAE_model(unittest.TestCase):
         self.model = DINCAE_like(params=self.model_params)
         
         self.input_tensor = th.rand(self.batch_size, self.model.n_channels, self.nrows, self.ncols)
+        self.masks = th.ones(self.batch_size, self.model.n_channels, self.nrows, self.ncols)
+        self.masks[:, 0, 0:10, 0:10] = 0.0
         
     def test_model_initialization(self):
         """Test if the model initializes correctly"""
@@ -80,7 +83,7 @@ class Test_DINCAE_model(unittest.TestCase):
     def test_forward_pass(self):
         """Test if the forward pass of the model works correctly"""
         # Test the forward pass of the model
-        output = self.model(self.input_tensor)
+        output = self.model(self.input_tensor, self.masks)
         
         # Check if the output shape is correct
         self.assertEqual(output.shape, (self.batch_size, self.model.n_channels, self.nrows, self.ncols))

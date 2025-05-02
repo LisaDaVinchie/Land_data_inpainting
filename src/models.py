@@ -1,9 +1,9 @@
 import torch as th
 from torch import nn
 from typing import List
-import json
 import math
 from PartialConv import PartialConv2d
+from preprocessing.mask_data import mask_inversemask_image
 
 def conv_output_size_same_padding(in_size, pool_size):
     return  math.ceil(in_size / pool_size)
@@ -118,6 +118,8 @@ class DINCAE_like(nn.Module):
                 self.pooling_sizes = params[model_cathegory_string][self.model_name].get("pooling_sizes", None)
             if self.interp_mode is None:
                 self.interp_mode = params[model_cathegory_string][self.model_name].get("interp_mode", None)
+                
+            self.placeholder = params[dataset_cathegory_string].get("placeholder", None)
             
         
         for var in [self.n_channels, self.image_nrows, self.image_ncols, self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode]:
@@ -134,29 +136,33 @@ class DINCAE_like(nn.Module):
             h.append(conv_output_size_same_padding(h[i-1], self.pooling_sizes[i-1]))
         return w,h
         
-    def forward(self, x: th.Tensor) -> th.Tensor:
+    def forward(self, images: th.Tensor, masks: th.Tensor) -> th.Tensor:
         """Forward pass
 
         Args:
-            x (th.Tensor): tensor of shape (batch_size, n_channels, image_nrows, image_ncols), not containing NaNs
+            images (th.Tensor): tensor of shape (batch_size, n_channels, image_nrows, image_ncols), not containing NaNs
+            masks (th.Tensor): tensor of shape (batch_size, n_channels, image_nrows, image_ncols), 1 where x is valid, 0 where x is masked
 
         Returns:
             th.Tensor: output image
         """
+        
+        x, _ = mask_inversemask_image(images, masks, self.placeholder)
+        
         enc1 = self.pool1(self.activation(self.conv1(x)))
         enc2 = self.pool2(self.activation(self.conv2(enc1)))
         enc3 = self.pool3(self.activation(self.conv3(enc2)))
         enc4 = self.pool4(self.activation(self.conv4(enc3)))
         enc5 = self.pool5(self.activation(self.conv5(enc4)))
         dec1 = self.activation(self.deconv1(self.interp1(enc5)))
-        x = dec1 + enc4
-        dec2 = self.activation(self.deconv2(self.interp2(x)))
-        x = dec2 + enc3
-        dec3 = self.activation(self.deconv3(self.interp3(x)))
-        x = dec3 + enc2
-        dec4 = self.activation(self.deconv4(self.interp4(x)))
-        x = dec4 + enc1
-        dec5 = self.activation(self.deconv5(self.interp5(x)))
+        images = dec1 + enc4
+        dec2 = self.activation(self.deconv2(self.interp2(images)))
+        images = dec2 + enc3
+        dec3 = self.activation(self.deconv3(self.interp3(images)))
+        images = dec3 + enc2
+        dec4 = self.activation(self.deconv4(self.interp4(images)))
+        images = dec4 + enc1
+        dec5 = self.activation(self.deconv5(self.interp5(images)))
         
         return dec5
 
