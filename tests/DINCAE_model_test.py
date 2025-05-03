@@ -5,7 +5,7 @@ import torch as th
 
 # Add the parent directory to the path so that we can import the game module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from src.models import DINCAE_like
+from src.models import DINCAE_like, initialize_model_and_dataset_kind
 
 class Test_DINCAE_model(unittest.TestCase):
     
@@ -87,6 +87,30 @@ class Test_DINCAE_model(unittest.TestCase):
         
         # Check if the output shape is correct
         self.assertEqual(output.shape, (self.batch_size, self.model.n_channels, self.nrows, self.ncols))
+    
+    def test_automatic_initialization(self):
+        dataset_params = {
+            "dataset": {
+                "cutted_nrows": self.nrows + 1,
+                "cutted_ncols": self.ncols + 1,
+                "dataset_kind": "test",
+                "test": {
+                    "n_channels": self.n_channels + 1,
+                }
+            }
+        }
+        model, dataset_kind = initialize_model_and_dataset_kind(self.model_params, "DINCAE_like", dataset_params)
+        
+        # Check that the network has the correct attributes
+        self.assertIsInstance(model, DINCAE_like)
+        self.assertEqual(dataset_kind, "extended")
+        self.assertEqual(model.n_channels, self.n_channels + 1)
+        self.assertEqual(model.image_nrows, self.nrows + 1)
+        self.assertEqual(model.image_ncols, self.ncols + 1)
+        self.assertEqual(model.middle_channels, self.middle_channels)
+        self.assertEqual(model.kernel_sizes, self.kernel_sizes)
+        self.assertEqual(model.pooling_sizes, self.pooling_sizes)
+        self.assertEqual(model.interp_mode, self.interp_mode)
 
 if __name__ == "__main__":
     unittest.main()

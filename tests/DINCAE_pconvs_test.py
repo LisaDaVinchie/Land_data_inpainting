@@ -3,10 +3,10 @@ import torch as th
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from models import DINCAE_pconvs
+from models import DINCAE_pconvs, initialize_model_and_dataset_kind
 
 
-class TestSimplePartialConv(unittest.TestCase):
+class TestDINCAEPconvs(unittest.TestCase):
     def setUp(self):
         """Set up test data and parameters."""
         # Create a temporary JSON file for model parameters
@@ -48,6 +48,7 @@ class TestSimplePartialConv(unittest.TestCase):
         self.dummy_mask[th.isnan(self.dummy_input)] = 0
         
         self.model = DINCAE_pconvs(self.params)
+        self.model.layers_setup()
 
     def test_initialization(self):
         """Test that the network initializes correctly."""
@@ -72,6 +73,7 @@ class TestSimplePartialConv(unittest.TestCase):
                                    kernel_sizes = self.kernel_sizes + [1],
                                    pooling_sizes = self.pooling_sizes + [1],
                                    interp_mode = "bilinear")
+        model.layers_setup()
         # Check that the network has the correct attributes
         self.assertEqual(model.n_channels, self.n_channels + 1)
         self.assertEqual(model.image_ncols, self.ncols + 1)
@@ -103,7 +105,29 @@ class TestSimplePartialConv(unittest.TestCase):
         self.assertTrue(th.isnan(output_img).any())
         self.assertFalse(th.isnan(self.model.output_mask).any())
         
-
+    def test_automatic_initialization(self):
+        dataset_params = {
+            "dataset": {
+                "cutted_nrows": self.nrows + 1,
+                "cutted_ncols": self.ncols + 1,
+                "dataset_kind": "test",
+                "test": {
+                    "n_channels": self.n_channels + 1,
+                }
+            }
+        }
+        model, dataset_kind = initialize_model_and_dataset_kind(self.params, "DINCAE_pconvs", dataset_params)
+        
+        # Check that the network has the correct attributes
+        self.assertIsInstance(model, DINCAE_pconvs)
+        self.assertEqual(dataset_kind, "minimal")
+        self.assertEqual(model.n_channels, self.n_channels + 1)
+        self.assertEqual(model.image_nrows, self.nrows + 1)
+        self.assertEqual(model.image_ncols, self.ncols + 1)
+        self.assertEqual(model.middle_channels, self.middle_channels)
+        self.assertEqual(model.kernel_sizes, self.kernel_sizes)
+        self.assertEqual(model.pooling_sizes, self.pooling_sizes)
+        self.assertEqual(model.interp_mode, self.interp_mode)
 
 if __name__ == "__main__":
     unittest.main()
