@@ -3,11 +3,10 @@ import torch as th
 from pathlib import Path
 
 class CreateDataloaders:
-    def __init__(self, dataset_path: Path, train_perc: float, batch_size: int):
+    def __init__(self, train_perc: float, batch_size: int = None):
         """Load the dataset and create the dataloaders
 
         Args:
-            dataset_path (Path): Path to the dataset
             train_perc (float): Percentage of the dataset to use for training
             batch_size (int): Batch size for the dataloaders
 
@@ -15,23 +14,26 @@ class CreateDataloaders:
             ValueError: If the train_perc is not between 0 and 1
             ValueError: If the batch_size is smaller than or equal to 0
         """
-        self.dataset_path = dataset_path
         self.train_perc = train_perc
         self.batch_size = batch_size
         
         if self.train_perc <=0 or self.train_perc >= 1:
-            raise ValueError(f"train_perc must be between 0 and 1, got {train_perc}")
-        
-        if self.batch_size <= 0:
-            raise ValueError(f"batch_size must be greater than 0, got {batch_size}")
+            raise ValueError(f"train_perc must be between 0 and 1, got {self.train_perc}")
+        if self.batch_size is not None and self.batch_size <= 0:
+            raise ValueError(f"batch_size must be greater than 0, got {self.batch_size}")
 
-    def create(self) -> tuple:
+    def create(self, dataset: dict, batch_size: int = None) -> tuple:
         """Create the dataloaders
 
         Returns:
             tuple: A tuple containing the training and testing dataloaders
         """
-        dataset = self._load_dataset()
+        
+
+        self.batch_size = batch_size if self.batch_size is None else self.batch_size
+        
+        if self.batch_size is None or self.batch_size <= 0:
+            raise ValueError(f"batch_size must be a positive integer, got {self.batch_size}")
         
         train_indices, test_indices = self._get_train_test_indices(dataset)
         
@@ -45,13 +47,17 @@ class CreateDataloaders:
 
         return train_loader, test_loader
 
-    def _load_dataset(self) -> dict:
-        """Loads the dataset from the given path
+    def load_dataset(self, dataset_path: Path) -> dict:
+        """Loads the dataset from the given path.
+        
+        Args:
+            dataset_path (Path): Path to the dataset.
 
         Returns:
             dict: A dictionary with the following keys: 'images', 'masks'
         """
-        return th.load(self.dataset_path)
+        
+        return th.load(dataset_path)
     
     def _get_train_test_indices(self, dataset):
         len_dataset = self._validate_dataset_length(dataset)
