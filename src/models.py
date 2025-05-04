@@ -46,7 +46,6 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
         raise ValueError(f"Model kind {model_kind} not recognized")
     
     if dataset_params is not None:
-        print("Using dataset specs params")
         model.override_load_dataset_configurations(dataset_params)
     
     model.layers_setup()
