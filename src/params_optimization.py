@@ -1,7 +1,7 @@
 import optuna
 from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend
-from train import TrainModel
+from train import TrainModel, change_dataset_idx
 from pathlib import Path
 import argparse
 from time import time
@@ -39,8 +39,8 @@ def main():
     
     start_time = time()
 
-    params_path = args.params
-    paths_path = args.paths
+    params_path = Path(args.params)
+    paths_path = Path(args.paths)
     
     if not params_path.exists():
         raise FileNotFoundError(f"Parameters path {params_path} does not exist.")
@@ -54,8 +54,25 @@ def main():
     with open(paths_path, 'r') as f:
         paths = json.load(f)
         
+    dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
+    dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
+    dataset_idx = int(params["training"]["dataset_idx"])
+    
+    if dataset_idx >= 0:
+        dataset_path, dataset_specs_path = change_dataset_idx(dataset_path, dataset_specs_path, dataset_idx)
+    
+    for path in [dataset_path, dataset_specs_path]:
+        if not path.exists():
+            raise FileNotFoundError(f"Dataset file {path} not found")
+    
+    with open(dataset_specs_path, 'r') as f:
+        dataset_specs = json.load(f)
         
-    obj = Objective(params, paths)
+    obj = Objective()
+    # Import parameters and paths
+    obj.import_params(params)
+    obj.import_and_check_paths(paths)
+    obj.dataloader_init(dataset_specs, dataset_path)
     
     storage = obj.create_storage()
     
@@ -89,50 +106,73 @@ def main():
         print(f"\nElapsed time: {time() - start_time:.2f} seconds\n", flush=True)
 
 class Objective():
-    def __init__(self, params, paths):
+    def __init__(self):
         # Load default config
         
-        self.params = params
-        self._import_paths(paths)
-        self._import_params()
-        
         self.dataloader_cache = {}
+        self.dataset = None
+        
+        self.optim_next_path = None
+        self.dataset_path = None
+        self.dataset_specs = None
 
-    def _import_params(self):
+    def import_params(self, params: dict):
+        self.params = params
         self.n_trials = self.params["optimization"]["n_trials"]
         self.batch_size_values = self.params["optimization"]["batch_size_values"]
         self.learning_rate_range = self.params["optimization"]["learning_rate_range"]
         self.epochs_range = self.params["optimization"]["epochs_range"]
         self.train_perc = self.params["training"]["train_perc"]
-        print("Parameters imported\n", flush = True)
 
-    def _import_paths(self, paths: Path):
-        self.dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
-        self.current_dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
+    def import_and_check_paths(self, paths: Path):
         self.optim_next_path = Path(paths["results"]["optim_next_path"])
-        self.storage_path = str(paths["results"]["study_next_path"])
+        self.storage_path = Path(paths["results"]["study_next_path"])
+        # self.dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
+        # self.dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
+        self.dataset = None
         
-        if not self.dataset_path.exists():
-            raise FileNotFoundError(f"Dataset path {self.dataset_path} does not exist.")
-        if not self.current_dataset_specs_path.exists():
-            raise FileNotFoundError(f"Dataset specs path {self.current_dataset_specs_path} does not exist.")
         if not self.optim_next_path.parent.exists():
             raise FileNotFoundError(f"Optimization results dir {self.optim_next_path.parent} does not exist.")
-        if not Path(self.storage_path).parent.exists():
+        if not self.storage_path.parent.exists():
             raise FileNotFoundError(f"Storage path {self.storage_path} does not exist.")
+        # if not self.dataset_path.exists():
+        #     raise FileNotFoundError(f"Dataset path {self.dataset_path} does not exist.")
+        # if not self.dataset_specs_path.exists():
+        #     raise FileNotFoundError(f"Dataset specs path {self.dataset_specs_path} does not exist.")
     
-    def create_storage(self):
-        return JournalStorage(JournalFileBackend(self.storage_path))
+    def dataloader_init(self, dataset_specs: dict, dataset_path: Path = None, dataset: dict = None):
+        self.dl = CreateDataloaders(self.train_perc)
+        
+        if dataset is None:
+            if dataset_path is None:
+                raise ValueError("Both dataset and dataset path are not provided.")
+        
+            if not dataset_path.exists():
+                raise FileNotFoundError(f"Dataset path {dataset_path} does not exist.")
+            
+            self.dataset = self.dl.load_dataset(dataset_path)
+        else:
+            self.dataset = dataset
+        self.dataset_specs = dataset_specs
+            
+            
+    
+    def create_storage(self, storage_path: Path = None):
+        """Create a storage for Optuna."""
+        if storage_path is None:
+            storage_path = self.storage_path
+        if not storage_path.parent.exists():
+            raise FileNotFoundError(f"Storage path dir {storage_path.parent} does not exist.")
+        return JournalStorage(JournalFileBackend(str(storage_path)))
     
     def _get_dataloaders(self, batch_size: int):
         """Get dataloaders with caching."""
         if batch_size not in self.dataloader_cache:
-            dl = CreateDataloaders(self.dataset_path, self.train_perc, batch_size)
-            train_loader, test_loader = dl.create()
+            train_loader, test_loader = self.dl.create(self.dataset, batch_size)
             self.dataloader_cache[batch_size] = (train_loader, test_loader)
         return self.dataloader_cache[batch_size]
         
-    def objective(self, trial):
+    def objective(self, trial: optuna.Trial):
         # Suggest hyperparameters
         batch_size = trial.suggest_categorical("batch_size", self.batch_size_values)
         learning_rate = trial.suggest_float("learning_rate", self.learning_rate_range[0], self.learning_rate_range[1], log=True)
@@ -140,10 +180,11 @@ class Objective():
         
         train_loader, test_loader = self._get_dataloaders(batch_size)
         
-        train = TrainModel(self.params, Path("weights.pt"), Path("results.txt"), self.current_dataset_specs_path)
+        train = TrainModel(self.params, Path("weights.pt"), Path("results.txt"), self.dataset_specs)
+        print("Registered channels: ", train.model.n_channels, flush=True)
         train.lr = learning_rate
         train._initialize_training_components(lr = learning_rate)
-        
+        train.epochs = epochs
         train.train(train_loader, test_loader, epochs)
         
         trial.set_user_attr("train_losses", train.train_losses)
@@ -151,8 +192,14 @@ class Objective():
 
         return train.test_losses[-1]  # Optuna minimizes this
     
-    def save_optim_specs(self, trial, study: optuna.Study):
+    def save_optim_specs(self, trial, study: optuna.Study, optim_path: Path = None):
         # Save the best hyperparameters
+        
+        if optim_path is None:
+            optim_path = self.optim_next_path
+        
+        if optim_path is None or not optim_path.parent.exists():
+            raise FileNotFoundError(f"Optimization results path {optim_path} is not available.")
         
         json_str = json.dumps(self.params, indent=4)[1: -1]
         
@@ -190,14 +237,13 @@ class Objective():
             f.write("Training parameters:\n")
             f.write(f"{json_str}\n")
             f.write("\nDataset specifications from original file:\n\n")
-            with open(self.current_dataset_specs_path, "r") as dataset_file:
-                f.write(dataset_file.read())
+            f.write(json.dumps(self.dataset_specs, indent=4))
                 
             # Flush and sync to disk
             f.flush()
             os.fsync(f.fileno())
         
-        print(f"Best hyperparameters saved to {self.optim_next_path}", flush = True)
+        print(f"Best hyperparameters saved to {optim_path}", flush = True)
 
 if __name__ == "__main__":
     main()
