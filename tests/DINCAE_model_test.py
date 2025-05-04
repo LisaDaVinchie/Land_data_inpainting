@@ -43,6 +43,7 @@ class Test_DINCAE_model(unittest.TestCase):
         }
         
         self.model = DINCAE_like(params=self.model_params)
+        self.model.layers_setup()
         
         self.input_tensor = th.rand(self.batch_size, self.model.n_channels, self.nrows, self.ncols)
         self.masks = th.ones(self.batch_size, self.model.n_channels, self.nrows, self.ncols)
@@ -72,6 +73,7 @@ class Test_DINCAE_model(unittest.TestCase):
                                    kernel_sizes = self.kernel_sizes + [1],
                                    pooling_sizes = self.pooling_sizes + [1],
                                    interp_mode = "bilinear")
+        model.layers_setup()
         # Check that the network has the correct attributes
         self.assertEqual(model.n_channels, self.n_channels + 1)
         self.assertEqual(model.image_ncols, self.ncols + 1)
