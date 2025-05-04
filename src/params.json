@@ -12,7 +12,8 @@
         "model_kind": "DINCAE_pconvs",
         "_possible_model_kinds": ["simple_conv", "conv_unet", "conv_maxpool", "DINCAE_like", "DINCAE_pconvs"],
         "placeholder": 0.0,
-        "save_every": 7
+        "save_every": 1,
+        "dataset_idx": 0
     },
     "dataset":{
         "cutted_nrows": 128,
