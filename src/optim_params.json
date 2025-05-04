@@ -10,8 +10,10 @@
         "loss_kind": "custom1",
         "_possible_losses": ["per_pixel", "per_pixel_mse", "tv_loss", "custom1"],
         "model_kind": "DINCAE_pconvs",
-        "_possible_model_kinds": ["simple_conv", "conv_unet", "conv_maxpool", "DINCAE_like", "DINCAE_pconvs"],
+        "_possible_model_kinds": ["simple_conv", "DINCAE_like", "DINCAE_pconvs"],
         "placeholder": 0.0,
+        "save_every": 100,
+        "dataset_idx": 0,
 
         "batch_size": 0,
         "epochs": 0,
@@ -55,22 +57,6 @@
             "stride": [1, 1, 1],
             "padding": [1, 1, 1],
             "output_padding": [0, 0, 0]
-        },
-        "conv_unet": {
-            "middle_channels": [32, 64, 128],
-            "kernel_size": [3, 3, 3],
-            "stride": [1, 1, 1],
-            "padding": [1, 1, 1],
-            "output_padding": [0, 0, 0]
-        },
-        "conv_maxpool": {
-            "middle_channels": [32, 64, 128, 256, 512],
-            "kernel_size": 3,
-            "stride": 1,
-            "pool_size": 2,
-            "up_kernel": 3,
-            "up_stride": 2,
-            "print_sizes": false
         }
     }
 }
