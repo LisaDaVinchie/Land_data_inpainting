@@ -19,8 +19,8 @@ def main():
     
     args = parser.parse_args()
     
-    params_file_path = args.params
-    paths_file_path = args.paths
+    params_file_path = Path(args.params)
+    paths_file_path = Path(args.paths)
     if not params_file_path.exists():
         raise FileNotFoundError(f"Parameters file not found: {params_file_path}")
     if not paths_file_path.exists():
@@ -33,12 +33,26 @@ def main():
     train_perc = float(params["training"]["train_perc"])
     batch_size = int(params["training"]["batch_size"])
     
-    weights_path, results_path, dataset_specs_path, dataset_path = configure_file_paths(paths)
+    weights_path, results_path = configure_file_paths(paths)
+    
+    dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
+    dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
+    dataset_idx = int(params["training"]["dataset_idx"])
+    if dataset_idx >= 0:
+        dataset_path, dataset_specs_path = change_dataset_idx(dataset_path, dataset_specs_path, dataset_idx)
+    
+    for path in [dataset_path, dataset_specs_path]:
+        if not path.exists():
+            raise FileNotFoundError(f"Dataset file {path} not found")
+    
+    with open(dataset_specs_path, 'r') as f:
+        dataset_specs = json.load(f)
         
-    dl = CreateDataloaders(dataset_path, train_perc, batch_size)
-    train_loader, test_loader = dl.create()
+    dl = CreateDataloaders(train_perc, batch_size)
+    dataset = dl.load_dataset(dataset_path)
+    train_loader, test_loader = dl.create(dataset)
         
-    train = TrainModel(params, weights_path, results_path, dataset_specs_path)
+    train = TrainModel(params, weights_path, results_path, dataset_specs)
     
     train.train(train_loader, test_loader)
     
@@ -54,24 +68,68 @@ def main():
     print(f"\nTraining completed in {elapsed_time:.2f} seconds", flush=True)
     
 def configure_file_paths(paths):
+    """Get and check the paths for the weights and results files.
+
+    Args:
+        paths (_type_): _description_
+
+    Raises:
+        FileNotFoundError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     weights_path = Path(paths["results"]["weights_path"])
-    dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
     results_path = Path(paths["results"]["results_path"])
-    dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
-    
-    if not [dataset_specs_path.exists(), dataset_path.exists()]:
-        raise FileNotFoundError(f"File not found at path {dataset_specs_path}")
     
     for path in [weights_path, results_path]:
         if not path.parent.exists():
             raise FileNotFoundError(f"Directory {path.parent} does not exist")
     
-    return weights_path, results_path, dataset_specs_path, dataset_path
+    return weights_path, results_path
+
+def change_dataset_idx(dataset_path: Path, dataset_specs_path: Path, new_idx: int) -> tuple:
+    """Change the dataset index in the file names.
+
+    Args:
+        dataset_path (Path): latest dataset path
+        dataset_specs_path (Path): latest dataset specs path
+        new_idx (int): new dataset index
+
+    Raises:
+        FileNotFoundError: dataset file not found
+        FileNotFoundError: dataset specs file not found
+
+    Returns:
+        tuple: new dataset path, new dataset specs path
+    """
+    dataset_ext = dataset_path.suffix
+    dataset_name = dataset_path.stem.split("_")[0]
+    new_dataset_path = dataset_path.parent / f"{dataset_name}_{new_idx}{dataset_ext}"
+    
+    dataset_specs_ext = dataset_specs_path.suffix
+    dataset_specs_name = "dataset_specs"
+    
+    new_dataset_specs_path = dataset_specs_path.parent / f"{dataset_specs_name}_{new_idx}{dataset_specs_ext}"
+    
+    return new_dataset_path, new_dataset_specs_path
     
 class TrainModel:
-    def __init__(self, params, weights_path, results_path, dataset_specs_path):
+    def __init__(self, params, weights_path, results_path, dataset_specs = None):
+        """Initialize the training class.
+
+        Args:
+            params (_type_): json
+            weights_path (_type_): _description_
+            results_path (_type_): _description_
+            dataset_specs (_type_, optional): _description_. Defaults to None.
+        """
         self.params = params
         self.device = th.device("cuda" if th.cuda.is_available() else "cpu")
+        
+        self.weights_path = weights_path
+        self.results_path = results_path
+        self.dataset_specs = dataset_specs
         
         self._configure_training_parameters()
         self._initialize_training_components()
@@ -79,25 +137,17 @@ class TrainModel:
         self.train_losses = []
         self.test_losses = []
         self.training_lr = []
-        
-        self.weights_path = weights_path
-        self.results_path = results_path
-        self.dataset_specs_path = dataset_specs_path
 
     def _configure_training_parameters(self):
         training_params = self.params["training"]
         
         self.model_kind = training_params["model_kind"]
         
-        
         self.loss_kind = str(training_params["loss_kind"])
         self.nan_placeholder = float(self.params["dataset"]["nan_placeholder"])
         self.lr = training_params['learning_rate']
         self.lr_scheduler = training_params["lr_scheduler"]
         self.epochs = training_params['epochs']
-        
-        if self.epochs <= 0:
-            raise ValueError("Number of epochs must be positive.")
         
         self.save_every = training_params['save_every']
         if self.save_every <= 0:
@@ -111,7 +161,7 @@ class TrainModel:
         nan_placeholder = nan_placeholder if nan_placeholder is not None else self.nan_placeholder
         model_kind = model_kind if model_kind is not None else self.model_kind
         
-        self.model, self.dataset_kind = initialize_model_and_dataset_kind(self.params, model_kind)
+        self.model, self.dataset_kind = initialize_model_and_dataset_kind(self.params, model_kind, self.dataset_specs)
         
         self.loss_function = get_loss_function(loss_kind, nan_placeholder)
         
@@ -134,6 +184,9 @@ class TrainModel:
         """
         
         epochs = epochs if epochs is not None else self.epochs
+        
+        if self.epochs <= 0:
+            raise ValueError("Number of epochs must be positive.")
         
         len_train_inv = 1 / len(train_loader)
         len_test_inv = len(test_loader)
@@ -212,8 +265,7 @@ class TrainModel:
             f.write(json_str)
             f.write("\n\n")
             f.write("\nDataset specifications from original file:\n\n")
-            with open(self.dataset_specs_path, "r") as dataset_file:
-                f.write(dataset_file.read())
+            f.write(json.dumps(self.dataset_specs, indent=4)[1: -1])
 
 if __name__ == "__main__":
     main()
