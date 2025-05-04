@@ -44,36 +44,42 @@ class TestCreateDataloaders(unittest.TestCase):
     def test_init_valid_parameters(self):
         # Test that initialization works with valid parameters
         dataloader_creator = CreateDataloaders(
-            dataset_path=self.dataset_path,
             train_perc=0.8,
             batch_size=32
         )
-        self.assertEqual(dataloader_creator.dataset_path, self.dataset_path)
         self.assertEqual(dataloader_creator.train_perc, 0.8)
         self.assertEqual(dataloader_creator.batch_size, 32)
+    
+    def test_init_no_bs(self):
+        # Test that initialization works with valid parameters
+        dataloader_creator = CreateDataloaders(
+            train_perc=0.8
+        )
+        self.assertEqual(dataloader_creator.train_perc, 0.8)
+        self.assertIsNone(dataloader_creator.batch_size)
 
     def test_init_invalid_train_perc(self):
         # Test that invalid train_perc raises ValueError
         with self.assertRaises(ValueError):
-            CreateDataloaders(self.dataset_path, -0.1, 32)
+            CreateDataloaders(-0.1, 32)
         with self.assertRaises(ValueError):
-            CreateDataloaders(self.dataset_path, 1.1, 32)
+            CreateDataloaders(1.1, 32)
         with self.assertRaises(ValueError):
-            CreateDataloaders(self.dataset_path, 1.0, 32)
+            CreateDataloaders(1.0, 32)
         with self.assertRaises(ValueError):
-            CreateDataloaders(self.dataset_path, 0.0, 32)
+            CreateDataloaders(0.0, 32)
 
     def test_init_invalid_batch_size(self):
         # Test that invalid batch_size raises ValueError
         with self.assertRaises(ValueError):
-            CreateDataloaders(self.dataset_path, 0.8, 0)
+            CreateDataloaders(0.8, 0)
         with self.assertRaises(ValueError):
-            CreateDataloaders(self.dataset_path, 0.8, -10)
+            CreateDataloaders(0.8, -10)
 
     def test_load_dataset(self):
         # Test that _load_dataset correctly loads the dataset
-        dataloader_creator = CreateDataloaders(self.dataset_path, 0.8, 32)
-        loaded_dataset = dataloader_creator._load_dataset()
+        dataloader_creator = CreateDataloaders(0.8, 32)
+        loaded_dataset = dataloader_creator.load_dataset(self.dataset_path)
         
         self.assertIsInstance(loaded_dataset, dict)
         self.assertEqual(set(loaded_dataset.keys()), {'images', 'masks'})
@@ -82,31 +88,31 @@ class TestCreateDataloaders(unittest.TestCase):
 
     def test_validate_dataset_length_valid(self):
         # Test _validate_dataset_length with valid dataset
-        dataloader_creator = CreateDataloaders(self.dataset_path, 0.8, 32)
-        loaded_dataset = dataloader_creator._load_dataset()
+        dataloader_creator = CreateDataloaders(0.8, 32)
+        loaded_dataset = dataloader_creator.load_dataset(self.dataset_path)
         length = dataloader_creator._validate_dataset_length(loaded_dataset)
         self.assertEqual(length, 100)
 
     def test_validate_dataset_length_invalid(self):
         # Test _validate_dataset_length with invalid dataset
-        dataloader_creator = CreateDataloaders(self.invalid_dataset_path, 0.8, 32)
-        loaded_dataset = dataloader_creator._load_dataset()
+        dataloader_creator = CreateDataloaders(0.8, 32)
+        loaded_dataset = dataloader_creator.load_dataset(self.invalid_dataset_path)
         
         with self.assertRaises(AssertionError):
             dataloader_creator._validate_dataset_length(loaded_dataset)
 
     def test_validate_dataset_length_wrong_keys(self):
         # Test _validate_dataset_length with wrong number of keys
-        dataloader_creator = CreateDataloaders(self.wrong_keys_dataset_path, 0.8, 32)
-        loaded_dataset = dataloader_creator._load_dataset()
+        dataloader_creator = CreateDataloaders(0.8, 32)
+        loaded_dataset = dataloader_creator.load_dataset(self.wrong_keys_dataset_path)
         
         with self.assertRaises(ValueError):
             dataloader_creator._validate_dataset_length(loaded_dataset)
 
     def test_get_train_test_indices(self):
         # Test that _get_train_test_indices returns correct splits
-        dataloader_creator = CreateDataloaders(self.dataset_path, 0.8, 32)
-        loaded_dataset = dataloader_creator._load_dataset()
+        dataloader_creator = CreateDataloaders(0.8, 32)
+        loaded_dataset = dataloader_creator.load_dataset(self.dataset_path)
         
         train_indices, test_indices = dataloader_creator._get_train_test_indices(loaded_dataset)
         
@@ -124,8 +130,8 @@ class TestCreateDataloaders(unittest.TestCase):
 
     def test_create_dataloaders(self):
         # Test that create() returns correct dataloaders
-        dataloader_creator = CreateDataloaders(self.dataset_path, 0.8, 32)
-        train_loader, test_loader = dataloader_creator.create()
+        dataloader_creator = CreateDataloaders(0.8, 32)
+        train_loader, test_loader = dataloader_creator.create(self.dataset)
         
         # Check types
         self.assertIsInstance(train_loader, th.utils.data.DataLoader)
@@ -144,6 +150,35 @@ class TestCreateDataloaders(unittest.TestCase):
         self.assertEqual(len(train_batch), 2)  # image and mask
         self.assertEqual(train_batch[0].shape, (32, 3, 64, 64))
         self.assertEqual(train_batch[1].shape, (32, 1, 64, 64))
+    
+    def test_create_dataloaders_bs_to_create(self):
+        # Test that create() returns correct dataloaders
+        dl = CreateDataloaders(0.8)
+        train_loader, test_loader = dl.create(self.dataset, batch_size=32)
+        
+        # Check types
+        self.assertIsInstance(train_loader, th.utils.data.DataLoader)
+        self.assertIsInstance(test_loader, th.utils.data.DataLoader)
+        
+        # Check batch sizes
+        self.assertEqual(train_loader.batch_size, 32)
+        self.assertEqual(test_loader.batch_size, 32)
+        
+        # Check dataset sizes
+        self.assertEqual(len(train_loader.dataset), 80)
+        self.assertEqual(len(test_loader.dataset), 20)
+        
+        # Check one batch
+        train_batch = next(iter(train_loader))
+        self.assertEqual(len(train_batch), 2)  # image and mask
+        self.assertEqual(train_batch[0].shape, (32, 3, 64, 64))
+        self.assertEqual(train_batch[1].shape, (32, 1, 64, 64))
+        
+    def test_create_dataloaders_bs_None(self):
+        # Test that create() raises ValueError when batch_size is None
+        dl = CreateDataloaders(0.8)
+        with self.assertRaises(ValueError):
+            dl.create(self.dataset)
 
     def test_custom_dataset_class(self):
         # Test the CustomDatasetClass
