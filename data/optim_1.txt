@@ -1,0 +1,501 @@
+Best trial parameters:
+{
+    "batch_size": 256,
+    "learning_rate": 5.0616928097141765e-06,
+    "epochs": 8
+}
+
+Best trial value:
+3376.667022705078
+
+Best trial train losses:
+14.231911644103034	13.944117485530793	13.647167326912047	13.420825034853012	13.305144158620683	13.283774345640152	13.295977441091386	13.290988074408636	
+
+Best trial test losses:
+3575.190628051758	3501.8426361083984	3433.2857055664062	3396.51611328125	3381.4182739257812	3378.508270263672	3377.3695068359375	3376.667022705078	
+
+All trials: 
+[
+    {
+        "number": 0,
+        "value": 3391.2327728271484,
+        "params": {
+            "batch_size": 64,
+            "learning_rate": 0.0009085411012694062,
+            "epochs": 7
+        },
+        "state": "1",
+        "start_time": "2025-05-06 10:04:37.580645",
+        "end_time": "2025-05-06 10:32:13.972709",
+        "user_attrs": {
+            "train_losses": [
+                13.267347789946056,
+                13.269109483749146,
+                13.240993651132735,
+                13.263833288162473,
+                13.240556081136067,
+                13.256665275210425,
+                13.274973960149856
+            ],
+            "test_losses": [
+                3391.2327728271484,
+                3391.2327728271484,
+                3391.2327728271484,
+                3391.2327728271484,
+                3391.2327728271484,
+                3391.2327728271484,
+                3391.2327728271484
+            ]
+        }
+    },
+    {
+        "number": 1,
+        "value": 3419.1691284179688,
+        "params": {
+            "batch_size": 128,
+            "learning_rate": 6.0929221964197796e-06,
+            "epochs": 14
+        },
+        "state": "1",
+        "start_time": "2025-05-06 10:32:14.119769",
+        "end_time": "2025-05-06 11:27:37.685854",
+        "user_attrs": {
+            "train_losses": [
+                13.715855522761268,
+                13.383935050358847,
+                13.287061721559555,
+                13.252147492908295,
+                13.211886284843324,
+                13.200231733776274,
+                13.201799650040883,
+                13.230901173182895,
+                13.223194152589828,
+                13.224155441163077,
+                13.212787476796953,
+                13.194728170122419,
+                13.221993779379224,
+                13.219310609121171
+            ],
+            "test_losses": [
+                3494.070587158203,
+                3448.6205139160156,
+                3429.5571899414062,
+                3422.2406463623047,
+                3419.9947357177734,
+                3419.4790954589844,
+                3419.329833984375,
+                3419.268997192383,
+                3419.233139038086,
+                3419.2135467529297,
+                3419.197998046875,
+                3419.1864166259766,
+                3419.177017211914,
+                3419.1691284179688
+            ]
+        }
+    },
+    {
+        "number": 2,
+        "value": 3391.2327880859375,
+        "params": {
+            "batch_size": 64,
+            "learning_rate": 0.00036408309165614883,
+            "epochs": 9
+        },
+        "state": "1",
+        "start_time": "2025-05-06 11:27:37.819551",
+        "end_time": "2025-05-06 12:03:09.100071",
+        "user_attrs": {
+            "train_losses": [
+                13.58529510195293,
+                13.235219289386082,
+                13.260498985411628,
+                13.249400653536357,
+                13.23127722361731,
+                13.263672783261253,
+                13.281479154314313,
+                13.23110200488378,
+                13.261758970835851
+            ],
+            "test_losses": [
+                3391.2340545654297,
+                3391.232879638672,
+                3391.2328186035156,
+                3391.2328186035156,
+                3391.2327880859375,
+                3391.2327880859375,
+                3391.2327880859375,
+                3391.2327880859375,
+                3391.2327880859375
+            ]
+        }
+    },
+    {
+        "number": 3,
+        "value": 3419.2237854003906,
+        "params": {
+            "batch_size": 128,
+            "learning_rate": 1.0814020745131253e-05,
+            "epochs": 13
+        },
+        "state": "1",
+        "start_time": "2025-05-06 12:03:09.232700",
+        "end_time": "2025-05-06 12:54:25.367255",
+        "user_attrs": {
+            "train_losses": [
+                14.62121414002918,
+                14.023539331224228,
+                13.52826076083713,
+                13.265857545156328,
+                13.235609069703116,
+                13.200055939810616,
+                13.210414780510796,
+                13.221659463549416,
+                13.201861593458387,
+                13.202187538146973,
+                13.219516769288077,
+                13.196991330101376,
+                13.208014503357902
+            ],
+            "test_losses": [
+                3699.935501098633,
+                3577.8763732910156,
+                3444.4046783447266,
+                3422.9993591308594,
+                3419.7322692871094,
+                3419.455352783203,
+                3419.3502197265625,
+                3419.298370361328,
+                3419.2698669433594,
+                3419.2518920898438,
+                3419.239273071289,
+                3419.2303771972656,
+                3419.2237854003906
+            ]
+        }
+    },
+    {
+        "number": 4,
+        "value": 3376.667022705078,
+        "params": {
+            "batch_size": 256,
+            "learning_rate": 5.0616928097141765e-06,
+            "epochs": 8
+        },
+        "state": "1",
+        "start_time": "2025-05-06 12:54:25.499235",
+        "end_time": "2025-05-06 13:25:53.046124",
+        "user_attrs": {
+            "train_losses": [
+                14.231911644103034,
+                13.944117485530793,
+                13.647167326912047,
+                13.420825034853012,
+                13.305144158620683,
+                13.283774345640152,
+                13.295977441091386,
+                13.290988074408636
+            ],
+            "test_losses": [
+                3575.190628051758,
+                3501.8426361083984,
+                3433.2857055664062,
+                3396.51611328125,
+                3381.4182739257812,
+                3378.508270263672,
+                3377.3695068359375,
+                3376.667022705078
+            ]
+        }
+    },
+    {
+        "number": 5,
+        "value": 3601.208938598633,
+        "params": {
+            "batch_size": 128,
+            "learning_rate": 1.1026227158951389e-06,
+            "epochs": 10
+        },
+        "state": "1",
+        "start_time": "2025-05-06 13:25:53.177525",
+        "end_time": "2025-05-06 14:05:10.047970",
+        "user_attrs": {
+            "train_losses": [
+                14.599814914521716,
+                14.533644297766307,
+                14.464777840508354,
+                14.411754063197543,
+                14.336780154515825,
+                14.269402852134098,
+                14.178985610840812,
+                14.134759085518972,
+                14.040421924893817,
+                13.957188409472268
+            ],
+            "test_losses": [
+                3765.7532653808594,
+                3749.933883666992,
+                3734.2171478271484,
+                3718.452682495117,
+                3702.2476654052734,
+                3685.345199584961,
+                3667.3627014160156,
+                3648.0584106445312,
+                3626.4273986816406,
+                3601.208938598633
+            ]
+        }
+    }
+]
+Training parameters:
+
+    "optimization": {
+        "n_trials": 20,
+        "batch_size_values": [
+            64,
+            128,
+            256
+        ],
+        "learning_rate_range": [
+            1e-06,
+            0.001
+        ],
+        "epochs_range": [
+            6,
+            30
+        ]
+    },
+    "training": {
+        "train_perc": 0.8,
+        "loss_kind": "custom1",
+        "_possible_losses": [
+            "per_pixel",
+            "per_pixel_mse",
+            "tv_loss",
+            "custom1"
+        ],
+        "model_kind": "DINCAE_pconvs",
+        "_possible_model_kinds": [
+            "simple_conv",
+            "DINCAE_like",
+            "DINCAE_pconvs"
+        ],
+        "placeholder": 0.0,
+        "save_every": 100,
+        "dataset_idx": 2,
+        "batch_size": 0,
+        "epochs": 0,
+        "learning_rate": 0,
+        "lr_scheduler": "none",
+        "_possible_schedulers": [
+            "none",
+            "step"
+        ],
+        "optimizer_kind": "adam"
+    },
+    "dataset": {
+        "cutted_nrows": 128,
+        "cutted_ncols": 128,
+        "nan_placeholder": -2.0,
+        "dataset_kind": "biochemistry",
+        "_possible_dataset_kinds": [
+            "biochemistry",
+            "temperature"
+        ],
+        "biochemistry": {
+            "n_channels": 13
+        },
+        "temperature": {
+            "n_channels": 5
+        }
+    },
+    "models": {
+        "DINCAE_pconvs": {
+            "middle_channels": [
+                16,
+                30,
+                58,
+                110,
+                209
+            ],
+            "kernel_sizes": [
+                3,
+                3,
+                3,
+                3,
+                3
+            ],
+            "pooling_sizes": [
+                2,
+                2,
+                2,
+                2,
+                2
+            ],
+            "interp_mode": "bilinear",
+            "_possible_interpolation_modes": [
+                "nearest",
+                "linear",
+                "bilinear",
+                "bicubic",
+                "trilinear"
+            ]
+        },
+        "DINCAE_like": {
+            "middle_channels": [
+                16,
+                30,
+                58,
+                110,
+                209
+            ],
+            "kernel_sizes": [
+                3,
+                3,
+                3,
+                3,
+                3
+            ],
+            "pooling_sizes": [
+                2,
+                2,
+                2,
+                2,
+                2
+            ],
+            "output_size": 15,
+            "interp_mode": "bilinear",
+            "_possible_interpolation_modes": [
+                "nearest",
+                "linear",
+                "bilinear",
+                "bicubic",
+                "trilinear"
+            ]
+        },
+        "simple_conv": {
+            "middle_channels": [
+                32,
+                64,
+                128
+            ],
+            "kernel_size": [
+                3,
+                3,
+                3
+            ],
+            "stride": [
+                1,
+                1,
+                1
+            ],
+            "padding": [
+                1,
+                1,
+                1
+            ],
+            "output_padding": [
+                0,
+                0,
+                0
+            ]
+        }
+    }
+
+
+Dataset specifications from original file:
+
+{
+    "dataset": {
+        "cutted_nrows": 128,
+        "cutted_ncols": 128,
+        "n_cutted_images": 5000,
+        "nans_threshold": 0.3,
+        "nan_placeholder": -2.0,
+        "mask_kind": "square",
+        "_possible_mask_kinds": [
+            "square",
+            "lines"
+        ],
+        "same_mask": false,
+        "dataset_kind": "temperature",
+        "_possible_dataset_kinds": [
+            "biochemistry",
+            "temperature"
+        ],
+        "biochemistry": {
+            "n_images": 31,
+            "n_channels": 13,
+            "x_shape_raw": 681,
+            "y_shape_raw": 1440,
+            "masked_channels": [
+                0,
+                3
+            ],
+            "channels_to_keep": [
+                "spco2",
+                "no3",
+                "si",
+                "fe",
+                "phyc"
+            ],
+            "channels_list": [
+                "nppv",
+                "o2",
+                "ph",
+                "dissic",
+                "talk",
+                "spco2",
+                "no3",
+                "po4",
+                "si",
+                "fe",
+                "phyc",
+                "chl"
+            ]
+        },
+        "temperature": {
+            "n_images": 31,
+            "n_channels": 5,
+            "x_shape_raw": 1600,
+            "y_shape_raw": 3600,
+            "masked_channels": [
+                0,
+                1
+            ],
+            "channels_to_keep": [
+                "sea_surface_temperature",
+                "sea_surface_temperature_stddev",
+                "or_latitude",
+                "or_longitude"
+            ],
+            "channels_list": [
+                "crs",
+                "sea_surface_temperature",
+                "or_number_of_pixels",
+                "sea_surface_temperature_stddev",
+                "quality_level",
+                "sses_bias",
+                "sses_standard_deviation",
+                "satellite_zenith_angle",
+                "or_latitude",
+                "or_longitude",
+                "adjusted_sea_surface_temperature",
+                "solar_zenith_angle",
+                "bias_to_reference_sst",
+                "sources_of_sst",
+                "sst_dtime"
+            ]
+        }
+    },
+    "masks": {
+        "square": {
+            "mask_percentage": 0.1
+        },
+        "lines": {
+            "num_lines": 5,
+            "min_thickness": 1,
+            "max_thickness": 5
+        }
+    }
+}
