@@ -1,8 +1,8 @@
 {
     "optimization": {
-        "n_trials": 20,
+        "n_trials": 200,
         "batch_size_values": [64, 128, 256],
-        "learning_rate_range": [0.000001, 0.001],
+        "learning_rate_range": [0.00000001, 0.001],
         "epochs_range": [6, 30]
     },
     "training":{
