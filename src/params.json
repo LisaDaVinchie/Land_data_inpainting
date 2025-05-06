@@ -2,8 +2,8 @@
     "training":{
         "train_perc": 0.8,
         "batch_size": 256,
-        "epochs": 20,
-        "learning_rate": 0.000005,
+        "epochs": 40,
+        "learning_rate": 0.00001,
         "lr_scheduler": "step",
         "_possible_schedulers": ["none", "step"],
         "optimizer_kind": "adam",
