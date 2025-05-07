@@ -1,0 +1,372 @@
+Elapsed time [s]:
+11076.654793977737
+
+Train losses
+15.649974644184113	15.454627513885498	15.279237508773804	15.11373233795166	15.015026152133942	14.94046950340271	14.854925096035004	14.793785512447357	14.688962757587433	14.648517668247223	14.606011688709259	14.563277184963226	14.516493439674377	14.484093606472015	14.441124439239502	14.397065997123718	14.393566071987152	14.38685429096222	14.391766488552094	14.360966801643372	14.336086988449097	14.32597702741623	14.395667791366577	14.33000373840332	14.318411469459534	14.360225975513458	14.327528476715088	14.315931618213654	14.311735808849335	14.299798548221588	14.300966143608093	14.285321116447449	14.311175048351288	14.30704003572464	14.343933045864105	14.308426916599274	14.32956862449646	14.306788861751556	14.306265413761139	14.295568645000458	
+
+Test losses
+250.03809356689453	247.18256378173828	244.57797622680664	242.09535598754883	240.82973098754883	239.5201301574707	238.13416290283203	236.6752166748047	235.9083595275879	235.12027740478516	234.30343627929688	233.46475982666016	233.03587341308594	232.60790634155273	232.1770477294922	231.73852157592773	231.5207405090332	231.30161666870117	231.0821990966797	230.8600959777832	230.7498779296875	230.6394805908203	230.53101348876953	230.42153549194336	230.36740112304688	230.31409072875977	230.26019668579102	230.20695114135742	230.18041229248047	230.15418243408203	230.12810516357422	230.1020851135254	230.08907318115234	230.07620239257812	230.06339645385742	230.05039596557617	230.04399490356445	230.0376319885254	230.03125	230.02483749389648	
+
+Learning rate
+1e-05	1e-05	1e-05	1e-05	5e-06	5e-06	5e-06	5e-06	2.5e-06	2.5e-06	2.5e-06	2.5e-06	1.25e-06	1.25e-06	1.25e-06	1.25e-06	6.25e-07	6.25e-07	6.25e-07	6.25e-07	3.125e-07	3.125e-07	3.125e-07	3.125e-07	1.5625e-07	1.5625e-07	1.5625e-07	1.5625e-07	7.8125e-08	7.8125e-08	7.8125e-08	7.8125e-08	3.90625e-08	3.90625e-08	3.90625e-08	3.90625e-08	1.953125e-08	1.953125e-08	1.953125e-08	1.953125e-08	
+
+Parameters
+
+    "training": {
+        "train_perc": 0.8,
+        "batch_size": 256,
+        "epochs": 40,
+        "learning_rate": 1e-05,
+        "lr_scheduler": "step",
+        "_possible_schedulers": [
+            "none",
+            "step"
+        ],
+        "optimizer_kind": "adam",
+        "loss_kind": "custom1",
+        "_possible_losses": [
+            "per_pixel",
+            "per_pixel_mse",
+            "tv_loss",
+            "custom1"
+        ],
+        "model_kind": "DINCAE_pconvs",
+        "_possible_model_kinds": [
+            "simple_conv",
+            "DINCAE_like",
+            "DINCAE_pconvs"
+        ],
+        "placeholder": 0.0,
+        "save_every": 1,
+        "dataset_idx": 2
+    },
+    "dataset": {
+        "cutted_nrows": 128,
+        "cutted_ncols": 128,
+        "n_cutted_images": 5000,
+        "nans_threshold": 0.3,
+        "nan_placeholder": -2.0,
+        "mask_kind": "square",
+        "_possible_mask_kinds": [
+            "square",
+            "lines"
+        ],
+        "same_mask": false,
+        "dataset_kind": "temperature",
+        "_possible_dataset_kinds": [
+            "biochemistry",
+            "temperature"
+        ],
+        "biochemistry": {
+            "n_images": 31,
+            "n_channels": 13,
+            "x_shape_raw": 681,
+            "y_shape_raw": 1440,
+            "masked_channels": [
+                0,
+                3
+            ],
+            "channels_to_keep": [
+                "spco2",
+                "no3",
+                "si",
+                "fe",
+                "phyc"
+            ],
+            "channels_list": [
+                "nppv",
+                "o2",
+                "ph",
+                "dissic",
+                "talk",
+                "spco2",
+                "no3",
+                "po4",
+                "si",
+                "fe",
+                "phyc",
+                "chl"
+            ]
+        },
+        "temperature": {
+            "n_images": 31,
+            "n_channels": 5,
+            "x_shape_raw": 1600,
+            "y_shape_raw": 3600,
+            "masked_channels": [
+                0,
+                1
+            ],
+            "channels_to_keep": [
+                "sea_surface_temperature",
+                "sea_surface_temperature_stddev",
+                "or_latitude",
+                "or_longitude"
+            ],
+            "channels_list": [
+                "crs",
+                "sea_surface_temperature",
+                "or_number_of_pixels",
+                "sea_surface_temperature_stddev",
+                "quality_level",
+                "sses_bias",
+                "sses_standard_deviation",
+                "satellite_zenith_angle",
+                "or_latitude",
+                "or_longitude",
+                "adjusted_sea_surface_temperature",
+                "solar_zenith_angle",
+                "bias_to_reference_sst",
+                "sources_of_sst",
+                "sst_dtime"
+            ]
+        }
+    },
+    "models": {
+        "DINCAE_pconvs": {
+            "middle_channels": [
+                16,
+                30,
+                58,
+                110,
+                209
+            ],
+            "kernel_sizes": [
+                3,
+                3,
+                3,
+                3,
+                3
+            ],
+            "pooling_sizes": [
+                2,
+                2,
+                2,
+                2,
+                2
+            ],
+            "interp_mode": "bilinear",
+            "_possible_interpolation_modes": [
+                "nearest",
+                "linear",
+                "bilinear",
+                "bicubic",
+                "trilinear"
+            ]
+        },
+        "DINCAE_like": {
+            "middle_channels": [
+                16,
+                30,
+                58,
+                110,
+                209
+            ],
+            "kernel_sizes": [
+                3,
+                3,
+                3,
+                3,
+                3
+            ],
+            "pooling_sizes": [
+                2,
+                2,
+                2,
+                2,
+                2
+            ],
+            "output_size": 15,
+            "interp_mode": "bilinear",
+            "_possible_interpolation_modes": [
+                "nearest",
+                "linear",
+                "bilinear",
+                "bicubic",
+                "trilinear"
+            ]
+        },
+        "simple_conv": {
+            "middle_channels": [
+                32,
+                64,
+                128
+            ],
+            "kernel_size": [
+                3,
+                3,
+                3
+            ],
+            "stride": [
+                1,
+                1,
+                1
+            ],
+            "padding": [
+                1,
+                1,
+                1
+            ],
+            "output_padding": [
+                0,
+                0,
+                0
+            ]
+        },
+        "conv_unet": {
+            "middle_channels": [
+                32,
+                64,
+                128
+            ],
+            "kernel_size": [
+                3,
+                3,
+                3
+            ],
+            "stride": [
+                1,
+                1,
+                1
+            ],
+            "padding": [
+                1,
+                1,
+                1
+            ],
+            "output_padding": [
+                0,
+                0,
+                0
+            ]
+        },
+        "conv_maxpool": {
+            "middle_channels": [
+                32,
+                64,
+                128,
+                256,
+                512
+            ],
+            "kernel_size": 3,
+            "stride": 1,
+            "pool_size": 2,
+            "up_kernel": 3,
+            "up_stride": 2,
+            "print_sizes": false
+        }
+    },
+    "masks": {
+        "square": {
+            "mask_percentage": 0.1
+        },
+        "lines": {
+            "num_lines": 5,
+            "min_thickness": 1,
+            "max_thickness": 5
+        }
+    },
+    "lr_schedulers": {
+        "step": {
+            "step_size": 4,
+            "gamma": 0.5
+        }
+    }
+
+
+
+Dataset specifications from original file:
+
+
+    "dataset": {
+        "cutted_nrows": 128,
+        "cutted_ncols": 128,
+        "n_cutted_images": 5000,
+        "nans_threshold": 0.3,
+        "nan_placeholder": -2.0,
+        "mask_kind": "square",
+        "_possible_mask_kinds": [
+            "square",
+            "lines"
+        ],
+        "same_mask": false,
+        "dataset_kind": "temperature",
+        "_possible_dataset_kinds": [
+            "biochemistry",
+            "temperature"
+        ],
+        "biochemistry": {
+            "n_images": 31,
+            "n_channels": 13,
+            "x_shape_raw": 681,
+            "y_shape_raw": 1440,
+            "masked_channels": [
+                0,
+                3
+            ],
+            "channels_to_keep": [
+                "spco2",
+                "no3",
+                "si",
+                "fe",
+                "phyc"
+            ],
+            "channels_list": [
+                "nppv",
+                "o2",
+                "ph",
+                "dissic",
+                "talk",
+                "spco2",
+                "no3",
+                "po4",
+                "si",
+                "fe",
+                "phyc",
+                "chl"
+            ]
+        },
+        "temperature": {
+            "n_images": 31,
+            "n_channels": 5,
+            "x_shape_raw": 1600,
+            "y_shape_raw": 3600,
+            "masked_channels": [
+                0,
+                1
+            ],
+            "channels_to_keep": [
+                "sea_surface_temperature",
+                "sea_surface_temperature_stddev",
+                "or_latitude",
+                "or_longitude"
+            ],
+            "channels_list": [
+                "crs",
+                "sea_surface_temperature",
+                "or_number_of_pixels",
+                "sea_surface_temperature_stddev",
+                "quality_level",
+                "sses_bias",
+                "sses_standard_deviation",
+                "satellite_zenith_angle",
+                "or_latitude",
+                "or_longitude",
+                "adjusted_sea_surface_temperature",
+                "solar_zenith_angle",
+                "bias_to_reference_sst",
+                "sources_of_sst",
+                "sst_dtime"
+            ]
+        }
+    },
+    "masks": {
+        "square": {
+            "mask_percentage": 0.1
+        },
+        "lines": {
+            "num_lines": 5,
+            "min_thickness": 1,
+            "max_thickness": 5
+        }
+    }
