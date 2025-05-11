@@ -2,8 +2,8 @@
     "training":{
         "train_perc": 0.8,
         "batch_size": 256,
-        "epochs": 40,
-        "learning_rate": 0.00001,
+        "epochs": 30,
+        "learning_rate": 0.0001,
         "lr_scheduler": "step",
         "_possible_schedulers": ["none", "step"],
         "optimizer_kind": "adam",
@@ -13,7 +13,7 @@
         "_possible_model_kinds": ["simple_conv", "DINCAE_like", "DINCAE_pconvs"],
         "placeholder": 0.0,
         "save_every": 1,
-        "dataset_idx": 2
+        "dataset_idx": 4
     },
     "dataset":{
         "cutted_nrows": 128,
@@ -110,8 +110,8 @@
     },
     "lr_schedulers": {
         "step": {
-            "step_size": 4,
-            "gamma": 0.5
+            "step_size": 5,
+            "gamma": 0.7
         }
     }
 }
