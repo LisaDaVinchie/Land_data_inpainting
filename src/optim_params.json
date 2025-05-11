@@ -29,10 +29,35 @@
         "dataset_kind": "biochemistry",
         "_possible_dataset_kinds": ["biochemistry", "temperature"],
         "biochemistry": {
-            "n_channels": 13
+            "n_images": 31,
+            "n_channels": 13,
+            "n_rows": 681,
+            "n_cols": 1440,
+            "masked_channels": [0, 3],
+            "channels_to_keep": ["spco2", "no3",
+                                "si", "fe", "phyc"],
+            "channels_list": ["nppv", "o2", "ph",
+                "dissic", "talk", "spco2",
+                "no3", "po4", "si",
+                "fe", "phyc", "chl"]
         },
         "temperature": {
-            "n_channels": 5
+            "n_images": 31,
+            "n_channels": 5,
+            "n_rows": 1600,
+            "n_cols": 3600,
+            "masked_channels": [0, 1],
+            "channels_to_keep": [
+                "sea_surface_temperature", "sea_surface_temperature_stddev",
+                "or_latitude", "or_longitude"
+                ],
+            "channels_list": [
+                "crs", "sea_surface_temperature", "or_number_of_pixels",
+                "sea_surface_temperature_stddev", "quality_level", "sses_bias",
+                "sses_standard_deviation", "satellite_zenith_angle", "or_latitude",
+                "or_longitude", "adjusted_sea_surface_temperature", "solar_zenith_angle",
+                "bias_to_reference_sst", "sources_of_sst", "sst_dtime"
+                ]
         }
     },
     "models":{
