@@ -20,7 +20,8 @@ class TestTrainingScript(unittest.TestCase):
         self.lr = 0.001
         self.epochs = 3
         self.save_every = 5
-        self.n_channels = 3
+        self.channels_to_keep = ["c1", "c2", "c3"]
+        self.n_channels = len(self.channels_to_keep) + 1
         self.nrows = 128
         self.ncols = 128
         
@@ -33,6 +34,7 @@ class TestTrainingScript(unittest.TestCase):
                 "dataset_kind": "test",
                 "test": {
                     "n_channels": self.n_channels,
+                    "channels_to_keep": self.channels_to_keep,
                 }
             },
             "training": {

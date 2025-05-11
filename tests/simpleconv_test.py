@@ -11,8 +11,8 @@ class Test_simpleconv_model(unittest.TestCase):
     
     def setUp(self):
         """Create a temporary JSON file with reward parameters."""
-        
-        self.n_channels = 1
+        self.channels_to_keep = ["c1", "c2", "c3"]
+        self.n_channels = len(self.channels_to_keep) + 1
         self.ncols = 64
         self.nrows = 64
         self.middle_channels = [64, 128, 256]
@@ -36,6 +36,7 @@ class Test_simpleconv_model(unittest.TestCase):
                 "dataset_kind": "test",
                 "test": {
                     "n_channels": self.n_channels,
+                    "channels_to_keep": self.channels_to_keep
                 }
             }      
         }
@@ -68,6 +69,8 @@ class Test_simpleconv_model(unittest.TestCase):
         self.assertEqual(output.shape, (self.batch_size, self.model.n_channels, 64, 64))
         
     def test_automatic_initialization(self):
+        
+        channels_to_keep = ["c1", "c2", "c3", "c4"]
         dataset_params = {
             "dataset": {
                 "cutted_nrows": self.nrows + 1,
@@ -75,6 +78,7 @@ class Test_simpleconv_model(unittest.TestCase):
                 "dataset_kind": "test",
                 "test": {
                     "n_channels": self.n_channels + 1,
+                    "channels_to_keep": channels_to_keep
                 }
             }
         }

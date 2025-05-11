@@ -16,17 +16,23 @@ class Test_DINCAE_model(unittest.TestCase):
         self.pooling_sizes = [2, 2, 2, 2, 2]
         self.interp_mode = "bilinear"
         self.nrows = 168
-        self.ncols = 144
-        self.n_channels = 10
+        self.ncols = 144 
+        self.channels_to_keep = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9"]
+        self.n_channels = len(self.channels_to_keep) + 1
+        self.placeholder = 0.0
         
         self.batch_size = 32
         self.model_params = {
+            "training": {
+                "placeholder": self.placeholder,
+            },
             "dataset": {
                 "cutted_nrows": self.nrows,
                 "cutted_ncols": self.ncols,
                 "dataset_kind": "test",
                 "test": {
                     "n_channels": self.n_channels,
+                    "channels_to_keep": self.channels_to_keep
                 },
                 "placeholder": 0.0
             },
@@ -61,6 +67,7 @@ class Test_DINCAE_model(unittest.TestCase):
         self.assertEqual(self.model.image_nrows, self.nrows)
         self.assertEqual(self.model.image_ncols, self.ncols)
         self.assertEqual(self.model.interp_mode, self.interp_mode)
+        self.assertEqual(self.model.placeholder, self.placeholder)
     
     def test_initalization_priority(self):
         """Test that input is preferred over the Json file."""
@@ -91,6 +98,7 @@ class Test_DINCAE_model(unittest.TestCase):
         self.assertEqual(output.shape, (self.batch_size, self.model.n_channels, self.nrows, self.ncols))
     
     def test_automatic_initialization(self):
+        channels_to_keep = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10"]
         dataset_params = {
             "dataset": {
                 "cutted_nrows": self.nrows + 1,
@@ -98,6 +106,7 @@ class Test_DINCAE_model(unittest.TestCase):
                 "dataset_kind": "test",
                 "test": {
                     "n_channels": self.n_channels + 1,
+                    "channels_to_keep": channels_to_keep
                 }
             }
         }

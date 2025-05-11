@@ -13,7 +13,8 @@ class TestDINCAEPconvs(unittest.TestCase):
         
         # Test input dimensions
         self.batch_size = 5
-        self.n_channels = 3
+        self.channels_to_keep = ["c1", "c2", "c3"]
+        self.n_channels = len(self.channels_to_keep) + 1
         self.ncols = 20
         self.nrows = 15
         self.mask_dim = 4
@@ -30,6 +31,7 @@ class TestDINCAEPconvs(unittest.TestCase):
                 "dataset_kind": "test",
                 "test": {
                     "n_channels": self.n_channels,
+                    "channels_to_keep": self.channels_to_keep,
                 }
             },
             "models": {
@@ -106,6 +108,7 @@ class TestDINCAEPconvs(unittest.TestCase):
         self.assertFalse(th.isnan(self.model.output_mask).any())
         
     def test_automatic_initialization(self):
+        channels_to_keep = ["c1", "c2", "c3", "c4"]
         dataset_params = {
             "dataset": {
                 "cutted_nrows": self.nrows + 1,
@@ -113,6 +116,7 @@ class TestDINCAEPconvs(unittest.TestCase):
                 "dataset_kind": "test",
                 "test": {
                     "n_channels": self.n_channels + 1,
+                    "channels_to_keep": channels_to_keep
                 }
             }
         }
