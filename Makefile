@@ -50,7 +50,7 @@ CUTTED_TXT_NAME := "explanatory"
 CUTTED_IMAGES_FILE_EXT := ".pt"
 
 NANS_MASKS_DIR := $(DATA_DIR)/nans_masks
-NANS_MASKS_BASENAME := "nans_mask"
+NANS_MASKS_BASENAME := nans_mask
 NANS_MASKS_FILE_EXT := ".pt"
 
 FIG_RESULTS_DIR := $(FIG_DIR)/results
