@@ -101,25 +101,6 @@ class DINCAE_like(nn.Module):
         self.interp5 = nn.Upsample(size=(self.image_nrows, self.image_ncols), mode=self.interp_mode)
         self.deconv5 = nn.Conv2d(self.middle_channels[0], self.n_channels, self.kernel_sizes[0], padding='same')
         
-    def _load_model_configurations(self, params):
-        if params is not None:
-            if self.middle_channels is None:
-                self.middle_channels = params[model_cathegory_string][self.model_name].get("middle_channels", None)
-            if self.kernel_sizes is None:
-                self.kernel_sizes = params[model_cathegory_string][self.model_name].get("kernel_sizes", None)
-            
-            if self.pooling_sizes is None:
-                self.pooling_sizes = params[model_cathegory_string][self.model_name].get("pooling_sizes", None)
-            if self.interp_mode is None:
-                self.interp_mode = params[model_cathegory_string][self.model_name].get("interp_mode", None)
-                
-            self.placeholder = params[dataset_cathegory_string].get("placeholder", None)
-            
-        
-        for var in [self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode]:
-            if var is None:
-                raise ValueError(f"Variable {var} is None. Please provide a value for it.")
-        
     def _load_dataset_configurations(self, params):
         if params is not None:
             if self.image_nrows is None:
@@ -128,10 +109,28 @@ class DINCAE_like(nn.Module):
                 self.image_ncols = params[dataset_cathegory_string].get(image_ncols_string, None)
             if self.n_channels is None:
                 dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
-                self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, None)
-        for var in [self.n_channels, self.image_nrows, self.image_ncols]:
-            if var is None:
-                raise ValueError(f"Variable {var} is None. Please provide a value for it.")
+                channels_to_keep = params[dataset_cathegory_string][dataset_kind].get("channels_to_keep", None)
+                self.n_channels = len(channels_to_keep) + 1
+        if self.n_channels is None:
+            raise ValueError(f"Variable n_channels is None. Please provide a value for it.")
+        if self.image_nrows is None:
+            raise ValueError(f"Variable image_nrows is None. Please provide a value for it.")
+        if self.image_ncols is None:
+            raise ValueError(f"Variable image_ncols is None. Please provide a value for it.")
+    
+    def override_load_dataset_configurations(self, params):
+        if params is not None:
+            self.image_nrows = params[dataset_cathegory_string].get(image_nrows_string, None)
+            self.image_ncols = params[dataset_cathegory_string].get(image_ncols_string, None)
+            dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
+            channels_to_keep = params[dataset_cathegory_string][dataset_kind].get("channels_to_keep", None)
+            self.n_channels = len(channels_to_keep) + 1
+        if self.n_channels is None:
+            raise ValueError(f"Variable n_channels is None. Please provide a value for it.")
+        if self.image_nrows is None:
+            raise ValueError(f"Variable image_nrows is None. Please provide a value for it.")
+        if self.image_ncols is None:
+            raise ValueError(f"Variable image_ncols is None. Please provide a value for it.")
     
     def override_load_dataset_configurations(self, params):
         if params is not None:
@@ -265,20 +264,28 @@ class DINCAE_pconvs(nn.Module):
                 self.image_ncols = params[dataset_cathegory_string].get(image_ncols_string, None)
             if self.n_channels is None:
                 dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
-                self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, None)
-        for var in [self.n_channels, self.image_nrows, self.image_ncols]:
-            if var is None:
-                raise ValueError(f"Variable {var} is None. Please provide a value for it.")
+                channels_to_keep = params[dataset_cathegory_string][dataset_kind].get("channels_to_keep", None)
+                self.n_channels = len(channels_to_keep) + 1
+        if self.n_channels is None:
+            raise ValueError(f"Variable n_channels is None. Please provide a value for it.")
+        if self.image_nrows is None:
+            raise ValueError(f"Variable image_nrows is None. Please provide a value for it.")
+        if self.image_ncols is None:
+            raise ValueError(f"Variable image_ncols is None. Please provide a value for it.")
     
     def override_load_dataset_configurations(self, params):
         if params is not None:
             self.image_nrows = params[dataset_cathegory_string].get(image_nrows_string, None)
             self.image_ncols = params[dataset_cathegory_string].get(image_ncols_string, None)
             dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
-            self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, None)
-        for var in [self.n_channels, self.image_nrows, self.image_ncols]:
-            if var is None:
-                raise ValueError(f"Variable {var} is None. Please provide a value for it.")
+            channels_to_keep = params[dataset_cathegory_string][dataset_kind].get("channels_to_keep", None)
+            self.n_channels = len(channels_to_keep) + 1
+        if self.n_channels is None:
+            raise ValueError(f"Variable n_channels is None. Please provide a value for it.")
+        if self.image_nrows is None:
+            raise ValueError(f"Variable image_nrows is None. Please provide a value for it.")
+        if self.image_ncols is None:
+            raise ValueError(f"Variable image_ncols is None. Please provide a value for it.")
         
     def _calculate_sizes(self):
         """Calculate the output sizes of the convolutions and the downsampling and upsampling layers."""
@@ -375,8 +382,7 @@ class simple_conv(nn.Module):
         self._load_dataset_configurations(params)
         
         self.encoder = None
-        self.decoder = None
-        
+        self.decoder = None  
     
     def layers_setup(self):
         # Encoder
@@ -413,7 +419,8 @@ class simple_conv(nn.Module):
     def _load_dataset_configurations(self, params):
         if params is not None:
             dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
-            self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, None)
+            channels_to_keep = params[dataset_cathegory_string][dataset_kind].get("channels_to_keep", None)
+            self.n_channels = len(channels_to_keep) + 1
         
         if self.n_channels is None:
             raise ValueError(f"Variable {self.n_channels} is None. Please provide a value for it.")
@@ -421,11 +428,12 @@ class simple_conv(nn.Module):
     def override_load_dataset_configurations(self, params):
         if params is not None:
             dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
-            self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, None)
-        for var in [self.n_channels]:
-            if var is None:
-                raise ValueError(f"Variable {var} is None. Please provide a value for it.")
-
+            channels_to_keep = params[dataset_cathegory_string][dataset_kind].get("channels_to_keep", None)
+            self.n_channels = len(channels_to_keep) + 1
+            
+        if self.n_channels is None:
+            raise ValueError(f"Variable {self.n_channels} is None. Please provide a value for it.")
+        
     def forward(self, x: th.Tensor, masks: th.Tensor) -> th.Tensor:
         images, _ = mask_inversemask_image(x, masks, 0.0)
         encoded = self.encoder(images)
