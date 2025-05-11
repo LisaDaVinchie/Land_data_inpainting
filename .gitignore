@@ -16,7 +16,7 @@ figs/results/
 src/paths.json
 
 # The file containing the Telegram bot token
-src/bot_codes.txt
+**bot_codes.txt
 
 # Pconvs not done by me
 **/*nvidia*
