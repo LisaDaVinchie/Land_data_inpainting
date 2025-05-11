@@ -29,8 +29,8 @@
         "biochemistry": {
             "n_images": 31,
             "n_channels": 13,
-            "x_shape_raw": 681,
-            "y_shape_raw": 1440,
+            "n_rows": 681,
+            "n_cols": 1440,
             "masked_channels": [0, 3],
             "channels_to_keep": ["spco2", "no3",
                                 "si", "fe", "phyc"],
@@ -42,8 +42,8 @@
         "temperature": {
             "n_images": 31,
             "n_channels": 5,
-            "x_shape_raw": 1600,
-            "y_shape_raw": 3600,
+            "n_rows": 1600,
+            "n_cols": 3600,
             "masked_channels": [0, 1],
             "channels_to_keep": [
                 "sea_surface_temperature", "sea_surface_temperature_stddev",
