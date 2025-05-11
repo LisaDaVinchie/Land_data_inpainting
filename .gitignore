@@ -18,9 +18,6 @@ src/paths.json
 # The file containing the Telegram bot token
 src/bot_codes.txt
 
-# The sbatch file with personal chat codes
-*.sh
-
 # Pconvs not done by me
 **/*nvidia*
 **/*Nvidia*
