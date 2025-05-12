@@ -18,9 +18,10 @@ src/paths.json
 # The file containing the Telegram bot token
 **bot_codes.txt
 
-# Pconvs not done by me
+# Code not done by me
 **/*nvidia*
 **/*Nvidia*
+**ignite*
 
 # Refactored versions of the code
 src/model
