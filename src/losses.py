@@ -211,6 +211,33 @@ class TotalVariationLoss(nn.Module):
         
         return dilated_mask if inverse else ~dilated_mask
    
+# class StyleLoss(nn.Module):
+#     def __init__(self, nan_placeholder: float):
+#         """Initialize the Style Loss module.
+
+#         Args:
+#             target_feature (th.Tensor): target feature map, shape (batch_size, channels, height, width)
+#         """
+#         super(StyleLoss, self).__init__()
+#         self.target = target_feature.detach()
+        
+#     def _gram_matrix(features):
+#         b, c, h, w = features.size()
+#         features = features.view(b, c, h * w)
+#         gram = th.bmm(features, features.transpose(1, 2))  # Batch matrix multiplication
+#         return gram / (c * h * w)
+        
+#     def forward(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) -> th.Tensor:
+#         """Calculate the style loss between the input and the target feature map.
+
+#         Args:
+#             x (th.Tensor): input feature map, shape (batch_size, channels, height, width)
+
+#         Returns:
+#             th.Tensor: style loss
+#         """
+#         return nn.functional.mse_loss(x, self.target)
+
 class CustomLoss1(nn.Module):
     def __init__(self, nan_placeholder: float, per_pixel_weight: float = 1.0, tv_weight: float = 0.1):
         """Combine per-pixel loss and total variation loss.
