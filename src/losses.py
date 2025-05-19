@@ -20,6 +20,8 @@ def get_loss_function(loss_kind: str, nan_placeholder: float) -> nn.Module:
         return TotalVariationLoss(nan_placeholder=nan_placeholder)
     elif loss_kind == "custom1":
         return CustomLoss1(nan_placeholder=nan_placeholder)
+    elif loss_kind == "dincae1":
+        return DINCAE1Loss(nan_placeholder=nan_placeholder)
     else:
         raise ValueError(f"Loss kind {loss_kind} not recognized")
 
