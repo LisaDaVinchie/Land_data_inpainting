@@ -23,6 +23,53 @@ def get_loss_function(loss_kind: str, nan_placeholder: float) -> nn.Module:
     else:
         raise ValueError(f"Loss kind {loss_kind} not recognized")
 
+class DINCAE1Loss(nn.Module):
+    
+    def __init__(self, nan_placeholder: float = -2.0):
+        """Initialize the DINCAE1Loss module.
+
+        Args:
+            loss_kind (str): type of loss function to use. Options are "per_pixel_loss" or "per_pixel_mse".
+            nan_placeholder (float, optional): value used to represent NaN pixels in the target tensor. Defaults to -2.0.
+        """
+        super(DINCAE1Loss, self).__init__()
+        self.nan_placeholder = nan_placeholder
+        self.eps = 1e-6 # Small constant to avoid division by zero
+        
+    def forward(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) -> th.Tensor:
+        
+        # Select the first channel of the target tensor
+        target = target[:, 0:1, :, :]
+        mean_pred = prediction[:, 0:1, :, :]
+        stdev_pred = prediction[:, 1:2, :, :]
+        
+        # Create a mask that is 1 where the target is the NaN placeholder and 0 otherwise
+        nans_mask = th.where(target == self.nan_placeholder, th.ones_like(target), th.zeros_like(target)).bool()
+        
+        valid_mask = ~(masks[:, 0, :, :] | nans_mask) # Create a mask that is 1 where the pixel is valid and 0 otherwise
+        
+        N = valid_mask.sum().float() # count the number of valid pixels
+        if N == 0:
+            return th.tensor(0.0, requires_grad=True)
+        
+        # Add small constant to stdev for numerical stability
+        stdev_pred = stdev_pred + self.eps
+        
+        # Compute squared term
+        squared_term = ((mean_pred - target) / stdev_pred).pow(2)
+        
+        # Compute log term (more numerically stable than squaring first)
+        log_term = th.log(stdev_pred.pow(2))
+        
+        # Combine terms
+        # Non valid pixels are set to 0
+        loss_terms = (squared_term + log_term) * valid_mask.float()
+        
+        # Sum and normalize
+        total_loss = loss_terms.sum() / (2 * N)
+        
+        return total_loss
+        
 class PerPixelMSE(nn.Module):
     def __init__(self, nan_placeholder: float):
         """Initialize the Per Pixel MSE loss module.
