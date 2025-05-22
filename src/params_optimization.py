@@ -57,7 +57,6 @@ def main():
     dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
     dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
     dataset_idx = int(params["training"]["dataset_idx"])
-    
     if dataset_idx >= 0:
         dataset_path, dataset_specs_path = change_dataset_idx(dataset_path, dataset_specs_path, dataset_idx)
     
@@ -68,7 +67,7 @@ def main():
     with open(dataset_specs_path, 'r') as f:
         dataset_specs = json.load(f)
         
-    obj = Objective()
+    obj = Objective(dataset_specs)
     # Import parameters and paths
     obj.import_params(params)
     obj.import_and_check_paths(paths)
@@ -106,7 +105,7 @@ def main():
         print(f"\nElapsed time: {time() - start_time:.2f} seconds\n", flush=True)
 
 class Objective():
-    def __init__(self):
+    def __init__(self, dataset_specs: dict):
         # Load default config
         
         self.dataloader_cache = {}
@@ -114,7 +113,8 @@ class Objective():
         
         self.optim_next_path = None
         self.dataset_path = None
-        self.dataset_specs = None
+        self.dataset_specs = dataset_specs
+        
 
     def import_params(self, params: dict):
         self.params = params
@@ -127,18 +127,12 @@ class Objective():
     def import_and_check_paths(self, paths: Path):
         self.optim_next_path = Path(paths["results"]["optim_next_path"])
         self.storage_path = Path(paths["results"]["study_next_path"])
-        # self.dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
-        # self.dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
         self.dataset = None
         
         if not self.optim_next_path.parent.exists():
             raise FileNotFoundError(f"Optimization results dir {self.optim_next_path.parent} does not exist.")
         if not self.storage_path.parent.exists():
             raise FileNotFoundError(f"Storage path {self.storage_path} does not exist.")
-        # if not self.dataset_path.exists():
-        #     raise FileNotFoundError(f"Dataset path {self.dataset_path} does not exist.")
-        # if not self.dataset_specs_path.exists():
-        #     raise FileNotFoundError(f"Dataset specs path {self.dataset_specs_path} does not exist.")
     
     def dataloader_init(self, dataset_specs: dict, dataset_path: Path = None, dataset: dict = None):
         self.dl = CreateDataloaders(self.train_perc)
@@ -154,8 +148,6 @@ class Objective():
         else:
             self.dataset = dataset
         self.dataset_specs = dataset_specs
-            
-            
     
     def create_storage(self, storage_path: Path = None):
         """Create a storage for Optuna."""
@@ -180,10 +172,11 @@ class Objective():
         
         train_loader, test_loader = self._get_dataloaders(batch_size)
         
-        train = TrainModel(self.params, Path("weights.pt"), Path("results.txt"), self.dataset_specs)
-        print("Registered channels: ", train.model.n_channels, flush=True)
+        train = TrainModel(self.params, self.dataset_specs, Path("weights.pt"), Path("results.txt"), self.dataset_specs)
+        
         train.lr = learning_rate
         train._initialize_training_components(lr = learning_rate)
+        
         train.epochs = epochs
         train.train(train_loader, test_loader, epochs)
         
