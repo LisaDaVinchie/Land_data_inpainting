@@ -167,7 +167,7 @@ class TrainModel:
         
         self.loss_function = get_loss_function(loss_kind, nan_placeholder)
         
-        self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
         
         self.scheduler = None
         if lr_scheduler == "step":
