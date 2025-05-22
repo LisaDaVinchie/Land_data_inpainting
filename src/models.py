@@ -72,7 +72,6 @@ class DINCAE_pconvs_1(nn.Module):
         self.output_channels = 2
         
         self._load_model_configurations(params)
-        self._load_dataset_configurations(params)
 
     def layers_setup(self):
         self.w, self.h = self._calculate_sizes()

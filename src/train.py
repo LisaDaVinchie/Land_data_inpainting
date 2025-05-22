@@ -52,7 +52,7 @@ def main():
     dataset = dl.load_dataset(dataset_path)
     train_loader, test_loader = dl.create(dataset)
         
-    train = TrainModel(params, weights_path, results_path, dataset_specs)
+    train = TrainModel(params, dataset_specs, weights_path, results_path, dataset_specs)
     
     train.train(train_loader, test_loader)
     
@@ -115,7 +115,7 @@ def change_dataset_idx(dataset_path: Path, dataset_specs_path: Path, new_idx: in
     return new_dataset_path, new_dataset_specs_path
     
 class TrainModel:
-    def __init__(self, params, weights_path, results_path, dataset_specs = None):
+    def __init__(self, training_params, dataset_params, weights_path, results_path, dataset_specs = None):
         """Initialize the training class.
 
         Args:
@@ -124,7 +124,7 @@ class TrainModel:
             results_path (_type_): _description_
             dataset_specs (_type_, optional): _description_. Defaults to None.
         """
-        self.params = params
+        self.params = training_params
         self.device = th.device("cuda" if th.cuda.is_available() else "cpu")
         
         self.weights_path = weights_path
@@ -132,6 +132,9 @@ class TrainModel:
         self.dataset_specs = dataset_specs
         
         self._configure_training_parameters()
+        self.nan_placeholder = float(dataset_specs["dataset"]["nan_placeholder"])
+        
+        
         self._initialize_training_components()
         
         self.train_losses = []
@@ -144,7 +147,6 @@ class TrainModel:
         self.model_kind = training_params["model_kind"]
         
         self.loss_kind = str(training_params["loss_kind"])
-        self.nan_placeholder = float(self.params["dataset"]["nan_placeholder"])
         self.lr = training_params['learning_rate']
         self.lr_scheduler = training_params["lr_scheduler"]
         self.epochs = training_params['epochs']
