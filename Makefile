@@ -6,8 +6,6 @@ SRC_DIR := $(BASE_DIR)/src
 FIG_DIR := $(BASE_DIR)/figs
 TEST_DIR := $(BASE_DIR)/tests
 
-PREPROCESSING_DIR := $(SRC_DIR)/preprocessing
-
 PROCESSED_DATA_DIR := $(DATA_DIR)/processed
 TEMPERATURE_DATA_DIR := $(PROCESSED_DATA_DIR)/temperature
 BIOCHEMISTRY_DATA_DIR := $(PROCESSED_DATA_DIR)/biochemistry
@@ -132,18 +130,11 @@ config:
 	@echo "    }" >> $(PATHS_FILE)
 	@echo "}" >> $(PATHS_FILE)
 
-cut: config
-	@echo "Cutting images..."
-	@$(PYTHON) $(PREPROCESSING_DIR)/cut_images.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
-
 train: config
 	@$(PYTHON) $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 btrain: config
 	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
-
-bcut: config
-	@$(PYTHON) -m torch.utils.bottleneck $(PREPROCESSING_DIR)/cut_images.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
 plot:config
 	@echo "Plotting results..."
@@ -165,8 +156,6 @@ help:
 	@echo "Usage: make [target]"
 	@echo "Available targets:"
 	@echo "  config: Store paths to json"
-	@echo "  cut: create a dataset of images"
-	@echo "  bcut: Run the bottleneck profiler on the cut_images script"
 	@echo "  train: Train the model"
 	@echo "  btrain: Run the bottleneck profiler on the training script"
 	@echo "  test: Run tests"
