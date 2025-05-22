@@ -15,49 +15,6 @@
         "save_every": 1,
         "dataset_idx": 5
     },
-    "dataset":{
-        "cutted_nrows": 128,
-        "cutted_ncols": 128,
-        "n_cutted_images": 5000,
-        "nans_threshold": 0.3,
-        "nan_placeholder": -2.0,
-        "mask_kind": "square",
-        "_possible_mask_kinds": ["square", "lines"],
-        "same_mask": false,
-        "dataset_kind": "temperature",
-        "_possible_dataset_kinds": ["biochemistry", "temperature"],
-        "biochemistry": {
-            "n_images": 31,
-            "n_channels": 13,
-            "n_rows": 681,
-            "n_cols": 1440,
-            "masked_channels": [0, 3],
-            "channels_to_keep": ["spco2", "no3",
-                                "si", "fe", "phyc"],
-            "channels_list": ["nppv", "o2", "ph",
-                "dissic", "talk", "spco2",
-                "no3", "po4", "si",
-                "fe", "phyc", "chl"]
-        },
-        "temperature": {
-            "n_images": 31,
-            "n_channels": 5,
-            "n_rows": 1600,
-            "n_cols": 3600,
-            "masked_channels": [0, 1],
-            "channels_to_keep": [
-                "sea_surface_temperature", "sea_surface_temperature_stddev",
-                "or_latitude", "or_longitude"
-                ],
-            "channels_list": [
-                "crs", "sea_surface_temperature", "or_number_of_pixels",
-                "sea_surface_temperature_stddev", "quality_level", "sses_bias",
-                "sses_standard_deviation", "satellite_zenith_angle", "or_latitude",
-                "or_longitude", "adjusted_sea_surface_temperature", "solar_zenith_angle",
-                "bias_to_reference_sst", "sources_of_sst", "sst_dtime"
-                ]
-        }
-    },
     "models":{
         "DINCAE_pconvs": {
             "middle_channels": [16, 30, 58, 110, 209],
@@ -96,16 +53,6 @@
             "up_kernel": 3,
             "up_stride": 2,
             "print_sizes": false
-        }
-    },
-    "masks": {
-        "square": {
-            "mask_percentage": 0.10
-        },
-        "lines": {
-            "num_lines": 5,
-            "min_thickness": 1,
-            "max_thickness": 5
         }
     },
     "lr_schedulers": {
