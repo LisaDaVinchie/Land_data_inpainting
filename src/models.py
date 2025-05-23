@@ -43,7 +43,7 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
         model = DINCAE_pconvs(params)
         dataset_kind = "minimal"
     elif model_kind == "DINCAE_pconvs_1":
-        model = DINCAE_pconvs_1(params)
+        model = DINCAE_pconvs_1(params = params, n_channels = 13)
         dataset_kind = "minimal"
     else:
         raise ValueError(f"Model kind {model_kind} not recognized")
@@ -77,19 +77,19 @@ class DINCAE_pconvs_1(nn.Module):
         self.w, self.h = self._calculate_sizes()
         
         self.pconv1 = PartialConv2d(self.n_channels, self.middle_channels[0], kernel_size=self.kernel_sizes[0], padding=self.kernel_sizes[0] // 2)
-        self.pool1 = nn.MaxPool2d(self.pooling_sizes[0], ceil_mode=True)
+        self.pool1 = nn.MaxPool2d(self.pooling_sizes[0], stride=2, ceil_mode=True)
         
         self.pconv2 = PartialConv2d(self.middle_channels[0], self.middle_channels[1], kernel_size=self.kernel_sizes[1], padding='same')
-        self.pool2 = nn.MaxPool2d(self.pooling_sizes[1], ceil_mode=True)
+        self.pool2 = nn.MaxPool2d(self.pooling_sizes[1], stride=2, ceil_mode=True)
         
         self.pconv3 = PartialConv2d(self.middle_channels[1], self.middle_channels[2], kernel_size=self.kernel_sizes[2], padding='same')
-        self.pool3 = nn.MaxPool2d(self.pooling_sizes[2], ceil_mode=True)
+        self.pool3 = nn.MaxPool2d(self.pooling_sizes[2], stride=2, ceil_mode=True)
         
         self.pconv4 = PartialConv2d(self.middle_channels[2], self.middle_channels[3], kernel_size=self.kernel_sizes[3], padding='same')
-        self.pool4 = nn.MaxPool2d(self.pooling_sizes[3], ceil_mode=True)
+        self.pool4 = nn.MaxPool2d(self.pooling_sizes[3], stride=2, ceil_mode=True)
         
         self.pconv5 = PartialConv2d(self.middle_channels[3], self.middle_channels[4], kernel_size=self.kernel_sizes[4], padding='same')
-        self.pool5 = nn.MaxPool2d(self.pooling_sizes[4], ceil_mode=True)
+        self.pool5 = nn.MaxPool2d(self.pooling_sizes[4], stride=2, ceil_mode=True)
         
         self.activation = nn.ReLU()
         
@@ -108,6 +108,12 @@ class DINCAE_pconvs_1(nn.Module):
         
         self.interp5 = nn.Upsample(size=(self.image_nrows, self.image_ncols), mode=self.interp_mode)
         self.pdeconv5 = PartialConv2d(self.middle_channels[0], self.output_channels, kernel_size=self.kernel_sizes[0], padding='same')
+        
+        self.print = True
+        
+    def print_shapes(self, layer_name, x):
+        if self.print:
+            print(f"{layer_name} shape: ", x.shape)
 
     def _load_model_configurations(self, params):
         if params is not None:
@@ -149,7 +155,7 @@ class DINCAE_pconvs_1(nn.Module):
             self.image_ncols = params[dataset_cathegory_string].get(image_ncols_string, None)
             dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
             channels_to_keep = params[dataset_cathegory_string][dataset_kind].get("channels_to_keep", None)
-            self.n_channels = 13
+            self.n_channels = len(channels_to_keep)
         if self.n_channels is None:
             raise ValueError(f"Variable n_channels is None. Please provide a value for it.")
         if self.image_nrows is None:
@@ -178,60 +184,83 @@ class DINCAE_pconvs_1(nn.Module):
         Returns:
             th.Tensor: output image and mask
         """
+        self.print_shapes("input", x)
         x1, mask1 = self.pconv1(x, mask)
+        self.print_shapes("pconv1", x1)
         x1 = self.activation(x1)
         x1 = self.pool1(x1)
+        self.print_shapes("pool1", x1)
         mask1 = self.pool1(mask1)
         
         x2, mask2 = self.pconv2(x1, mask1)
+        self.print_shapes("pconv2", x2)
         x2 = self.activation(x2)
         x2 = self.pool2(x2)
+        self.print_shapes("pool2", x2)
         mask2 = self.pool2(mask2)
         
         x3, mask3 = self.pconv3(x2, mask2)
+        self.print_shapes("pconv3", x3)
         x3 = self.activation(x3)
         x3 = self.pool3(x3)
+        self.print_shapes("pool3", x3)
         mask3 = self.pool3(mask3)
         
         x4, mask4 = self.pconv4(x3, mask3)
+        self.print_shapes("pconv4", x4)
         x4 = self.activation(x4)
         x4 = self.pool4(x4)
+        self.print_shapes("pool4", x4)
         mask4 = self.pool4(mask4)
         
         x5, mask5 = self.pconv5(x4, mask4)
+        self.print_shapes("pconv5", x5)
         x5 = self.activation(x5)
         x5 = self.pool5(x5)
         mask5 = self.pool5(mask5)
+        self.print_shapes("pool5", x5)
         
         dec1, dmask1= self.interp1(x5), self.interp1(mask5)
+        self.print_shapes("interp1", dec1)
         dec1, dmask1 = self.pdeconv1(dec1, dmask1)
+        self.print_shapes("pdeconv1", dec1)
         dec1 = self.activation(dec1)
         x = dec1 + x4
+        
         mask = dmask1 + mask4
         
         dec2, dmask2 = self.interp2(x), self.interp2(mask)
+        self.print_shapes("interp2", dec2)
         dec2, dmask2 = self.pdeconv2(dec2, dmask2)
+        self.print_shapes("pdeconv2", dec2)
         dec2 = self.activation(dec2)
         x = dec2 + x3
         mask = dmask2 + mask3
         
         dec3, dmask3 = self.interp3(x), self.interp3(mask)
+        self.print_shapes("interp3", dec3)
         dec3, dmask3 = self.pdeconv3(dec3, dmask3)
+        self.print_shapes("pdeconv3", dec3)
         dec3 = self.activation(dec3)
         x = dec3 + x2
         mask = dmask3 + mask2
         
         dec4, dmask4 = self.interp4(x), self.interp4(mask)
+        self.print_shapes("interp4", dec4)
         dec4, dmask4 = self.pdeconv4(dec4, dmask4)
+        self.print_shapes("pdeconv4", dec4)
         dec4 = self.activation(dec4)
         x = dec4 + x1
         mask = dmask4 + mask1
         
         dec5, dmask5 = self.interp5(x), self.interp5(mask)
+        self.print_shapes("interp5", dec5)
         dec5, dmask5 = self.pdeconv5(dec5, dmask5)
+        self.print_shapes("pdeconv5", dec5)
         dec5 = self.activation(dec5)
         
         self.output_mask = dmask5
+        
         
         return dec5
 
@@ -265,19 +294,19 @@ class DINCAE_like(nn.Module):
         w, h = self._calculate_sizes()
         
         self.conv1 = nn.Conv2d(self.n_channels, self.middle_channels[0], self.kernel_sizes[0], padding = self.kernel_sizes[0] // 2)
-        self.pool1 = nn.MaxPool2d(self.pooling_sizes[0], ceil_mode=True)
+        self.pool1 = nn.MaxPool2d(self.pooling_sizes[0], stride=2, ceil_mode=True)
         
         self.conv2 = nn.Conv2d(self.middle_channels[0], self.middle_channels[1], self.kernel_sizes[1], padding = 'same')
-        self.pool2 = nn.MaxPool2d(self.pooling_sizes[1], ceil_mode=True)
+        self.pool2 = nn.MaxPool2d(self.pooling_sizes[1], stride=2, ceil_mode=True)
         
         self.conv3 = nn.Conv2d(self.middle_channels[1], self.middle_channels[2], self.kernel_sizes[2], padding = 'same')
-        self.pool3 = nn.MaxPool2d(self.pooling_sizes[2], ceil_mode=True)
+        self.pool3 = nn.MaxPool2d(self.pooling_sizes[2], stride=2, ceil_mode=True)
         
         self.conv4 = nn.Conv2d(self.middle_channels[2], self.middle_channels[3], self.kernel_sizes[3], padding = 'same')
-        self.pool4 = nn.MaxPool2d(self.pooling_sizes[3], ceil_mode=True)
+        self.pool4 = nn.MaxPool2d(self.pooling_sizes[3], stride=2, ceil_mode=True)
         
         self.conv5 = nn.Conv2d(self.middle_channels[3], self.middle_channels[4], self.kernel_sizes[4], padding = 'same')
-        self.pool5 = nn.MaxPool2d(self.pooling_sizes[4], ceil_mode=True)
+        self.pool5 = nn.MaxPool2d(self.pooling_sizes[4], stride=2, ceil_mode=True)
         self.activation = nn.ReLU()
         
     
@@ -400,19 +429,19 @@ class DINCAE_pconvs(nn.Module):
         self.w, self.h = self._calculate_sizes()
         
         self.pconv1 = PartialConv2d(self.n_channels, self.middle_channels[0], kernel_size=self.kernel_sizes[0], padding=self.kernel_sizes[0] // 2)
-        self.pool1 = nn.MaxPool2d(self.pooling_sizes[0], ceil_mode=True)
+        self.pool1 = nn.MaxPool2d(self.pooling_sizes[0], stride=2, ceil_mode=True)
         
         self.pconv2 = PartialConv2d(self.middle_channels[0], self.middle_channels[1], kernel_size=self.kernel_sizes[1], padding='same')
-        self.pool2 = nn.MaxPool2d(self.pooling_sizes[1], ceil_mode=True)
+        self.pool2 = nn.MaxPool2d(self.pooling_sizes[1], stride=2, ceil_mode=True)
         
         self.pconv3 = PartialConv2d(self.middle_channels[1], self.middle_channels[2], kernel_size=self.kernel_sizes[2], padding='same')
-        self.pool3 = nn.MaxPool2d(self.pooling_sizes[2], ceil_mode=True)
+        self.pool3 = nn.MaxPool2d(self.pooling_sizes[2], stride=2, ceil_mode=True)
         
         self.pconv4 = PartialConv2d(self.middle_channels[2], self.middle_channels[3], kernel_size=self.kernel_sizes[3], padding='same')
-        self.pool4 = nn.MaxPool2d(self.pooling_sizes[3], ceil_mode=True)
+        self.pool4 = nn.MaxPool2d(self.pooling_sizes[3], stride=2, ceil_mode=True)
         
         self.pconv5 = PartialConv2d(self.middle_channels[3], self.middle_channels[4], kernel_size=self.kernel_sizes[4], padding='same')
-        self.pool5 = nn.MaxPool2d(self.pooling_sizes[4], ceil_mode=True)
+        self.pool5 = nn.MaxPool2d(self.pooling_sizes[4], stride=2, ceil_mode=True)
         
         self.activation = nn.ReLU()
         
