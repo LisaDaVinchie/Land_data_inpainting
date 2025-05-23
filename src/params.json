@@ -3,7 +3,7 @@
         "train_perc": 0.8,
         "batch_size": 128,
         "epochs": 20,
-        "learning_rate": 0.01,
+        "learning_rate": 0.001,
         "lr_scheduler": "step",
         "_possible_schedulers": ["none", "step"],
         "optimizer_kind": "adam",
