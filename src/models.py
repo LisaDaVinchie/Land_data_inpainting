@@ -43,13 +43,14 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
         model = DINCAE_pconvs(params)
         dataset_kind = "minimal"
     elif model_kind == "DINCAE_pconvs_1":
-        model = DINCAE_pconvs_1(params = params, n_channels = 13)
+        model = DINCAE_pconvs_1(params = params)
         dataset_kind = "minimal"
     else:
         raise ValueError(f"Model kind {model_kind} not recognized")
     
     if dataset_params is not None:
         model.override_load_dataset_configurations(dataset_params)
+    model.n_channels = 13
     
     model.layers_setup()
     
@@ -70,7 +71,7 @@ class DINCAE_pconvs_1(nn.Module):
         self.pooling_sizes = pooling_sizes
         self.interp_mode = interp_mode
         self.output_channels = 2
-        
+                
         self._load_model_configurations(params)
 
     def layers_setup(self):
@@ -184,6 +185,9 @@ class DINCAE_pconvs_1(nn.Module):
         Returns:
             th.Tensor: output image and mask
         """
+        
+        
+        self.print = False
         self.print_shapes("input", x)
         x1, mask1 = self.pconv1(x, mask)
         self.print_shapes("pconv1", x1)
