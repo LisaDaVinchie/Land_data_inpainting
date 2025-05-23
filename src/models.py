@@ -149,7 +149,7 @@ class DINCAE_pconvs_1(nn.Module):
             self.image_ncols = params[dataset_cathegory_string].get(image_ncols_string, None)
             dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
             channels_to_keep = params[dataset_cathegory_string][dataset_kind].get("channels_to_keep", None)
-            self.n_channels = len(channels_to_keep) + 1 + 8
+            self.n_channels = 13
         if self.n_channels is None:
             raise ValueError(f"Variable n_channels is None. Please provide a value for it.")
         if self.image_nrows is None:

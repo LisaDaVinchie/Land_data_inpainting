@@ -228,9 +228,8 @@ class TrainModel:
     def _compute_loss(self, images, masks):
         images = images.to(self.device)
         masks = masks.to(self.device)
-                
         output = self.model(images, masks.float())
-        loss = self.loss_function(output, images, masks)
+        loss = self.loss_function(output[:, 0], images[:, 4], masks[:, 4])
         return loss
     
     def save_weights(self):
