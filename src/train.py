@@ -35,6 +35,11 @@ def main():
     
     weights_path, results_path = configure_file_paths(paths)
     
+    # Ensure the results file exists and is a txt file
+    results_path = results_path.with_suffix('.txt')
+    results_path.parent.mkdir(parents=True, exist_ok=True)
+    results_path.touch(exist_ok=True)
+    
     dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
     dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
     dataset_idx = int(params["training"]["dataset_idx"])
