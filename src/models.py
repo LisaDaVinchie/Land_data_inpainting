@@ -45,6 +45,9 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
     elif model_kind == "DINCAE_pconvs_1":
         model = DINCAE_pconvs_1(params = params)
         dataset_kind = "minimal"
+    elif model_kind == "dummy":
+        model = DummyModel()
+        dataset_kind = "minimal"
     else:
         raise ValueError(f"Model kind {model_kind} not recognized")
     
@@ -55,6 +58,41 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
     model.layers_setup()
     
     return model, dataset_kind
+
+class DummyModel(nn.Module):
+    def __init__(self, params = None, n_channels: int = 13, total_days: int = 9):
+        """Dummy model for testing purposes. Returns the mean of the previous and following days.
+
+        Args:
+            params (_type_, optional): _description_. Defaults to None.
+            n_channels (int, optional): _description_. Defaults to 13.
+            total_days (int, optional): _description_. Defaults to 9.
+        """
+        super(DummyModel, self).__init__()
+        
+        self.n_channels = n_channels
+        self.total_days = total_days
+    
+    def forward(self, images: th.Tensor, masks: th.Tensor) -> th.Tensor:
+        c = self.total_days // 2
+
+        # Select all the channels of the SST except the one to predict
+        known_channels = range(self.total_days)
+        known_channels = [i for i in known_channels if i != c]
+        
+        known_images = images[:, known_channels, :, :]
+        
+        mean_image = known_images.mean(dim=1, keepdim=True)
+        
+        return mean_image.requires_grad_(True)
+    
+    def layers_setup(self):
+        """Dummy method to satisfy the interface."""
+        self.conv1 = nn.Conv2d(2, 2, kernel_size=3, padding=1)
+        
+    
+    def override_load_dataset_configurations(self, params):
+        pass
 
 class DINCAE_pconvs_1(nn.Module):
     def __init__(self, params, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None):
