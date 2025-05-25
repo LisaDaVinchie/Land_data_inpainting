@@ -1,13 +1,13 @@
 {
     "training":{
         "train_perc": 0.8,
-        "batch_size": 128,
+        "batch_size": 64,
         "epochs": 20,
-        "learning_rate": 0.001,
+        "learning_rate": 0.0001,
         "lr_scheduler": "none",
         "_possible_schedulers": ["none", "step"],
         "optimizer_kind": "adam",
-        "loss_kind": "per_pixel_mse",
+        "loss_kind": "per_pixel",
         "_possible_losses": ["per_pixel", "per_pixel_mse", "tv_loss", "custom1", "dincae1"],
         "model_kind": "DINCAE_pconvs_1",
         "_possible_model_kinds": ["simple_conv", "DINCAE_like", "DINCAE_pconvs", "DINCAE_pconvs_1"],
@@ -20,7 +20,7 @@
             "middle_channels": [16, 30, 58, 110, 209],
             "kernel_sizes": [3, 3, 3, 3, 3],
             "pooling_sizes": [2, 2, 2, 2, 2],
-            "interp_mode": "bilinear",
+            "interp_mode": "nearest",
             "_possible_interpolation_modes": ["nearest", "linear", "bilinear", "bicubic", "trilinear"]
         },
         "DINCAE_like": {
