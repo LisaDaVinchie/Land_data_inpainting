@@ -6,14 +6,14 @@
         "learning_rate": 0.0001,
         "lr_scheduler": "none",
         "_possible_schedulers": ["none", "step"],
-        "optimizer_kind": "adam",
+        "optimizer_kind": "dincae1",
         "loss_kind": "per_pixel",
         "_possible_losses": ["per_pixel", "per_pixel_mse", "tv_loss", "custom1", "dincae1"],
         "model_kind": "dummy",
         "_possible_model_kinds": ["simple_conv", "DINCAE_like", "DINCAE_pconvs", "DINCAE_pconvs_1", "dummy"],
         "placeholder": 0.0,
         "save_every": 1,
-        "dataset_idx": 1
+        "dataset_idx": 2
     },
     "models":{
         "DINCAE_pconvs": {
