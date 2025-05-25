@@ -41,9 +41,11 @@ class DINCAE1Loss(nn.Module):
     def forward(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) -> th.Tensor:
         
         # Select the first channel of the target tensor
-        target = target[:, 0:1, :, :]
-        mean_pred = prediction[:, 0:1, :, :]
-        stdev_pred = prediction[:, 1:2, :, :]
+        target = target[:, 4, :, :].unsqueeze(1) # Assuming the target has 0 total days: 4 previous days, 1 current day, and 1 next day, we select the current day (index 4)
+        
+        # Assuming the output has 2 channels: mean and standard deviation
+        mean_pred = prediction[:, 0, :, :].unsqueeze(1)
+        stdev_pred = prediction[:, 1, :, :].unsqueeze(1)
         
         # Create a mask that is 1 where the target is the NaN placeholder and 0 otherwise
         nans_mask = th.where(target == self.nan_placeholder, th.ones_like(target), th.zeros_like(target)).bool()
