@@ -202,6 +202,7 @@ class TrainModel:
             print(f"Epoch {epoch + 1}/{epochs}\n", flush=True)
             self.model.train()
             epoch_loss = 0.0
+            i = 0
             for (images, masks) in train_loader:
                 loss = self._compute_loss(images, masks)
                 epoch_loss += loss.item()
@@ -209,19 +210,22 @@ class TrainModel:
                 loss.backward()
                 self.optimizer.step()
                 self.optimizer.zero_grad()
+                i += 1
 
             self.training_lr.append(self.optimizer.param_groups[0]['lr'])
             self.scheduler.step() if self.scheduler is not None else None
             
-            self.train_losses.append(epoch_loss * len_train_inv)
+            self.train_losses.append(epoch_loss / i)
             
             with th.no_grad():
                 self.model.eval()
                 epoch_loss = 0.0
+                i = 0
                 for (images, masks) in test_loader:
                     loss = self._compute_loss(images, masks)
                     epoch_loss += loss.item()
-                self.test_losses.append(epoch_loss * len_test_inv)
+                    i += 1
+                self.test_losses.append(epoch_loss / i)
             
             if (epoch + 1) % self.save_every == 0:
                 self.save_weights()
