@@ -48,6 +48,9 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
     elif model_kind == "dummy":
         model = DummyModel()
         dataset_kind = "minimal"
+    elif model_kind == "dummier":
+        model = DummierModel()
+        dataset_kind = "minimal"
     else:
         raise ValueError(f"Model kind {model_kind} not recognized")
     
@@ -58,6 +61,34 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
     model.layers_setup()
     
     return model, dataset_kind
+
+class DummierModel(nn.Module):
+    def __init__(self, params = None, n_channels: int = 13, total_days: int = 9):
+        """Dummy model for testing purposes. Returns the mean of the previous and following days.
+
+        Args:
+            params (_type_, optional): _description_. Defaults to None.
+            n_channels (int, optional): _description_. Defaults to 13.
+            total_days (int, optional): _description_. Defaults to 9.
+        """
+        super(DummierModel, self).__init__()
+        
+        self.n_channels = n_channels
+        self.total_days = total_days
+    
+    def forward(self, images: th.Tensor, masks: th.Tensor) -> th.Tensor:
+        
+        B, _, H, W = images.shape
+        
+        return th.ones((B, 2, H, W), dtype=th.float32, requires_grad = True) * 4
+    
+    def layers_setup(self):
+        """Dummy method to satisfy the interface."""
+        self.conv1 = nn.Conv2d(2, 2, kernel_size=3, padding=1)
+        
+    
+    def override_load_dataset_configurations(self, params):
+        pass
 
 class DummyModel(nn.Module):
     def __init__(self, params = None, n_channels: int = 13, total_days: int = 9):
