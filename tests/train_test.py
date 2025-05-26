@@ -27,16 +27,6 @@ class TestTrainingScript(unittest.TestCase):
         
         # Create dummy JSON files
         self.params_content = {
-            "dataset": {
-                "nan_placeholder": self.nan_placeholder,
-                "cutted_nrows": self.nrows,
-                "cutted_ncols": self.ncols,
-                "dataset_kind": "test",
-                "test": {
-                    "n_channels": self.n_channels,
-                    "channels_to_keep": self.channels_to_keep,
-                }
-            },
             "training": {
                 "train_perc": self.train_perc,
                 "batch_size": self.batch_size,
@@ -83,6 +73,19 @@ class TestTrainingScript(unittest.TestCase):
             }
         }
         
+        self.dataset_specs = {
+            "dataset": {
+                "nan_placeholder": self.nan_placeholder,
+                "cutted_nrows": self.nrows,
+                "cutted_ncols": self.ncols,
+                "dataset_kind": "test",
+                "test": {
+                    "n_channels": self.n_channels,
+                    "channels_to_keep": self.channels_to_keep,
+                }
+            }
+        }
+        
         # Write files to temp dir
         self.params_path = Path(self.temp_dir.name) / "params.json"
         self.paths_path = Path(self.temp_dir.name) / "paths.json"
@@ -97,8 +100,8 @@ class TestTrainingScript(unittest.TestCase):
             
         # Create dummy dataset
         self.dummy_dataset = {
-            'images': th.randn(20, self.n_channels, self.nrows, self.ncols),
-            'masks': th.ones((20, self.n_channels, self.nrows, self.ncols), dtype=th.bool)
+            'images': th.randn(20, 13, self.nrows, self.ncols),
+            'masks': th.ones((20, 13, self.nrows, self.ncols), dtype=th.bool)
         }
         
         self.weights_path = "weights.pt"
@@ -121,7 +124,7 @@ class TestTrainingScript(unittest.TestCase):
     
     def test_initialize_train_model(self):
         # Test initialization of TrainModel
-        train_model = TrainModel(self.params_content, self.weights_path, self.results_path)
+        train_model = TrainModel(self.params_content, self.weights_path, self.results_path, self.dataset_specs)
         
         # Check if model and dataset are initialized correctly
         self.assertIsNotNone(train_model.model)
@@ -146,7 +149,7 @@ class TestTrainingScript(unittest.TestCase):
         invalid_params["training"]["save_every"] = 0
         
         with self.assertRaises(ValueError):
-            TrainModel(invalid_params, self.weights_path, self.results_path)
+            TrainModel(invalid_params, self.weights_path, self.results_path, self.dataset_specs)
 
     def test_train_model_invalid_lr_scheduler(self):
         # Test invalid lr_scheduler parameter
@@ -154,14 +157,14 @@ class TestTrainingScript(unittest.TestCase):
         invalid_params["training"]["lr_scheduler"] = "invalid"
         
         with self.assertRaises(ValueError):
-            TrainModel(invalid_params, self.weights_path, self.results_path)
+            TrainModel(invalid_params, self.weights_path, self.results_path, self.dataset_specs)
 
     def test_train_model_no_scheduler(self):
         # Test no scheduler case
         no_scheduler_params = self.params_content.copy()
         no_scheduler_params["training"]["lr_scheduler"] = "none"
         
-        train_model = TrainModel(no_scheduler_params, self.weights_path, self.results_path)
+        train_model = TrainModel(no_scheduler_params, self.weights_path, self.results_path, self.dataset_specs)
         self.assertIsNone(train_model.scheduler)
 
     def test_train_method(self):
@@ -172,7 +175,7 @@ class TestTrainingScript(unittest.TestCase):
         mock_train_loader, mock_test_loader = dl.create(self.dummy_dataset)
         
         # Run training
-        train_model = TrainModel(self.params_content, self.weights_path, self.results_path)
+        train_model = TrainModel(self.params_content, self.weights_path, self.results_path, self.dataset_specs)
         train_model.train(mock_train_loader, mock_test_loader)
         
         # Check results
