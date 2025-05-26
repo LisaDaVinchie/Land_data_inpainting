@@ -32,7 +32,7 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
     Returns:
         tuple[nn.Module, str]: model and dataset kind
     """
-    
+
     if model_kind == "simple_conv":
         model = simple_conv(params)
         dataset_kind = "extended"
@@ -496,7 +496,7 @@ class DINCAE_pconvs(nn.Module):
         self.interp_mode = interp_mode
         
         self._load_model_configurations(params)
-        self._load_dataset_configurations(params)
+        # self._load_dataset_configurations(params)
 
     def layers_setup(self):
         self.w, self.h = self._calculate_sizes()
