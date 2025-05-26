@@ -13,7 +13,7 @@
         "_possible_model_kinds": ["simple_conv", "DINCAE_like", "DINCAE_pconvs", "DINCAE_pconvs_1", "dummy", "dummier"],
         "placeholder": 0.0,
         "save_every": 1,
-        "dataset_idx": 2
+        "dataset_idx": 1
     },
     "models":{
         "DINCAE_pconvs": {
