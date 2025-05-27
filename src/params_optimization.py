@@ -172,7 +172,7 @@ class Objective():
         
         train_loader, test_loader = self._get_dataloaders(batch_size)
         
-        train = TrainModel(self.params, self.dataset_specs, Path("weights.pt"), Path("results.txt"), self.dataset_specs)
+        train = TrainModel(self.params, Path("weights.pt"), Path("results.txt"), self.dataset_specs)
         
         train.lr = learning_rate
         train._initialize_training_components(lr = learning_rate)
