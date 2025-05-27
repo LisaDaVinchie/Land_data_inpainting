@@ -3,7 +3,7 @@
         "n_trials": 200,
         "batch_size_values": [32, 64, 128, 256],
         "learning_rate_range": [0.00000001, 0.001],
-        "epochs_range": [10, 20]
+        "epochs_range": [15, 20]
     },
     "training":{
         "train_perc": 0.8,
