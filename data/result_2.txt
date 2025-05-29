@@ -1,0 +1,389 @@
+Elapsed time [s]:
+4015.720829963684
+
+Train losses
+1071.550344315786	1069.8789876302083	1071.7291918557787	1070.5778421068949	1071.575903514075	1072.3818882533483	1070.784171937004	1072.0767686631943	1072.3394310360864	1071.7718844943577	1070.7640700567335	1072.7250995938741	1071.9381287589906	1070.5206599159847	1072.1466897631449	1072.9600946335565	1072.3944149925596	1070.9064282614088	1072.0367460704986	1072.2535012865824	
+
+Test losses
+1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	1097.7891235351562	
+
+Learning rate
+0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	0.001	
+
+Parameters
+
+    "training": {
+        "train_perc": 0.8,
+        "batch_size": 64,
+        "epochs": 20,
+        "learning_rate": 0.001,
+        "lr_scheduler": "none",
+        "_possible_schedulers": [
+            "none",
+            "step"
+        ],
+        "optimizer_kind": "adam",
+        "loss_kind": "per_pixel",
+        "_possible_losses": [
+            "per_pixel",
+            "per_pixel_mse",
+            "tv_loss",
+            "custom1",
+            "dincae1"
+        ],
+        "model_kind": "DINCAE_pconvs_1",
+        "_possible_model_kinds": [
+            "simple_conv",
+            "DINCAE_like",
+            "DINCAE_pconvs",
+            "DINCAE_pconvs_1",
+            "dummy",
+            "dummier"
+        ],
+        "placeholder": 0.0,
+        "save_every": 1,
+        "dataset_idx": 3
+    },
+    "models": {
+        "DINCAE_pconvs": {
+            "middle_channels": [
+                16,
+                30,
+                58,
+                110,
+                209
+            ],
+            "kernel_sizes": [
+                3,
+                3,
+                3,
+                3,
+                3
+            ],
+            "pooling_sizes": [
+                2,
+                2,
+                2,
+                2,
+                2
+            ],
+            "interp_mode": "nearest",
+            "_possible_interpolation_modes": [
+                "nearest",
+                "linear",
+                "bilinear",
+                "bicubic",
+                "trilinear"
+            ]
+        },
+        "DINCAE_like": {
+            "middle_channels": [
+                16,
+                30,
+                58,
+                110,
+                209
+            ],
+            "kernel_sizes": [
+                3,
+                3,
+                3,
+                3,
+                3
+            ],
+            "pooling_sizes": [
+                2,
+                2,
+                2,
+                2,
+                2
+            ],
+            "output_size": 15,
+            "interp_mode": "bilinear",
+            "_possible_interpolation_modes": [
+                "nearest",
+                "linear",
+                "bilinear",
+                "bicubic",
+                "trilinear"
+            ]
+        },
+        "simple_conv": {
+            "middle_channels": [
+                32,
+                64,
+                128
+            ],
+            "kernel_size": [
+                3,
+                3,
+                3
+            ],
+            "stride": [
+                1,
+                1,
+                1
+            ],
+            "padding": [
+                1,
+                1,
+                1
+            ],
+            "output_padding": [
+                0,
+                0,
+                0
+            ]
+        },
+        "conv_unet": {
+            "middle_channels": [
+                32,
+                64,
+                128
+            ],
+            "kernel_size": [
+                3,
+                3,
+                3
+            ],
+            "stride": [
+                1,
+                1,
+                1
+            ],
+            "padding": [
+                1,
+                1,
+                1
+            ],
+            "output_padding": [
+                0,
+                0,
+                0
+            ]
+        },
+        "conv_maxpool": {
+            "middle_channels": [
+                32,
+                64,
+                128,
+                256,
+                512
+            ],
+            "kernel_size": 3,
+            "stride": 1,
+            "pool_size": 2,
+            "up_kernel": 3,
+            "up_stride": 2,
+            "print_sizes": false
+        }
+    },
+    "lr_schedulers": {
+        "step": {
+            "step_size": 4,
+            "gamma": 0.4
+        }
+    }
+
+
+
+Dataset specifications from original file:
+
+
+    "dataset": {
+        "cutted_nrows": 128,
+        "cutted_ncols": 128,
+        "n_cutted_images": 5000,
+        "nans_threshold": 0.3,
+        "total_days": 9,
+        "nan_placeholder": -300.0,
+        "mask_kind": "square",
+        "_possible_mask_kinds": [
+            "square",
+            "lines"
+        ],
+        "same_mask": false,
+        "dataset_kind": "temperature",
+        "_possible_dataset_kinds": [
+            "ensemble_physics",
+            "biochemistry",
+            "temperature"
+        ],
+        "year_range": [
+            2021,
+            2021
+        ],
+        "month_range": [
+            1,
+            12
+        ],
+        "ensemble_physics": {
+            "n_rows": 681,
+            "n_cols": 1440,
+            "masked_channels": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "channels_to_keep": [
+                "so_mean",
+                "uo_mean",
+                "vo_mean",
+                "zos_mean"
+            ],
+            "channels": [
+                "thetao_mean",
+                "so_mean",
+                "uo_mean",
+                "vo_mean",
+                "zos_mean",
+                "mlotst_mean",
+                "siconc_mean",
+                "sithick_mean",
+                "thetao_std",
+                "so_std",
+                "uo_std",
+                "vo_std",
+                "zos_std",
+                "mlotst_std",
+                "siconc_std",
+                "sithick_std"
+            ],
+            "dataset_id": "cmems_mod_glo_phy-mnstd_my_0.25deg_P1D-m",
+            "longitude_range": [
+                -180,
+                179.75
+            ],
+            "latitude_range": [
+                -80,
+                90
+            ],
+            "depth_range": [
+                0.5057600140571594,
+                0.5057600140571594
+            ]
+        },
+        "biochemistry": {
+            "n_rows": 681,
+            "n_cols": 1440,
+            "dataset_id": "cmems_mod_glo_bgc-name_anfc_0.25deg_P1D-m",
+            "longitude_range": [
+                -180,
+                179.75
+            ],
+            "latitude_range": [
+                -80,
+                90
+            ],
+            "depth_range": [
+                0.4940253794193268,
+                0.4940253794193268
+            ],
+            "channels_to_keep": [
+                "nppv",
+                "o2",
+                "ph",
+                "dissic",
+                "talk",
+                "spco2",
+                "no3",
+                "po4",
+                "si",
+                "fe",
+                "phyc",
+                "chl"
+            ],
+            "subfolders": [
+                "bio",
+                "car",
+                "co2",
+                "nut",
+                "pft"
+            ],
+            "bio": {
+                "channels": [
+                    "nppv",
+                    "o2"
+                ]
+            },
+            "car": {
+                "channels": [
+                    "dissic",
+                    "ph",
+                    "talk"
+                ]
+            },
+            "co2": {
+                "channels": [
+                    "spco2"
+                ]
+            },
+            "nut": {
+                "channels": [
+                    "fe",
+                    "no3",
+                    "po4",
+                    "si"
+                ]
+            },
+            "pft": {
+                "channels": [
+                    "chl",
+                    "phyc"
+                ]
+            }
+        },
+        "temperature": {
+            "n_rows": 1600,
+            "n_cols": 3600,
+            "masked_channels": [
+                0,
+                1
+            ],
+            "channels_to_keep": [
+                "sea_surface_temperature",
+                "sea_surface_temperature_stddev",
+                "or_latitude",
+                "or_longitude"
+            ],
+            "channels": [
+                "adjusted_sea_surface_temperature",
+                "bias_to_reference_sst",
+                "or_latitude",
+                "or_longitude",
+                "or_number_of_pixels",
+                "quality_level",
+                "satellite_zenith_angle",
+                "sea_surface_temperature",
+                "sea_surface_temperature_stddev",
+                "solar_zenith_angle",
+                "sses_bias",
+                "sses_standard_deviation",
+                "sst_dtime"
+            ],
+            "dataset_id": "IFREMER-GLOB-SST-L3-NRT-OBS_FULL_TIME_SERIE",
+            "longitude_range": [
+                -179.97500610351562,
+                179.97500610351562
+            ],
+            "latitude_range": [
+                -79.9749984741211,
+                79.9749984741211
+            ],
+            "depth_range": [
+                0.4940253794193268,
+                0.4940253794193268
+            ]
+        }
+    },
+    "masks": {
+        "square": {
+            "mask_percentage": 0.1
+        },
+        "lines": {
+            "num_lines": 5,
+            "min_thickness": 1,
+            "max_thickness": 5
+        }
+    }
