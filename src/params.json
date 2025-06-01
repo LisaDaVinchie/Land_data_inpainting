@@ -4,8 +4,9 @@
         "batch_size": 32,
         "epochs": 20,
         "learning_rate": 0.0001,
-        "lr_scheduler": "step",
-        "_possible_schedulers": ["none", "step"],
+        "clip_value": 5.0,
+        "lr_scheduler": "lambda",
+        "_possible_schedulers": ["none", "step", "lambda"],
         "optimizer_kind": "adam",
         "loss_kind": "per_pixel_mse",
         "_possible_losses": ["per_pixel", "per_pixel_mse", "tv_loss", "custom1", "dincae1"],
@@ -59,6 +60,10 @@
         "step": {
             "step_size": 4,
             "gamma": 0.4
+        },
+        "lambda": {
+            "factor": 2.0,
+            "step_size": 4
         }
     }
 }
