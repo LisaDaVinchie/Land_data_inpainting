@@ -1,5 +1,6 @@
 import torch as th
 import torch.optim as optim
+import torch.nn.utils as utils
 from pathlib import Path
 import argparse
 from time import time
@@ -157,8 +158,11 @@ class TrainModel:
         self.epochs = training_params['epochs']
         
         self.save_every = training_params['save_every']
+        
         if self.save_every <= 0:
             raise ValueError("Save interval must be positive.")
+        
+        self.clip_value = training_params["clip_value"]
 
     def _initialize_training_components(self, lr = None, lr_scheduler = None, loss_kind = None, nan_placeholder = None, model_kind = None):
         
@@ -179,6 +183,11 @@ class TrainModel:
             step_size = int(self.params["lr_schedulers"][lr_scheduler]["step_size"])
             gamma = float(self.params["lr_schedulers"][lr_scheduler]["gamma"])
             self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=step_size, gamma=gamma)
+        if lr_scheduler == "lambda":
+            factor = float(self.params["lr_schedulers"][lr_scheduler]["factor"])
+            step_size = int(self.params["lr_schedulers"][lr_scheduler]["step_size"])
+            lr_lambda = lambda step: factor ** -(step // step_size)
+            self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=lr_lambda)
         elif lr_scheduler != "none":
             raise ValueError(f"Unknown lr_scheduler: {lr_scheduler}")
         
@@ -195,8 +204,6 @@ class TrainModel:
         if self.epochs <= 0:
             raise ValueError("Number of epochs must be positive.")
         
-        len_train_inv = 1 / len(train_loader)
-        len_test_inv = len(test_loader)
         print(flush=True)
         for epoch in range(epochs):
             print(f"Epoch {epoch + 1}/{epochs}\n", flush=True)
@@ -208,6 +215,7 @@ class TrainModel:
                 epoch_loss += loss.item()
                 
                 loss.backward()
+                utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
                 self.optimizer.step()
                 self.optimizer.zero_grad()
                 n_batches += 1
@@ -238,7 +246,7 @@ class TrainModel:
         images = images.to(self.device)
         masks = masks.to(self.device)
         output = self.model(images, masks.float())
-        loss = self.loss_function(output, images, masks)
+        loss = self.loss_function(output[:, 0], images[:, 4], masks[:, 4])
         return loss
     
     def save_weights(self):
