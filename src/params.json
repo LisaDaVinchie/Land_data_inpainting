@@ -2,7 +2,7 @@
     "training":{
         "train_perc": 0.8,
         "batch_size": 32,
-        "epochs": 20,
+        "epochs": 50,
         "learning_rate": 0.0001,
         "clip_value": 5.0,
         "lr_scheduler": "lambda",
