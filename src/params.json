@@ -4,7 +4,7 @@
         "batch_size": 32,
         "epochs": 20,
         "learning_rate": 0.0001,
-        "lr_scheduler": "none",
+        "lr_scheduler": "step",
         "_possible_schedulers": ["none", "step"],
         "optimizer_kind": "adam",
         "loss_kind": "per_pixel_mse",
