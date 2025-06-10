@@ -130,8 +130,6 @@ class Objective():
         optim_params = params["optimization"]
         self.n_trials = optim_params["n_trials"]
         self.batch_size_values = optim_params["batch_size_values"]
-        self.learning_rate_range = optim_params["learning_rate_range"]
-        self.epochs_range = optim_params["epochs_range"]
         self.step_size_range = optim_params["step_size_range"]
         self.train_perc = self.params["training"]["train_perc"]
         self.epochs = self.params["training"]["epochs"]
@@ -180,13 +178,12 @@ class Objective():
     def objective(self, trial: optuna.Trial):
         # Suggest hyperparameters
         batch_size = trial.suggest_categorical("batch_size", self.batch_size_values)
-        learning_rate = trial.suggest_float("learning_rate", self.learning_rate_range[0], self.learning_rate_range[1], log=True)
         step_size = trial.suggest_int("step_size", self.step_size_range[0], self.step_size_range[1])
         
         train_loader, test_loader = self._get_dataloaders(batch_size)
         
         train = TrainModel(self.params, Path("weights.pt"), Path("results.txt"), self.dataset_specs)
-        train._initialize_training_components(lr = learning_rate)
+        train._initialize_training_components()
         
         lr_lambda = lambda step: 2 ** -(step // step_size)
         train.scheduler = optim.lr_scheduler.LambdaLR(train.optimizer, lr_lambda=lr_lambda)
