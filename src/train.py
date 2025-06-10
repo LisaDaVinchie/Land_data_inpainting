@@ -7,7 +7,7 @@ from time import time
 import json
 
 from models import initialize_model_and_dataset_kind
-from losses import get_loss_function
+from losses import get_loss_function, calculate_valid_pixels
 from CustomDataset_v2 import CreateDataloaders
 
 def main():
@@ -209,31 +209,31 @@ class TrainModel:
             print(f"Epoch {epoch + 1}/{epochs}\n", flush=True)
             self.model.train()
             epoch_loss = 0.0
-            n_batches = 0
+            n_valid_pixels = 0
             for (images, masks) in train_loader:
                 loss = self._compute_loss(images, masks)
                 epoch_loss += loss.item()
                 
                 loss.backward()
-                utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
+                # utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
                 self.optimizer.step()
                 self.optimizer.zero_grad()
-                n_batches += 1
+                n_valid_pixels += calculate_valid_pixels(masks[:, 4], images[:, 4], self.nan_placeholder)
 
             self.training_lr.append(self.optimizer.param_groups[0]['lr'])
             self.scheduler.step() if self.scheduler is not None else None
             
-            self.train_losses.append(epoch_loss / n_batches)
+            self.train_losses.append(epoch_loss / (n_valid_pixels + 1e-8))
             
             with th.no_grad():
                 self.model.eval()
                 epoch_loss = 0.0
-                n_batches = 0
+                n_valid_pixels = 0
                 for (images, masks) in test_loader:
                     loss = self._compute_loss(images, masks)
                     epoch_loss += loss.item()
-                    n_batches += 1
-                self.test_losses.append(epoch_loss / n_batches)
+                    n_valid_pixels += calculate_valid_pixels(masks[:, 4], images[:, 4], self.nan_placeholder)
+                self.test_losses.append(epoch_loss / (n_valid_pixels + 1e-8))
             
             if (epoch + 1) % self.save_every == 0:
                 self.save_weights()
