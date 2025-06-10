@@ -95,9 +95,10 @@ STUDY_NEXT_PATH = $(OPTIM_DIR)/$(STUDY_BASENAME)_$(IDX)$(STUDY_FILE_EXT)
 PATHS_FILE := $(SRC_DIR)/paths.json
 PARAMS_FILE := $(SRC_DIR)/params.json
 OPTIM_PARAMS_FILE := $(SRC_DIR)/optim_params.json
+OPTIM_PARAMS1_FILE := $(SRC_DIR)/optim_params1.json
 
 
-.PHONY: config cut bcut train btrain optim test plot clean help
+.PHONY: config cut bcut train btrain optim optim1 test plot clean help
 
 config:
 	@echo "Storing paths to json..."
@@ -143,6 +144,10 @@ plot:config
 optim: config
 	@echo "Optimizing model..."
 	@$(PYTHON) $(SRC_DIR)/params_optimization.py --params $(OPTIM_PARAMS_FILE) --paths $(PATHS_FILE)
+
+optim1: config
+	@echo "Optimizing model with new parameters..."
+	@$(PYTHON) $(SRC_DIR)/params_optimization1.py --params $(OPTIM_PARAMS1_FILE) --paths $(PATHS_FILE)
 
 test:
 	@echo "Running tests..."
