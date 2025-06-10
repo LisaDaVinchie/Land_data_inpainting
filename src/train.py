@@ -215,7 +215,7 @@ class TrainModel:
                 epoch_loss += loss.item()
                 
                 loss.backward()
-                # utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
+                utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
                 self.optimizer.step()
                 self.optimizer.zero_grad()
                 n_valid_pixels += calculate_valid_pixels(masks[:, 4], images[:, 4], self.nan_placeholder)
