@@ -14,7 +14,7 @@ figs/results/
 
 # The paths json file
 src/paths.json
-src/*1.json
+src/params1.json
 
 # The file containing the Telegram bot token
 **bot_codes.txt
