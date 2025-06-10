@@ -19,6 +19,9 @@ src/params1.json
 # The file containing the Telegram bot token
 **bot_codes.txt
 
+# Transfer file
+transfer.sh
+
 # Code not done by me
 **/*nvidia*
 **/*Nvidia*
