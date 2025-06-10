@@ -17,9 +17,10 @@
         "batch_size": 0,
         "epochs": 80,
         "learning_rate": 0.0001,
-        "lr_scheduler": "none",
+        "lr_scheduler": "lambda",
         "_possible_schedulers": ["none", "step"],
-        "optimizer_kind": "adam"
+        "optimizer_kind": "adam",
+        "clip_value": 5.0
     },
     "lr_schedulers": {
         "step": {
