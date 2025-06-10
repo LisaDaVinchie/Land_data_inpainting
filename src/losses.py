@@ -24,6 +24,36 @@ def get_loss_function(loss_kind: str, nan_placeholder: float) -> nn.Module:
         return DINCAE1Loss(nan_placeholder=nan_placeholder)
     else:
         raise ValueError(f"Loss kind {loss_kind} not recognized")
+    
+    
+def calculate_valid_pixels(masks: th.Tensor, target: th.Tensor, nan_placeholder: float) -> int:
+    
+    # Create a mask that is 1 where the pixel is valid and 0 otherwise
+    masks = calculate_valid_mask(masks, target, nan_placeholder, inv=True)
+    
+    return masks.float().sum().item()
+
+def calculate_valid_mask(masks: th.Tensor, target: th.Tensor, nan_placeholder: float, inv: bool = False) -> th.Tensor:
+    """Get the pixxels to be used for inpainting, i.e. the pixels that are masked and not NaN.
+
+    Args:
+        masks (th.Tensor): binary mask with 0 where the pixel is masked, shape (batch_size, channels, height, width).
+        target (th.Tensor): ground truth, shape (batch_size, channels, height, width).
+        nan_placeholder (float): value used to represent NaN pixels in the target tensor.
+        inv (bool, optional): whether to return the inverse mask. Defaults to False.
+
+    Returns:
+        th.Tensor: mask with 0 where the pixel is valid and 1 otherwise if inv is False, or 1 where the pixel is valid and  otherwise if inv is True.
+    """
+    
+    # Create a mask that is 1 where the pixel is masked and 0 otherwise
+    nans_mask = th.where(target == nan_placeholder, th.ones_like(target), th.zeros_like(target)).bool()
+    
+    # Create a mask that is 0 where the pixel is valid and 1 otherwise
+    masks |= nans_mask  # Combine the masks with the NaN mask
+    
+    # If inv, create a mask that is 1 where the pixel is valid and 0 otherwise
+    return ~masks if inv else masks
 
 class DINCAE1Loss(nn.Module):
     
@@ -98,19 +128,15 @@ class PerPixelMSE(nn.Module):
             th.Tensor: per-pixel loss
         """
         
-        n_valid_pixels = (~masks).sum().float() # count the number of masked (0) pixels, by inverting the mask
-        
         # Create a mask that is 1 where the target is the NaN placeholder and 0 otherwise
-        # This is used to count the number of NaN pixels
-        n_nans = th.where(target == self.nan_placeholder, th.ones_like(target), th.zeros_like(target)).sum().float() # count the number of NaN pixels
-        # Subtract the number of NaN pixels from the number of valid pixels
-        n_valid_pixels -= n_nans 
-        if n_valid_pixels == 0: # if all pixels are masked, return 0
-            return th.tensor(0.0, requires_grad=True)
+        # 
+        # nans_mask = th.where(target == self.nan_placeholder, th.ones_like(target), th.zeros_like(target)).bool() # Create a mask that is 1 where the target is the NaN placeholder and 0 otherwise
+        
+        masks = calculate_valid_mask(masks, target, self.nan_placeholder) # Create a mask that is 0 where the pixel is valid and 1 otherwise
         
         diff = (prediction - target) ** 2 # Calculate the squared difference, for each pixel
         masked_diff = diff.masked_fill(masks, 0.0) # Set the masked pixels to 0 where the mask is 1, i.e. where the pixel is not masked
-        return masked_diff.sum() / n_valid_pixels # Return the mean of the squared differences over the number of valid pixels
+        return masked_diff.sum() # Return the mean of the squared differences over the number of valid pixels
 
 class PerPixelL1(nn.Module):
     def __init__(self, nan_placeholder: float = -2.0):
@@ -135,16 +161,15 @@ class PerPixelL1(nn.Module):
             th.Tensor: per-pixel loss
         """
         
-        n_valid_pixels = (~masks).sum().float()
-        n_nans = th.where(target == self.nan_placeholder, th.ones_like(target), th.zeros_like(target)).sum().float() # count the number of NaN pixels
+        # nans_mask = th.where(target == self.nan_placeholder, th.ones_like(target), th.zeros_like(target)).bool() # Create a mask that is 1 where the target is the NaN placeholder and 0 otherwise
         
-        n_valid_pixels -= n_nans # Subtract the number of NaN pixels from the number of valid pixels
-        if n_valid_pixels == 0:
-            return th.tensor(0.0, requires_grad=True)
+        # masks = masks | nans_mask # Create a mask that is 0 where the pixel is valid and 1 otherwise
+        
+        masks = calculate_valid_mask(masks, target, self.nan_placeholder) # Create a mask that is 0 where the pixel is valid and 1 otherwise
         
         diff = th.abs(prediction - target)
         masked_diff = diff.masked_fill(masks, 0.0)
-        return masked_diff.sum() / n_valid_pixels
+        return masked_diff.sum()
 
 class TotalVariationLoss(nn.Module):
     def __init__(self, nan_placeholder: float):

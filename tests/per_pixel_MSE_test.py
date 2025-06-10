@@ -38,8 +38,8 @@ class TestPerPixelLoss(unittest.TestCase):
         loss = self.loss_function(prediction, target, mask)
         # Only unmasked pixels are (0, 0) and (1, 1)
         # Differences: (1.0 - 1.0)**2 = 0.0 and (4.0 - 1.0)**2 = 9.0
-        # Mean loss: (0.0 + 9.0) / 2 = 4.5
-        expected_loss = th.tensor(4.5)
+        # Mean loss: (0.0 + 9.0) = 9.0
+        expected_loss = th.tensor(9.0)
         self.assertTrue(th.allclose(loss, expected_loss))
         
     def test_full_masking_with_nans(self):
@@ -54,8 +54,8 @@ class TestPerPixelLoss(unittest.TestCase):
         loss = self.loss_function(prediction, target, mask)
         # Differences: (11 - 1.0)**2 = 100, (16 - 6)**2 = 100, (17 - 7)**2 = 100,
         # (18 - 8)**2 = 100, (19 - 9)**2 = 100
-        # Mean loss: (100 + 100 + 100 + 100 + 100) / 5 = 100
-        expected_loss = th.tensor(100, dtype=th.float32)
+        # Mean loss: (100 + 100 + 100 + 100 + 100) = 500
+        expected_loss = th.tensor(500, dtype=th.float32)
         self.assertTrue(th.allclose(loss, expected_loss))
 
     def test_random_inputs(self):

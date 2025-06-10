@@ -1,3 +1,4 @@
+
 import torch as th
 import unittest
 import os
@@ -37,8 +38,8 @@ class TestPerPixelLoss(unittest.TestCase):
         loss = self.loss_function(prediction, target, mask)
         # Only unmasked pixels are (0, 0) and (1, 1)
         # Differences: |1.0 - 1.0| = 0.0 and |4.0 - 1.0| = 3.0
-        # Mean loss: (0.0 + 3.0) / 2 = 1.5
-        expected_loss = th.tensor(1.5)
+        # Mean loss: (0.0 + 3.0) = 3.0
+        expected_loss = th.tensor(3.0)
         self.assertTrue(th.allclose(loss, expected_loss))
         
     def test_full_masking_with_nans(self):
@@ -53,8 +54,8 @@ class TestPerPixelLoss(unittest.TestCase):
         loss = self.loss_function(prediction, target, mask)
         # Differences: (11 - 1.0) = 10, (16 - 6) = 10, (17 - 7) = 10,
         # (18 - 8) = 10, (19 - 9) = 10
-        # Mean loss: (10 + 10 + 10 + 10 + 10) / 5 = 10
-        expected_loss = th.tensor(10, dtype=th.float32)
+        # Mean loss: (10 + 10 + 10 + 10 + 10) = 50
+        expected_loss = th.tensor(50, dtype=th.float32)
         self.assertTrue(th.allclose(loss, expected_loss))
 
     def test_random_inputs(self):
