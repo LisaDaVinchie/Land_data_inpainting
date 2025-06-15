@@ -34,7 +34,7 @@ def calculate_valid_pixels(masks: th.Tensor, target: th.Tensor, nan_placeholder:
     return masks.float().sum().item()
 
 def calculate_valid_mask(masks: th.Tensor, target: th.Tensor, nan_placeholder: float, inv: bool = False) -> th.Tensor:
-    """Get the pixxels to be used for inpainting, i.e. the pixels that are masked and not NaN.
+    """Get the pixels to be used for inpainting, i.e. the pixels that are masked and not NaN.
 
     Args:
         masks (th.Tensor): binary mask with 0 where the pixel is masked, shape (batch_size, channels, height, width).
@@ -49,10 +49,10 @@ def calculate_valid_mask(masks: th.Tensor, target: th.Tensor, nan_placeholder: f
     # Create a mask that is 1 where the pixel is masked and 0 otherwise
     nans_mask = th.where(target == nan_placeholder, th.ones_like(target), th.zeros_like(target)).bool()
     
-    # Create a mask that is 0 where the pixel is valid and 1 otherwise
+    # Create a mask that is 0 where the pixel is masked and 1 otherwise
     masks |= nans_mask  # Combine the masks with the NaN mask
     
-    # If inv, create a mask that is 1 where the pixel is valid and 0 otherwise
+    # If inv, create a mask that is 1 where the pixel is masked and 0 otherwise
     return ~masks if inv else masks
 
 class DINCAE1Loss(nn.Module):
@@ -125,17 +125,17 @@ class PerPixelMSE(nn.Module):
             The loss is calculated on the masked (0) pixels.
 
         Returns:
-            th.Tensor: per-pixel loss
+            th.Tensor: per-pixel loss calculated only on the masked pixels.
         """
         
-        # Create a mask that is 1 where the target is the NaN placeholder and 0 otherwise
-        # 
-        # nans_mask = th.where(target == self.nan_placeholder, th.ones_like(target), th.zeros_like(target)).bool() # Create a mask that is 1 where the target is the NaN placeholder and 0 otherwise
+        # Create a mask mask that is 0 where the loss must be calculated and 1 otherwise
+        masks = calculate_valid_mask(masks, target, self.nan_placeholder)
         
-        masks = calculate_valid_mask(masks, target, self.nan_placeholder) # Create a mask that is 0 where the pixel is valid and 1 otherwise
+        # Calculate the squared difference, for each pixel
+        diff = (prediction - target) ** 2 
         
-        diff = (prediction - target) ** 2 # Calculate the squared difference, for each pixel
-        masked_diff = diff.masked_fill(masks, 0.0) # Set the masked pixels to 0 where the mask is 1, i.e. where the pixel is not masked
+        # Set the masked pixels to 0 where the mask is 1, i.e. where the pixel is not masked
+        masked_diff = diff.masked_fill(masks, 0.0)
         return masked_diff.sum() # Return the mean of the squared differences over the number of valid pixels
 
 class PerPixelL1(nn.Module):
