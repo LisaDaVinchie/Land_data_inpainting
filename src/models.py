@@ -263,7 +263,12 @@ class DecoderBlock(nn.Module):
         x = self.activation(x)
         if e_x is not None and e_mask is not None:
             x = x + e_x
-            mask = mask.bool() & e_mask.bool()
+            # mask = mask * e_mask
+            mask = th.clamp(mask + e_mask, 0, 1)
+            
+            # x = th.cat([x, e_x], dim=1)
+            # mask = th.cat([mask, e_mask], dim=1)
+            
         
         return x, mask.float()
 
