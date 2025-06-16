@@ -97,6 +97,7 @@ PARAMS_FILE := $(SRC_DIR)/params.json
 OPTIM_PARAMS_FILE := $(SRC_DIR)/optim_params.json
 OPTIM_PARAMS1_FILE := $(SRC_DIR)/optim_params1.json
 OPTIM_PARAMS2_FILE := $(SRC_DIR)/optim_params2.json
+OPTIM_PARAMS3_FILE := $(SRC_DIR)/optim_params3.json
 
 
 .PHONY: config cut bcut train btrain optim optim1 test plot clean help
@@ -141,6 +142,9 @@ train2: config
 train3: config
 	@$(PYTHON) $(SRC_DIR)/train3.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
+train4: config
+	@$(PYTHON) $(SRC_DIR)/train4.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
 btrain: config
 	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
@@ -158,6 +162,9 @@ optim1: config
 
 optim2: config
 	@$(PYTHON) $(SRC_DIR)/params_optimization2.py --params $(OPTIM_PARAMS2_FILE) --paths $(PATHS_FILE)
+
+optim3: config
+	@$(PYTHON) $(SRC_DIR)/params_optimization3.py --params $(OPTIM_PARAMS3_FILE) --paths $(PATHS_FILE)
 
 test:
 	@echo "Running tests..."
