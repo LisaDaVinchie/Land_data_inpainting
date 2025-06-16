@@ -98,6 +98,7 @@ OPTIM_PARAMS_FILE := $(SRC_DIR)/optim_params.json
 OPTIM_PARAMS1_FILE := $(SRC_DIR)/optim_params1.json
 OPTIM_PARAMS2_FILE := $(SRC_DIR)/optim_params2.json
 OPTIM_PARAMS3_FILE := $(SRC_DIR)/optim_params3.json
+OPTIM_PARAMS5_FILE := $(SRC_DIR)/optim_params5.json
 
 
 .PHONY: config cut bcut train btrain optim optim1 test plot clean help
@@ -168,6 +169,10 @@ optim2: config
 
 optim3: config
 	@$(PYTHON) $(SRC_DIR)/params_optimization3.py --params $(OPTIM_PARAMS3_FILE) --paths $(PATHS_FILE)
+
+optim5: config
+	@echo "Optimizing model with new parameters..."
+	@$(PYTHON) $(SRC_DIR)/params_optimization5.py --params $(OPTIM_PARAMS5_FILE) --paths $(PATHS_FILE)
 
 test:
 	@echo "Running tests..."
