@@ -16,6 +16,7 @@ import json
 
 from models import initialize_model_and_dataset_kind
 from losses import get_loss_function, calculate_valid_pixels
+from select_lr_scheduler import select_lr_scheduler
 from CustomDataset_v2 import CreateDataloaders
 
 def main():
@@ -224,18 +225,7 @@ class TrainModel:
         
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
         
-        self.scheduler = None
-        if lr_scheduler == "step":
-            step_size = int(self.params["lr_schedulers"][lr_scheduler]["step_size"])
-            gamma = float(self.params["lr_schedulers"][lr_scheduler]["gamma"])
-            self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=step_size, gamma=gamma)
-        if lr_scheduler == "lambda":
-            factor = float(self.params["lr_schedulers"][lr_scheduler]["factor"])
-            step_size = int(self.params["lr_schedulers"][lr_scheduler]["step_size"])
-            lr_lambda = lambda step: factor ** -(step // step_size)
-            self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=lr_lambda)
-        elif lr_scheduler != "none":
-            raise ValueError(f"Unknown lr_scheduler: {lr_scheduler}")
+        self.lr_scheduler = select_lr_scheduler(self.params, lr_scheduler, self.optimizer)
         
     def normalize(self, images):
         norm_images = 2 * (images - self.min_val) * self.diff_inv - 1
