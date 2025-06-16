@@ -267,7 +267,6 @@ class TrainModel:
             for (images, masks) in train_loader:
                 loss = self._compute_loss(images, masks)
                 epoch_loss += loss.item()
-                print(f"Epoch {epoch + 1}/{epochs}, Batch loss: {loss.item()}", flush=True)
                 
                 loss.backward()
                 utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
