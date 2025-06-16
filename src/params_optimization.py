@@ -1,3 +1,10 @@
+###########################################################################
+#
+# No lr scheduler
+# Optimize batch size, learning rate and epochs
+# 
+###########################################################################
+
 import optuna
 from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend
