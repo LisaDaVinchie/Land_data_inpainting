@@ -5,7 +5,7 @@
         "epochs": 20,
         "learning_rate": 0.0001,
         "clip_value": 5.0,
-        "lr_scheduler": "none",
+        "lr_scheduler": "lambda",
         "_possible_schedulers": ["none", "step", "lambda"],
         "optimizer_kind": "adam",
         "loss_kind": "per_pixel_mse",
@@ -15,6 +15,16 @@
         "placeholder": 0.0,
         "save_every": 1,
         "dataset_idx": 1
+    },
+    "lr_schedulers": {
+        "step": {
+            "step_size": 4,
+            "gamma": 0.4
+        },
+        "lambda": {
+            "factor": 2.0,
+            "step_size": 4
+        }
     },
     "models":{
         "DINCAE_pconvs": {
@@ -54,16 +64,6 @@
             "up_kernel": 3,
             "up_stride": 2,
             "print_sizes": false
-        }
-    },
-    "lr_schedulers": {
-        "step": {
-            "step_size": 4,
-            "gamma": 0.4
-        },
-        "lambda": {
-            "factor": 2.0,
-            "step_size": 4
         }
     }
 }
