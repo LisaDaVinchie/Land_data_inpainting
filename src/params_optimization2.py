@@ -161,6 +161,13 @@ class Objective():
             raise FileNotFoundError(f"Optimization results dir {self.optim_next_path.parent} does not exist.")
         if not self.storage_path.parent.exists():
             raise FileNotFoundError(f"Storage path {self.storage_path} does not exist.")
+
+        self.weights_path = Path(paths["results"]["weights_path"])
+        self.results_path = Path(paths["results"]["results_path"])
+        
+        for path in [self.weights_path, self.results_path]:
+            if not path.parent.exists():
+                raise FileNotFoundError(f"Directory {path.parent} does not exist")
     
     def dataloader_init(self, dataset_specs: dict, dataset_path: Path = None):
         dl = CreateDataloaders(self.train_perc)
@@ -187,8 +194,8 @@ class Objective():
         step_size = trial.suggest_int("step_size", self.step_size_range[0], self.step_size_range[1])
         
         train = TrainModel(training_params=self.params,
-                           weights_path="weights.pt",
-                           results_path="results.pt",
+                           weights_path=self.weights_path,
+                           results_path=self.results_path,
                            dataset_specs=self.dataset_specs,
                            min_val=self.min_val,
                            max_val=self.max_val)
