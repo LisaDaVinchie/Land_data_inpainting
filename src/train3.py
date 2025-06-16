@@ -16,6 +16,7 @@ import json
 
 from models import initialize_model_and_dataset_kind
 from losses import get_loss_function, calculate_valid_pixels
+from select_lr_scheduler import select_lr_scheduler
 from CustomDataset_v2 import CreateDataloaders
 
 def main():
@@ -41,6 +42,7 @@ def main():
     
     train_perc = float(params["training"]["train_perc"])
     batch_size = int(params["training"]["batch_size"])
+    epochs = int(params["training"]["epochs"])
     
     weights_path, results_path = configure_file_paths(paths)
     
@@ -103,7 +105,7 @@ def main():
                        max_val=max_val,
                        dataset_specs=dataset_specs)
     
-    train.train(train_loader, test_loader)
+    train.train(train_loader, test_loader, epochs)
     
     elapsed_time = time() - start_time
     print(flush=True)
@@ -164,7 +166,7 @@ def change_dataset_idx(dataset_path: Path, dataset_specs_path: Path, new_idx: in
     return new_dataset_path, new_dataset_specs_path
     
 class TrainModel:
-    def __init__(self, training_params, weights_path, results_path, min_val, max_val,dataset_specs = None):
+    def __init__(self, training_params, weights_path, results_path, min_val, max_val, dataset_specs = None):
         """Initialize the training class.
 
         Args:
@@ -205,7 +207,6 @@ class TrainModel:
         self.loss_kind = str(training_params["loss_kind"])
         self.lr = training_params['learning_rate']
         self.lr_scheduler = training_params["lr_scheduler"]
-        self.epochs = training_params['epochs']
         
         self.save_every = training_params['save_every']
         
@@ -228,18 +229,7 @@ class TrainModel:
         
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
         
-        self.scheduler = None
-        if lr_scheduler == "step":
-            step_size = int(self.params["lr_schedulers"][lr_scheduler]["step_size"])
-            gamma = float(self.params["lr_schedulers"][lr_scheduler]["gamma"])
-            self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=step_size, gamma=gamma)
-        if lr_scheduler == "lambda":
-            factor = float(self.params["lr_schedulers"][lr_scheduler]["factor"])
-            step_size = int(self.params["lr_schedulers"][lr_scheduler]["step_size"])
-            lr_lambda = lambda step: factor ** -(step // step_size)
-            self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=lr_lambda)
-        elif lr_scheduler != "none":
-            raise ValueError(f"Unknown lr_scheduler: {lr_scheduler}")
+        self.scheduler = select_lr_scheduler(self.params, lr_scheduler, self.optimizer)
         
     def normalize(self, images):
         norm_images = 2 * (images - self.min_val) * self.diff_inv - 1
@@ -256,11 +246,6 @@ class TrainModel:
             train_loader (th.utils.data.DataLoader): training dataloader
             test_loader (th.utils.data.DataLoader): testing dataloader
         """
-        
-        epochs = epochs if epochs is not None else self.epochs
-        
-        if self.epochs <= 0:
-            raise ValueError("Number of epochs must be positive.")
         
         print(flush=True)
         for epoch in range(epochs):
