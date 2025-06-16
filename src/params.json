@@ -12,7 +12,7 @@
         "_possible_losses": ["per_pixel", "per_pixel_mse", "tv_loss", "custom1", "dincae1"],
         "model_kind": "DINCAE_pconvs",
         "_possible_model_kinds": ["simple_conv", "DINCAE_like", "DINCAE_pconvs", "dummy", "dummier"],
-        "placeholder": 0.0,
+        "placeholder": -300.0,
         "save_every": 1,
         "dataset_idx": 1
     },
