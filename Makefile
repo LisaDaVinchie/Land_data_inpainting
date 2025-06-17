@@ -12,10 +12,12 @@ BIOCHEMISTRY_DATA_DIR := $(PROCESSED_DATA_DIR)/biochemistry
 PROCESSED_DATA_EXT := ".pt"
 
 RESULTS_DIR := $(DATA_DIR)/results
+RESULTS_DIR_HPC := $(DATA_DIR)/results_dem
 RESULT_BASENAME := result
 RESULT_FILE_EXT := .txt
 
 WEIGHTS_DIR := $(DATA_DIR)/weights
+WEIGHTS_DIR_HPC := $(DATA_DIR)/weights_dem
 WEIGHTS_BASENAME := "weights"
 WEIGHTS_FILE_EXT := ".pt"
 
@@ -37,6 +39,7 @@ DATASET_SPECS_BASENAME := "dataset_specs"
 DATASET_SPECS_FILE_EXT := ".json"
 
 OPTIM_DIR = $(DATA_DIR)/optim
+OPTIM_DIR_HPC = $(DATA_DIR)/optim_dem
 OPTIM_BASENAME = "optim"
 OPTIM_FILE_EXT = ".txt"
 STUDY_BASENAME = "study"
@@ -52,6 +55,7 @@ NANS_MASKS_BASENAME := nans_mask
 NANS_MASKS_FILE_EXT := ".pt"
 
 FIG_RESULTS_DIR := $(FIG_DIR)/results
+FIG_RESULTS_DIR_HPC := $(FIG_DIR)/results_dem
 FIGS_BASENAME := "result"
 FIG_FILE_EXT := ".png"
 
@@ -86,6 +90,12 @@ NEXT_RESULT_PATH = $(RESULTS_DIR)/$(RESULT_BASENAME)_$(NEXT_RESULT_IDX)$(RESULT_
 CURRENT_RESULT_PATH = $(RESULTS_DIR)/$(RESULT_BASENAME)_$(CURRENT_RESULT_IDX)$(RESULT_FILE_EXT)
 FIGS_PATH = $(FIG_RESULTS_DIR)/$(FIGS_BASENAME)_$(CURRENT_RESULT_IDX)$(FIG_FILE_EXT)
 WEIGHTS_PATH = $(WEIGHTS_DIR)/$(WEIGHTS_BASENAME)_$(NEXT_RESULT_IDX)$(WEIGHTS_FILE_EXT)
+
+CURRENT_RESULT_HPC_IDX := $(shell find "$(RESULTS_DIR_HPC)" -type f -name "$(RESULT_BASENAME)_*$(RESULT_FILE_EXT)" | \
+    sed 's|.*_\([0-9]*\)\$(RESULT_FILE_EXT)|\1|' | \
+    sort -n | tail -1)
+
+CURRENT_RESULT_HPC_PATH = $(RESULTS_DIR_HPC)/$(RESULT_BASENAME)_$(CURRENT_RESULT_HPC_IDX)$(RESULT_FILE_EXT)
 
 # Find the next available optimization index
 IDX=$(shell i=0; while [ -e "$(OPTIM_DIR)/$(STUDY_BASENAME)_$$i$(STUDY_FILE_EXT)" ]; do i=$$((i+1)); done; echo "$$i")
@@ -154,7 +164,11 @@ btrain: config
 
 plot:config
 	@echo "Plotting results..."
-	@$(PYTHON) $(SRC_DIR)/plot_results.py --paths $(PATHS_FILE)
+	@$(PYTHON) $(SRC_DIR)/plot_results.py --respath $(CURRENT_RESULT_PATH) --figdir $(FIG_RESULTS_DIR)
+
+plothpc: config
+	@echo "Plotting results for HPC..."
+	@$(PYTHON) $(SRC_DIR)/plot_results.py --respath $(CURRENT_RESULT_HPC_PATH) --figdir $(FIG_RESULTS_DIR_HPC)
 
 optim: config
 	@echo "Optimizing model..."
