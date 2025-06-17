@@ -1,9 +1,6 @@
 # The data folder, except for the result calculated using the server
-data/*
-!data/result_*.txt
-!data/weights_*.pt
-!data/optim_*.txt
-!data/study_*.db
+data/
+figs/
 
 # Slurm logs
 logs/
