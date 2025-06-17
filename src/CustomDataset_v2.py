@@ -70,12 +70,13 @@ class CreateDataloaders:
     def _validate_dataset_length(self, dataset):
         dataset_keys = list(dataset.keys())
         
-        if len(dataset_keys) != 2:
-            raise ValueError(f"Dataset keys must be 2, got {len(dataset_keys)}")
+        if len(dataset_keys) < 3:
+            raise ValueError(f"Dataset keys must be at least 3, got {len(dataset_keys)}")
         
         len_dataset = len(dataset[dataset_keys[0]])
-        for key in dataset_keys:
-            assert len(dataset[key]) == len_dataset, f"Dataset keys have different lengths"
+        for key in dataset_keys[:3]:
+            if len(dataset[key]) != len_dataset:
+                raise(ValueError("Datset lengths must be equal\n"))
         return len_dataset
     
 
@@ -91,6 +92,7 @@ class CustomDatasetClass(Dataset):
         
         self.image = dataset[dataset_keys[0]]
         self.mask = dataset[dataset_keys[1]]
+        self.nanmask = dataset[dataset_keys[2]]
     
     def __len__(self) -> int:
         """Returns the length of the dataset
@@ -109,4 +111,4 @@ class CustomDatasetClass(Dataset):
         Returns:
             tuple: A tuple containing the image and masked image
         """
-        return self.image[idx], self.mask[idx]
+        return self.image[idx], self.mask[idx], self.nanmask[idx]

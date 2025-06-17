@@ -17,7 +17,8 @@ class TestCreateDataloaders(unittest.TestCase):
         # Create a dummy dataset
         self.dataset = {
             'images': th.randn(100, 3, 64, 64),  # 100 RGB images of 64x64
-            'masks': th.randn(100, 1, 64, 64)    # 100 single-channel masks
+            'masks': th.randn(100, 1, 64, 64) > 0.5,
+            'nanmasks': th.randn(100, 1, 64, 64) > 0.5
         }
         th.save(self.dataset, self.dataset_path)
         
@@ -82,9 +83,10 @@ class TestCreateDataloaders(unittest.TestCase):
         loaded_dataset = dataloader_creator.load_dataset(self.dataset_path)
         
         self.assertIsInstance(loaded_dataset, dict)
-        self.assertEqual(set(loaded_dataset.keys()), {'images', 'masks'})
+        self.assertEqual(set(loaded_dataset.keys()), {'images', 'masks', 'nanmasks'})
         self.assertEqual(loaded_dataset['images'].shape, (100, 3, 64, 64))
         self.assertEqual(loaded_dataset['masks'].shape, (100, 1, 64, 64))
+        self.assertEqual(loaded_dataset['nanmasks'].shape, (100, 1, 64, 64))
 
     def test_validate_dataset_length_valid(self):
         # Test _validate_dataset_length with valid dataset
@@ -95,16 +97,25 @@ class TestCreateDataloaders(unittest.TestCase):
 
     def test_validate_dataset_length_invalid(self):
         # Test _validate_dataset_length with invalid dataset
-        dataloader_creator = CreateDataloaders(0.8, 32)
-        loaded_dataset = dataloader_creator.load_dataset(self.invalid_dataset_path)
         
-        with self.assertRaises(AssertionError):
+        loaded_dataset = {
+                "images": th.randn(50, 3, 64, 64),
+                "masks": th.randn(60, 1, 64, 64),
+                "nanmasks": th.randn(70, 1, 64, 64)
+            }
+        
+        dataloader_creator = CreateDataloaders(0.8, 32)
+        
+        with self.assertRaises(ValueError):
             dataloader_creator._validate_dataset_length(loaded_dataset)
 
     def test_validate_dataset_length_wrong_keys(self):
         # Test _validate_dataset_length with wrong number of keys
         dataloader_creator = CreateDataloaders(0.8, 32)
-        loaded_dataset = dataloader_creator.load_dataset(self.wrong_keys_dataset_path)
+        loaded_dataset = {
+                "images": th.randn(50, 3, 64, 64),
+                "masks": th.randn(60, 1, 64, 64)
+            }
         
         with self.assertRaises(ValueError):
             dataloader_creator._validate_dataset_length(loaded_dataset)
@@ -147,7 +158,7 @@ class TestCreateDataloaders(unittest.TestCase):
         
         # Check one batch
         train_batch = next(iter(train_loader))
-        self.assertEqual(len(train_batch), 2)  # image and mask
+        self.assertEqual(len(train_batch), 3)  # image and mask and nanmask
         self.assertEqual(train_batch[0].shape, (32, 3, 64, 64))
         self.assertEqual(train_batch[1].shape, (32, 1, 64, 64))
     
@@ -170,7 +181,7 @@ class TestCreateDataloaders(unittest.TestCase):
         
         # Check one batch
         train_batch = next(iter(train_loader))
-        self.assertEqual(len(train_batch), 2)  # image and mask
+        self.assertEqual(len(train_batch), 3)  # image and mask
         self.assertEqual(train_batch[0].shape, (32, 3, 64, 64))
         self.assertEqual(train_batch[1].shape, (32, 1, 64, 64))
         
@@ -184,7 +195,8 @@ class TestCreateDataloaders(unittest.TestCase):
         # Test the CustomDatasetClass
         dataset = {
             'images': th.randn(10, 3, 64, 64),
-            'masks': th.randn(10, 1, 64, 64)
+            'masks': th.randn(10, 1, 64, 64) > 0.5,
+            'nanmasks': th.randn(10, 3, 64, 64) > 0.5
         }
         custom_dataset = CustomDatasetClass(dataset)
         
@@ -192,20 +204,23 @@ class TestCreateDataloaders(unittest.TestCase):
         self.assertEqual(len(custom_dataset), 10)
         
         # Test getitem
-        img, mask = custom_dataset[0]
+        img, mask, nanmask = custom_dataset[0]
         self.assertEqual(img.shape, (3, 64, 64))
         self.assertEqual(mask.shape, (1, 64, 64))
+        self.assertEqual(nanmask.shape, (3, 64, 64))
         
         # Test with different key names
         dataset = {
             'data': th.randn(5, 3, 32, 32),
-            'labels': th.randn(5, 1, 32, 32)
+            'labels': th.randn(5, 1, 32, 32),
+            'nan_labels': th.randn(5, 3, 32, 32)
         }
         custom_dataset = CustomDatasetClass(dataset)
         self.assertEqual(len(custom_dataset), 5)
-        img, mask = custom_dataset[0]
+        img, mask, nanmask = custom_dataset[0]
         self.assertEqual(img.shape, (3, 32, 32))
         self.assertEqual(mask.shape, (1, 32, 32))
+        self.assertEqual(nanmask.shape, (3, 32, 32))
 
 if __name__ == '__main__':
     unittest.main()
