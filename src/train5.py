@@ -150,7 +150,7 @@ class TrainModel:
         self.test_losses = []
         self.training_lr = []
         
-    def train(self, train_loader: th.utils.data.DataLoader, test_loader: th.utils.data.DataLoader, epochs: int = None):
+    def train(self, train_loader: th.utils.data.DataLoader, test_loader: th.utils.data.DataLoader, epochs: int):
         """Train the model on the dataset.
 
         Args:
