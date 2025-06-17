@@ -34,7 +34,6 @@ def main():
     learning_rate = float(training_params["learning_rate"])
     loss_kind = str(training_params["loss_kind"])
     scheduler_kind = str(training_params["lr_scheduler"])
-    nan_placeholder = float(training_params["placeholder"])
     
     weights_path, results_path = configure_file_paths(paths)
     
@@ -72,14 +71,14 @@ def main():
     
     model, _ = initialize_model_and_dataset_kind(params, model_kind)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
-    loss_function = get_loss_function(loss_kind, nan_placeholder)
+    loss_function = get_loss_function(loss_kind)
+    print(f"Using loss function: {loss_function.__class__.__name__}", flush=True)
     lr_scheduler = select_lr_scheduler(params, scheduler_kind, optimizer)
         
     train = TrainModel(model = model, 
                       loss_function = loss_function, 
                       optimizer = optimizer,
-                      lr_scheduler = lr_scheduler,
-                      nan_placeholder = nan_placeholder)
+                      lr_scheduler = lr_scheduler)
     
     train.results_path = results_path
     train.weights_path = weights_path
@@ -121,7 +120,7 @@ def configure_file_paths(paths):
     return weights_path, results_path
     
 class TrainModel:
-    def __init__(self, model, loss_function, optimizer, nan_placeholder, clip_value = 5.0, lr_scheduler = None, save_every = 1):
+    def __init__(self, model, loss_function, optimizer, clip_value = 5.0, lr_scheduler = None, save_every = 1):
         """Initialize the training class.
 
         Args:
@@ -139,7 +138,6 @@ class TrainModel:
         self.scheduler = lr_scheduler
         self.clip_value = clip_value
         self.save_every = save_every
-        self.nan_placeholder = nan_placeholder
         
         self.results_path = None
         self.weights_path = None
@@ -164,15 +162,15 @@ class TrainModel:
             self.model.train()
             epoch_loss = 0.0
             n_valid_pixels = 0
-            for (images, masks) in train_loader:
-                loss = self._compute_loss(images, masks)
+            for (images, masks, nan_masks) in train_loader:
+                loss = self._compute_loss(images, masks, nan_masks)
                 epoch_loss += loss.item()
                 
                 loss.backward()
                 utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
                 self.optimizer.step()
                 self.optimizer.zero_grad()
-                n_valid_pixels += calculate_valid_pixels(masks[:, 4], images[:, 4], self.nan_placeholder)
+                n_valid_pixels += th.sum((masks | ~ nan_masks)[:, 4].float()).item()  # Count valid pixels
 
             self.training_lr.append(self.optimizer.param_groups[0]['lr'])
             self.scheduler.step() if self.scheduler is not None else None
@@ -183,10 +181,10 @@ class TrainModel:
                 self.model.eval()
                 epoch_loss = 0.0
                 n_valid_pixels = 0
-                for (images, masks) in test_loader:
-                    loss = self._compute_loss(images, masks)
+                for (images, masks, nan_masks) in test_loader:
+                    loss = self._compute_loss(images, masks, nan_masks)
                     epoch_loss += loss.item()
-                    n_valid_pixels += calculate_valid_pixels(masks[:, 4], images[:, 4], self.nan_placeholder)
+                    n_valid_pixels += th.sum((masks | ~ nan_masks)[:, 4].float()).item()  # Count valid pixels
             self.test_losses.append(epoch_loss / (n_valid_pixels + 1e-8))
             
             if (epoch + 1) % self.save_every == 0:
@@ -196,14 +194,14 @@ class TrainModel:
                 
         print(flush=True)
                 
-    def _compute_loss(self, images, masks):
+    def _compute_loss(self, images, masks, nan_masks):
         images = images.to(self.device)
         masks = masks.to(self.device)
-        
+        nan_masks = nan_masks.to(self.device)
         
         # Multiply images by masks to exxlude information from masked pixels
-        output = self.model(images * masks.float(), masks.float())
-        loss = self.loss_function(output[:, 0], images[:, 4], masks[:, 4])
+        output = self.model(images * masks.float(), (masks & nan_masks).float())
+        loss = self.loss_function(output[:, 0], images[:, 4], (masks | ~ nan_masks)[:, 4])
         return loss
     
     def save_weights(self):
