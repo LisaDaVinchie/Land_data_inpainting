@@ -192,7 +192,7 @@ class TrainModel:
             if (epoch + 1) % self.save_every == 0:
                 self.save_weights()
                 self.save_results()
-                print(f"\nModel weights and results saved at epoch {epoch + 1}\n", flush=True)
+                print(f"\nModel weights and results saved at epoch {epoch + 1} at path {self.weights_path}\n", flush=True)
                 
         print(flush=True)
                 
