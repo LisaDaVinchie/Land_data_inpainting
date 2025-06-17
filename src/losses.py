@@ -1,7 +1,7 @@
 import torch as th
 import torch.nn as nn
 
-def get_loss_function(loss_kind: str, nan_placeholder: float) -> nn.Module:
+def get_loss_function(loss_kind: str) -> nn.Module:
     """Get the loss function based on the specified kind.
 
     Args:
@@ -13,15 +13,9 @@ def get_loss_function(loss_kind: str, nan_placeholder: float) -> nn.Module:
     """
     
     if loss_kind == "per_pixel":
-        return PerPixelL1(nan_placeholder=nan_placeholder)
+        return PerPixelL1()
     elif loss_kind == "per_pixel_mse":
-        return PerPixelMSE(nan_placeholder=nan_placeholder)
-    elif loss_kind == "tv_loss":
-        return TotalVariationLoss(nan_placeholder=nan_placeholder)
-    elif loss_kind == "custom1":
-        return CustomLoss1(nan_placeholder=nan_placeholder)
-    elif loss_kind == "dincae1":
-        return DINCAE1Loss(nan_placeholder=nan_placeholder)
+        return PerPixelMSE()
     else:
         raise ValueError(f"Loss kind {loss_kind} not recognized")
     
@@ -105,15 +99,13 @@ class DINCAE1Loss(nn.Module):
         return total_loss
         
 class PerPixelMSE(nn.Module):
-    def __init__(self, nan_placeholder: float):
+    def __init__(self):
         """Initialize the Per Pixel MSE loss module.
         
         Args:
             nan_placeholder (float, optional): placeholder for nan pixels. Defaults to -2.0.
         """
         super(PerPixelMSE, self).__init__()
-        
-        self.nan_placeholder = nan_placeholder
     
     def forward(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) -> th.Tensor:
         """Calculate the per-pixel loss between the prediction and the target on masked pixels.
@@ -121,15 +113,11 @@ class PerPixelMSE(nn.Module):
         Args:
             prediction (th.Tensor): output of the model, shape (batch_size, channels, height, width)
             target (th.Tensor): ground truth, shape (batch_size, channels, height, width)
-            masks (th.Tensor): binary mask with 0 where the pixel is masked, shape (batch_size, channels, height, width).
-            The loss is calculated on the masked (0) pixels.
+            masks (th.Tensor): binary mask with 0 where the loss must be calculated, shape (batch_size, channels, height, width).
 
         Returns:
             th.Tensor: per-pixel loss calculated only on the masked pixels.
         """
-        
-        # Create a mask mask that is 0 where the loss must be calculated and 1 otherwise
-        masks = calculate_valid_mask(masks, target, self.nan_placeholder)
         
         # Calculate the squared difference, for each pixel
         diff = (prediction - target) ** 2 
@@ -139,15 +127,13 @@ class PerPixelMSE(nn.Module):
         return masked_diff.sum() # Return the mean of the squared differences over the number of valid pixels
 
 class PerPixelL1(nn.Module):
-    def __init__(self, nan_placeholder: float = -2.0):
+    def __init__(self):
         """Initialize the Per Pixel L1 loss module.
 
         Args:
             nan_placeholder (float, optional): placeholder for nan pixels. Defaults to -2.0.
         """
         super(PerPixelL1, self).__init__()
-        
-        self.nan_placeholder = nan_placeholder
     
     def forward(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) -> th.Tensor:
         """Calculate the per-pixel loss between the prediction and the target, ignoring masked pixels.
@@ -160,12 +146,6 @@ class PerPixelL1(nn.Module):
         Returns:
             th.Tensor: per-pixel loss
         """
-        
-        # nans_mask = th.where(target == self.nan_placeholder, th.ones_like(target), th.zeros_like(target)).bool() # Create a mask that is 1 where the target is the NaN placeholder and 0 otherwise
-        
-        # masks = masks | nans_mask # Create a mask that is 0 where the pixel is valid and 1 otherwise
-        
-        masks = calculate_valid_mask(masks, target, self.nan_placeholder) # Create a mask that is 0 where the pixel is valid and 1 otherwise
         
         diff = th.abs(prediction - target)
         masked_diff = diff.masked_fill(masks, 0.0)

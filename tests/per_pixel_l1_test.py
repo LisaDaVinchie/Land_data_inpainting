@@ -11,7 +11,7 @@ class TestPerPixelLoss(unittest.TestCase):
     
     def setUp(self):
         self.nan_placeholder = -2.0
-        self.loss_function = PerPixelL1(nan_placeholder=self.nan_placeholder)
+        self.loss_function = PerPixelL1()
     def test_no_masking(self):
         """Test case where no pixels are masked (all pixels are valid)."""
         prediction = th.tensor([[[[1.0, 2.0], [3.0, 4.0]]]])

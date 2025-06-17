@@ -9,8 +9,8 @@ from losses import PerPixelMSE
 class TestPerPixelLoss(unittest.TestCase):
     
     def setUp(self):
+        self.loss_function = PerPixelMSE()
         self.nan_placeholder = -2.0
-        self.loss_function = PerPixelMSE(nan_placeholder=self.nan_placeholder)
         
     def test_no_masking(self):
         """Test case where no pixels are masked (all pixels are valid)."""
