@@ -27,19 +27,20 @@ def read_results(results_path: Path) -> tuple:
 
 def main():
     parser = argparse.ArgumentParser(description='Plot results from training')
-    parser.add_argument('--paths', type=Path, help='Path to the JSON file with data paths')
+    parser.add_argument('--respath', type=Path, help='Path to the JSON file with data paths')
+    parser.add_argument('--figdir', type=Path, help='Path to the JSON file with data paths')
     args = parser.parse_args()
 
-    paths_path = Path(args.paths)
-
-    with open(paths_path, 'r') as f:
-        paths = json.load(f)
-    results_path = Path(paths["results"]["current_results_path"])
-    figs_path = Path(paths["results"]["figs_path"])
-
-    for path in [results_path, figs_path.parent]:
-        if not path.exists():
-            raise FileNotFoundError(f"Path {path} does not exist.")
+    results_path = Path(args.respath)
+    figs_dir = Path(args.figdir)
+    
+    if not results_path.is_file():
+        raise FileNotFoundError(f"Results file {results_path} does not exist.")
+    
+    if not figs_dir.is_dir():
+        raise FileNotFoundError(f"Figures directory {figs_dir} does not exist.")
+    
+    fig_path = figs_dir / str(results_path.stem + ".png")
 
     train_losses, test_losses = read_results(results_path)
 
@@ -52,8 +53,8 @@ def main():
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
-    plt.savefig(figs_path)
-    print("Plot saved to", figs_path, flush=True)
+    plt.savefig(fig_path)
+    print("Plot saved to", fig_path, flush=True)
     
 if __name__ == "__main__":
     main()
