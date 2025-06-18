@@ -101,7 +101,6 @@ class DummyModel(nn.Module):
         self.total_days = total_days
         self.layers_setup()
         # Add a dummy parameter that does nothing but enables gradient clipping
-        self.dummy_param = nn.Parameter(th.zeros(1), requires_grad=True)
     
     def forward(self, images: th.Tensor, masks: th.Tensor) -> th.Tensor:
         # c = self.total_days // 2
@@ -109,6 +108,7 @@ class DummyModel(nn.Module):
         # # Select all the channels of the SST except the one to predict
         # known_channels = range(self.total_days)
         # known_channels = [i for i in known_channels if i != c]
+        self.dummy_param = nn.Parameter(th.zeros(1), requires_grad=True)
         
         c = 4
         known_channels = [0, 1, 2, 3, 5, 6, 7, 8]
@@ -119,7 +119,7 @@ class DummyModel(nn.Module):
         
         mean_image = th.nanmean(known_images, dim=1, keepdim=True)
         dummystd = th.zeros_like(mean_image)
-        mean_image = th.where(masks[:, known_channels, :, :].bool(), mean_image, known_images)
+        mean_image = th.where(masks[:, c:c+1, :, :].bool(), mean_image, images[:, c:c+1, :, :])
         mean_image = th.cat([mean_image, dummystd], dim=1) * (1 + self.dummy_param)
         
         return mean_image
