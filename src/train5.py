@@ -180,7 +180,7 @@ class TrainModel:
             epoch_loss += loss.item()
             if backpropagate:
                 loss.backward()
-                # utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
+                utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
                 self.optimizer.step()
                 self.optimizer.zero_grad()
             
