@@ -53,9 +53,6 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
     
     if dataset_params is not None:
         model.override_load_dataset_configurations(dataset_params)
-    model.n_channels = 13
-    
-    model.layers_setup()
     
     return model, dataset_kind
 
@@ -72,6 +69,8 @@ class DummierModel(nn.Module):
         
         self.n_channels = n_channels
         self.total_days = total_days
+        
+        self.layers_setup()
     
     def forward(self, images: th.Tensor, masks: th.Tensor) -> th.Tensor:
         
@@ -100,17 +99,29 @@ class DummyModel(nn.Module):
         
         self.n_channels = n_channels
         self.total_days = total_days
+        self.layers_setup()
     
     def forward(self, images: th.Tensor, masks: th.Tensor) -> th.Tensor:
-        c = self.total_days // 2
+        # c = self.total_days // 2
 
-        # Select all the channels of the SST except the one to predict
-        known_channels = range(self.total_days)
-        known_channels = [i for i in known_channels if i != c]
+        # # Select all the channels of the SST except the one to predict
+        # known_channels = range(self.total_days)
+        # known_channels = [i for i in known_channels if i != c]
+        
+        c = 4
+        known_channels = [0, 1, 2, 3, 5, 6, 7, 8]
         
         known_images = images[:, known_channels, :, :]
         
-        mean_image = known_images.mean(dim=1, keepdim=True)
+        print(f"known_images shape: {known_images.shape}", flush=True)
+        
+        known_images = th.where(masks[:, known_channels, :, :].bool(), known_images, th.nan)
+        
+        mean_image = th.nanmean(known_images, dim=1, keepdim=True)
+        
+        print(f"mean_image shape: {mean_image.shape}", flush=True)
+        dummystd = th.zeros_like(mean_image)
+        mean_image = th.cat([mean_image, dummystd], dim=1)
         
         return mean_image.requires_grad_(True)
     
@@ -123,7 +134,7 @@ class DummyModel(nn.Module):
         pass
 
 class DINCAE_pconvs(nn.Module):
-    def __init__(self, params = None, n_channels: int = 13, image_nrows: int = 128, image_ncols: int = 128, middle_channels: List[int] = [16, 30, 58, 110, 209], kernel_sizes: List[int] = [3, 3, 3, 3, 3], pooling_sizes: List[int] = [2, 2, 2, 2, 2], interp_mode: str = "bilinear"):
+    def __init__(self, n_channels: int = 13, image_nrows: int = 128, image_ncols: int = 128, middle_channels: List[int] = [16, 30, 58, 110, 209], kernel_sizes: List[int] = [3, 3, 3, 3, 3], pooling_sizes: List[int] = [2, 2, 2, 2, 2], interp_mode: str = "bilinear"):
         super(DINCAE_pconvs, self).__init__()
         
         self.model_name = "DINCAE_pconvs"
@@ -176,15 +187,15 @@ class DINCAE_pconvs(nn.Module):
             if var is None:
                 raise ValueError(f"Variable {var} is None. Please provide a value for it.")
     
-    def _load_dataset_configurations(self, params):
-        if params is not None:
-            dataset_params = params[dataset_cathegory_string]
-            if self.n_channels is None:
-                dataset_kind = dataset_params.get("dataset_kind", None)
-                channels_to_keep = dataset_params[dataset_kind].get("channels_to_keep", None)
-                self.n_channels = len(channels_to_keep) + 1 + 8
-        if self.n_channels is None:
-            raise ValueError(f"Variable n_channels is None. Please provide a value for it.")
+    # def _load_dataset_configurations(self, params):
+    #     if params is not None:
+    #         dataset_params = params[dataset_cathegory_string]
+    #         if self.n_channels is None:
+    #             dataset_kind = dataset_params.get("dataset_kind", None)
+    #             channels_to_keep = dataset_params[dataset_kind].get("channels_to_keep", None)
+    #             self.n_channels = len(channels_to_keep) + 1 + 8
+    #     if self.n_channels is None:
+    #         raise ValueError(f"Variable n_channels is None. Please provide a value for it.")
     
     def override_load_dataset_configurations(self, params):
         if params is not None:
@@ -265,6 +276,7 @@ class DecoderBlock(nn.Module):
             x = x + e_x
             # mask = mask * e_mask
             mask = th.clamp(mask + e_mask, 0, 1)
+            # mask = mask + e_mask
             
             # x = th.cat([x, e_x], dim=1)
             # mask = th.cat([mask, e_mask], dim=1)
