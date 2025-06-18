@@ -156,34 +156,17 @@ class TrainModel:
         for epoch in range(epochs):
             print(f"Epoch {epoch + 1}/{epochs}\n", flush=True)
             self.model.train()
-            epoch_loss = 0.0
-            n_valid_pixels = 0
-            for (images, masks, nan_masks) in train_loader:
-                loss = self._compute_loss(images, masks, nan_masks)
-                epoch_loss += loss.item()
-                # print(f"\tBatch loss: {loss.item()}", flush=True)
-                loss.backward()
-                utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
-                self.optimizer.step()
-                self.optimizer.zero_grad()
-                batch_pixels = self.calculate_valid_pixels(masks[:, 4], nan_masks[:, 4])
-                # print(f"\tbatch pixels: {batch_pixels}", flush=True)
-                n_valid_pixels += batch_pixels
+            total_train_loss = self.train_step(train_loader)
 
             self.training_lr.append(self.optimizer.param_groups[0]['lr'])
             self.scheduler.step() if self.scheduler is not None else None
             
-            self.train_losses.append(epoch_loss / (n_valid_pixels + 1e-8))
+            self.train_losses.append(total_train_loss)
             
             with th.no_grad():
                 self.model.eval()
-                epoch_loss = 0.0
-                n_valid_pixels = 0
-                for (images, masks, nan_masks) in test_loader:
-                    loss = self._compute_loss(images, masks, nan_masks)
-                    epoch_loss += loss.item()
-                    n_valid_pixels += self.calculate_valid_pixels(masks[:, 4], nan_masks[:, 4])
-            self.test_losses.append(epoch_loss / (n_valid_pixels + 1e-8))
+                total_test_loss = self.train_step(test_loader, backpropagate=False)
+            self.test_losses.append(total_test_loss)
             
             if (epoch + 1) % self.save_every == 0:
                 self.save_weights()
@@ -191,9 +174,28 @@ class TrainModel:
                 print(f"\nModel weights and results saved at epoch {epoch + 1} at path {self.weights_path}\n", flush=True)
                 
         print(flush=True)
+
+    def train_step(self, dataloader, backpropagate=True):
+        epoch_loss: float = 0.0
+        n_valid_pixels: int = 0
+        for (images, masks, nan_masks) in dataloader:
+            # loss = self._compute_loss(images, masks, nan_masks)
+            # Multiply images by masks to exxlude information from masked pixels
+            output = self.model(images * masks.float(), (masks & nan_masks).float())
+            loss = self.loss_function(output[:, 0], images[:, 4], self.validation_mask(masks[:, 4], nan_masks[:, 4]))
+            epoch_loss += loss.item()
+            if backpropagate:
+                loss.backward()
+                # utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
+                self.optimizer.step()
+                self.optimizer.zero_grad()
+            
+            n_valid_pixels += self.calculate_valid_pixels(masks[:, 4], nan_masks[:, 4])
+
+        return epoch_loss / (n_valid_pixels + 1e-8)  # Avoid division by zero
     
     def validation_mask(self, masks: th.Tensor, nan_masks: th.Tensor, loss: bool = True):
-        """Calculate the validation mask for the dataset.
+        """Calculate the mask used to calculate the loss, i.e. where the pixel is masked but not nan.
 
         Args:
             masks (th.Tensor): masks tensor
@@ -214,7 +216,6 @@ class TrainModel:
         
         # Multiply images by masks to exxlude information from masked pixels
         output = self.model(images * masks.float(), (masks & nan_masks).float())
-        # print(f"\tMean output: {output.mean().item():.4f}", flush=True)
         loss = self.loss_function(output[:, 0], images[:, 4], self.validation_mask(masks[:, 4], nan_masks[:, 4]))
         return loss
     
