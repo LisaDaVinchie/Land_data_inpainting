@@ -159,6 +159,9 @@ train4: config
 train5: config
 	@$(PYTHON) $(SRC_DIR)/train5.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
+train6: config
+	@$(PYTHON) $(SRC_DIR)/train6.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
 btrain: config
 	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train4.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
 
