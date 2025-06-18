@@ -111,7 +111,7 @@ OPTIM_PARAMS3_FILE := $(SRC_DIR)/optim_params3.json
 OPTIM_PARAMS5_FILE := $(SRC_DIR)/optim_params5.json
 
 
-.PHONY: config cut bcut train btrain optim optim1 test plot clean help
+.PHONY: config cut bcut train btrain optim optim1 test plot clean help loss
 
 config:
 	@echo "Storing paths to json..."
@@ -168,6 +168,10 @@ btrain: config
 plot:config
 	@echo "Plotting results..."
 	@$(PYTHON) $(SRC_DIR)/plot_results.py --respath $(CURRENT_RESULT_PATH) --figdir $(FIG_RESULTS_DIR)
+
+loss: config
+	@echo "Plotting loss..."
+	@$(PYTHON) $(SRC_DIR)/calculate_dataset_mean_loss.py --paths $(PATHS_FILE) --params $(PARAMS_FILE)
 
 plothpc: config
 	@echo "Plotting results for HPC..."
