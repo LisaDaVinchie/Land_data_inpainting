@@ -119,7 +119,7 @@ class DummyModel(nn.Module):
         
         mean_image = th.nanmean(known_images, dim=1, keepdim=True)
         dummystd = th.zeros_like(mean_image)
-        mean_image = th.where(masks[:, c:c+1, :, :].bool(), mean_image, images[:, c:c+1, :, :])
+        mean_image = th.where(masks[:, c:c+1, :, :].bool(), images[:, c:c+1, :, :], mean_image)
         mean_image = th.cat([mean_image, dummystd], dim=1) * (1 + self.dummy_param)
         
         return mean_image
