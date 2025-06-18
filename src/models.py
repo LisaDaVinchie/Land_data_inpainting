@@ -100,6 +100,8 @@ class DummyModel(nn.Module):
         self.n_channels = n_channels
         self.total_days = total_days
         self.layers_setup()
+        # Add a dummy parameter that does nothing but enables gradient clipping
+        self.dummy_param = nn.Parameter(th.zeros(1), requires_grad=True)
     
     def forward(self, images: th.Tensor, masks: th.Tensor) -> th.Tensor:
         # c = self.total_days // 2
@@ -113,17 +115,13 @@ class DummyModel(nn.Module):
         
         known_images = images[:, known_channels, :, :]
         
-        print(f"known_images shape: {known_images.shape}", flush=True)
-        
         known_images = th.where(masks[:, known_channels, :, :].bool(), known_images, th.nan)
         
         mean_image = th.nanmean(known_images, dim=1, keepdim=True)
-        
-        print(f"mean_image shape: {mean_image.shape}", flush=True)
         dummystd = th.zeros_like(mean_image)
-        mean_image = th.cat([mean_image, dummystd], dim=1)
+        mean_image = th.cat([mean_image, dummystd], dim=1) * (1 + self.dummy_param)
         
-        return mean_image.requires_grad_(True)
+        return mean_image
     
     def layers_setup(self):
         """Dummy method to satisfy the interface."""
