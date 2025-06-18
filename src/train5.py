@@ -15,7 +15,7 @@ from time import time
 import json
 
 from models import initialize_model_and_dataset_kind
-from losses import get_loss_function, calculate_valid_pixels
+from losses import get_loss_function
 from select_lr_scheduler import select_lr_scheduler
 from utils import change_dataset_idx, parse_params
 from CustomDataset_v2 import CreateDataloaders
@@ -64,10 +64,6 @@ def main():
     dl = CreateDataloaders(train_perc, batch_size)
     dataset = dl.load_dataset(dataset_path)
     train_loader, test_loader = dl.create(dataset)
-    
-    images = dataset["images"]
-    masks = dataset["masks"]
-    images *= masks.float()  # Apply masks to images to exclude masked pixels
     
     model, _ = initialize_model_and_dataset_kind(params, model_kind)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
@@ -165,12 +161,14 @@ class TrainModel:
             for (images, masks, nan_masks) in train_loader:
                 loss = self._compute_loss(images, masks, nan_masks)
                 epoch_loss += loss.item()
-                
+                # print(f"\tBatch loss: {loss.item()}", flush=True)
                 loss.backward()
                 utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
                 self.optimizer.step()
                 self.optimizer.zero_grad()
-                n_valid_pixels += th.sum((masks | ~ nan_masks)[:, 4].float()).item()  # Count valid pixels
+                batch_pixels = self.calculate_valid_pixels(masks[:, 4], nan_masks[:, 4])
+                # print(f"\tbatch pixels: {batch_pixels}", flush=True)
+                n_valid_pixels += batch_pixels
 
             self.training_lr.append(self.optimizer.param_groups[0]['lr'])
             self.scheduler.step() if self.scheduler is not None else None
@@ -184,7 +182,7 @@ class TrainModel:
                 for (images, masks, nan_masks) in test_loader:
                     loss = self._compute_loss(images, masks, nan_masks)
                     epoch_loss += loss.item()
-                    n_valid_pixels += th.sum((masks | ~ nan_masks)[:, 4].float()).item()  # Count valid pixels
+                    n_valid_pixels += self.calculate_valid_pixels(masks[:, 4], nan_masks[:, 4])
             self.test_losses.append(epoch_loss / (n_valid_pixels + 1e-8))
             
             if (epoch + 1) % self.save_every == 0:
@@ -193,6 +191,21 @@ class TrainModel:
                 print(f"\nModel weights and results saved at epoch {epoch + 1} at path {self.weights_path}\n", flush=True)
                 
         print(flush=True)
+    
+    def validation_mask(self, masks: th.Tensor, nan_masks: th.Tensor, loss: bool = True):
+        """Calculate the validation mask for the dataset.
+
+        Args:
+            masks (th.Tensor): masks tensor
+            nan_masks (th.Tensor): nan masks tensor
+
+        Returns:
+            th.Tensor: validation mask
+        """
+        return ~(~masks & nan_masks) if loss else (~masks & nan_masks)
+    
+    def calculate_valid_pixels(self, masks: th.Tensor, nan_masks: th.Tensor):
+        return self.validation_mask(masks, nan_masks, loss=False).float().sum().item()
                 
     def _compute_loss(self, images, masks, nan_masks):
         images = images.to(self.device)
@@ -201,7 +214,8 @@ class TrainModel:
         
         # Multiply images by masks to exxlude information from masked pixels
         output = self.model(images * masks.float(), (masks & nan_masks).float())
-        loss = self.loss_function(output[:, 0], images[:, 4], (masks | ~ nan_masks)[:, 4])
+        # print(f"\tMean output: {output.mean().item():.4f}", flush=True)
+        loss = self.loss_function(output[:, 0], images[:, 4], self.validation_mask(masks[:, 4], nan_masks[:, 4]))
         return loss
     
     def save_weights(self):
