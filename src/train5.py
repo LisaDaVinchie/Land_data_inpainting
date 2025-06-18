@@ -44,7 +44,6 @@ def main():
     
     dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
     dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
-    minmax_path = Path(paths["data"]["current_minmax_path"])
     dataset_idx = int(params["training"]["dataset_idx"])
     if dataset_idx >= 0:
         dataset_path, dataset_specs_path = change_dataset_idx(dataset_path, dataset_specs_path, dataset_idx)
@@ -52,11 +51,6 @@ def main():
     for path in [dataset_path, dataset_specs_path]:
         if not path.exists():
             raise FileNotFoundError(f"Dataset file {path} not found")
-        
-    if not minmax_path.parent.exists():
-        raise FileNotFoundError(f"Minmax file directory {minmax_path.parent} does not exist")
-    minmax_base_path = str(minmax_path)[:-4]  # Remove the last two characters (dataset index)
-    minmax_path = Path(minmax_base_path + f"{dataset_idx}.pt")
     
     with open(dataset_specs_path, 'r') as f:
         dataset_specs = json.load(f)
