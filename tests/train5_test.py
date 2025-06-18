@@ -5,7 +5,8 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from train5 import TrainModel
 from losses import PerPixelMSE
-from models import DINCAE_pconvs, DummierModel
+from models import DummierModel, DINCAE_pconvs
+from CustomDataset_v2 import CreateDataloaders
 
 class TestTrainingScript(unittest.TestCase):
     def setUp(self):
@@ -102,6 +103,48 @@ class TestTrainingScript(unittest.TestCase):
         loss = self.train._compute_loss(images, masks, nanmasks)
         
         self.assertAlmostEqual(loss.item(), expected_loss, places=5)
+        
+    def test_train_step(self):
+        """Test if a training step runs without errors."""
+        
+        model = DINCAE_pconvs()
+        loss_function = PerPixelMSE()
+        optimizer = th.optim.Adam(model.parameters(), lr=0.0001)
+        
+        train = TrainModel(loss_function=loss_function, 
+                           model=model, 
+                           optimizer=optimizer)
+        
+        shape = (10, 13, 4, 4)  # Batch size, channels, height, width
+        images = th.randn(shape)
+        masks = (th.randn(shape) > 0.5).bool()
+        nanmasks = (th.randn(shape) > 0.5).bool()
+        
+        # images = th.ones(shape) * 2
+        # masks = th.ones(shape, dtype=th.bool)
+        # masks[:, 4, 0:2, 0:2] = False
+        # nanmasks = th.ones(shape, dtype=th.bool)
+        
+        dataset = {
+            'images': images,
+            'masks': masks,
+            'nanmasks': nanmasks
+        }
+        
+        dl = CreateDataloaders(0.9)
+        train_loader, _ = dl.create(dataset, 5)
+        
+        dl1 = CreateDataloaders(0.3)
+        train_loader1, _ = dl1.create(dataset, 5)
+        
+        # Run a single training step
+        total_loss = train.train_step(train_loader)
+        total_loss1 = train.train_step(train_loader1)
+        
+        print(total_loss, total_loss1)
+        
+        self.assertIsInstance(total_loss, float, "Total loss should be a float.")
+        
 
 if __name__ == '__main__':
     unittest.main()
