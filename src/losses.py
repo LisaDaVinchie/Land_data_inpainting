@@ -141,7 +141,7 @@ class PerPixelL1(nn.Module):
         Args:
             prediction (th.Tensor): output of the model, shape (batch_size, channels, height, width)
             target (th.Tensor): ground truth, shape (batch_size, channels, height, width)
-            masks (th.Tensor): th.bool mask with False for masked pixels, shape (batch_size, channels, height, width)
+            masks (th.Tensor): th.bool mask with False where the loss must be calculated, shape (batch_size, channels, height, width)
 
         Returns:
             th.Tensor: per-pixel loss
