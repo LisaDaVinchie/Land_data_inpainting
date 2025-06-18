@@ -23,6 +23,7 @@ def main():
     loss_func = PerPixelMSE()
         
     dataset = th.load(dataset_path)
+    print("Loaded dataset from", dataset_path, flush=True)
     
     dataset_keys = list(dataset.keys())
     
@@ -35,21 +36,18 @@ def main():
     c = 4
     known_channels = [0, 1, 2, 3, 5, 6, 7, 8]
     
-    # known_images * (~nan_mask[i:i+1, :, :, :]).float() * th.nan
-    
     known_images = images[:, known_channels, :, :]
     
-    # print(f"nans in known_images: {th.isnan(known_images).sum()}")
-    
-    # Replace nan placeholder values with NaN
-    # known_images *= (~nan_mask[:, known_channels, :, :]).float() * th.nan
-    # print(f"nans in known_images after replacement: {th.isnan(known_images).sum()}")
     known_images = th.where(nan_mask[:, known_channels, :, :].bool(), known_images, th.nan)
+    print("Found known images", flush=True)
     
     # Calculate the mean image for the known channels only on non-NaN values
     mean_image = th.nanmean(known_images, dim=1, keepdim=True)
+    print("Calculated mean image", flush=True)
     mean_image = th.nan_to_num(mean_image, nan=-300.0)
+    print("Replaced NaN values in mean image", flush=True)
     mean_image = th.where(masks[:, c:c+1, :, :], images[:, c:c+1, :, :], mean_image)
+    print("Applied masks to mean image", flush=True)
     
     
     if plot:
@@ -66,11 +64,17 @@ def main():
         plt.show()
         
     val_mask = ~(~masks & nan_mask)
+    print("Calculated validation mask", flush=True)
     
     loss = loss_func(mean_image, images[:, c:c+1, :, :], val_mask[:, c:c+1, :, :]).item()
+    print("Calculated loss", flush=True)
     n_valid_pixels = (~val_mask[:, c, :, :]).float().sum().item()
+    print("Number of valid pixels:", n_valid_pixels, flush=True)
     
     loss /= n_valid_pixels
+    print("Normalized loss by number of valid pixels", flush=True)
+    
+    th.save(th.tensor(loss), dataset_path.parent / f"mean_loss_{dataset_idx}.pt")
     
     print("loss:", loss)
     
