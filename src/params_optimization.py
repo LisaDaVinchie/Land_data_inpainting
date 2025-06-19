@@ -1,21 +1,29 @@
 ###########################################################################
 #
-# No lr scheduler
-# Optimize batch size, learning rate and epochs
+#   Fix the number of epochs, initial lr with lambda scheduler and
+#   batch size
+#   Optimize step size
+#   Use train5, that does not require the params dictionary
 # 
 ###########################################################################
+
 
 import optuna
 from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend
-from train import TrainModel, change_dataset_idx
 from pathlib import Path
-import argparse
 from time import time
+from torch import optim
 import json
 import signal
 import os
 import sys
+
+from train import TrainModel
+from models import initialize_model_and_dataset_kind
+from losses import get_loss_function
+from utils import change_dataset_idx, parse_params
+from CustomDataset import CreateDataloaders
 
 from CustomDataset import CreateDataloaders
 
@@ -38,28 +46,10 @@ def signal_handler(signum, frame):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Train a CNN model on a dataset')
-    parser.add_argument('--paths', type=Path, help='Path to the JSON file with data paths')
-    parser.add_argument('--params', type=Path, help='Path to the JSON file with model parameters')
-    
-    args = parser.parse_args()
-    
     start_time = time()
-
-    params_path = Path(args.params)
-    paths_path = Path(args.paths)
-    
-    if not params_path.exists():
-        raise FileNotFoundError(f"Parameters path {params_path} does not exist.")
-    if not paths_path.exists():
-        raise FileNotFoundError(f"Paths path {paths_path} does not exist.")
+    params, paths = parse_params()
     
     global study, obj
-    
-    with open(params_path, 'r') as f:
-        params = json.load(f)
-    with open(paths_path, 'r') as f:
-        paths = json.load(f)
         
     dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
     dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
@@ -74,11 +64,57 @@ def main():
     with open(dataset_specs_path, 'r') as f:
         dataset_specs = json.load(f)
         
-    obj = Objective(dataset_specs)
+    training_params = params["training"]
+    train_perc = float(training_params["train_perc"])
+    batch_size = int(training_params["batch_size"])
+    epochs = int(training_params["epochs"])
+    model_kind = str(training_params["model_kind"])
+    learning_rate = float(training_params["learning_rate"])
+    loss_kind = str(training_params["loss_kind"])
+    nan_placeholder = float(training_params["placeholder"])
+    step_size_range = list(params["optimization"]["step_size_range"])
+    n_trials = int(params["optimization"]["n_trials"])
+    
+    print(f"Starting optimization with parameters:\n"
+          f"Dataset path: {dataset_path}\n"
+          f"Dataset specs path: {dataset_specs_path}\n"
+          f"Dataset index: {dataset_idx}\n"
+          f"Train percentage: {train_perc}\n"
+          f"Batch size: {batch_size}\n"
+          f"Epochs: {epochs}\n"
+          f"Model kind: {model_kind}\n"
+          f"Learning rate: {learning_rate}\n"
+          f"Loss kind: {loss_kind}\n"
+          f"Nan placeholder: {nan_placeholder}\n"
+          f"Step size range: {step_size_range}\n"
+          f"Number of trials: {n_trials}\n", flush=True)
+        
+    dl = CreateDataloaders(train_perc, batch_size)
+    dataset = dl.load_dataset(dataset_path)
+    train_loader, test_loader = dl.create(dataset)
+    
+    model, _ = initialize_model_and_dataset_kind(params, model_kind)
+    loss_function = get_loss_function(loss_kind, nan_placeholder)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
+    
+        
+    obj = Objective(
+        model = model,
+        epochs = epochs,
+        loss_function = loss_function,
+        optimizer = optimizer,
+        nan_placeholder= nan_placeholder,
+        train_loader=train_loader,
+        test_loader=test_loader,
+        step_size_range=step_size_range)
     # Import parameters and paths
-    obj.import_params(params)
     obj.import_and_check_paths(paths)
-    obj.dataloader_init(dataset_specs, dataset_path)
+    
+    obj.train.results_path = obj.results_path
+    obj.train.weights_path = obj.weights_path
+    obj.train.params = params
+    obj.params = params
+    obj.train.dataset_specs = dataset_specs
     
     storage = obj.create_storage()
     
@@ -96,7 +132,7 @@ def main():
     try:
         # Optimize in small chunks so we can handle early termination
         completed_trials = 0
-        while not terminate_early and completed_trials < obj.n_trials:
+        while not terminate_early and completed_trials < n_trials:
             study.optimize(obj.objective, n_trials=1, gc_after_trial=True, catch=(Exception,))
             completed_trials += 1
 
@@ -112,24 +148,30 @@ def main():
         print(f"\nElapsed time: {time() - start_time:.2f} seconds\n", flush=True)
 
 class Objective():
-    def __init__(self, dataset_specs: dict):
+    def __init__(self, model, epochs, loss_function, optimizer, nan_placeholder, train_loader, test_loader, step_size_range, lr_scheduler=None):
         # Load default config
         
         self.dataloader_cache = {}
         self.dataset = None
         
+        self.epochs = epochs
+        self.step_size_range = step_size_range
+        
         self.optim_next_path = None
         self.dataset_path = None
-        self.dataset_specs = dataset_specs
+        self.dataset_specs = None
+        self.train_loader = None
+        self.test_loader = None
         
-
-    def import_params(self, params: dict):
-        self.params = params
-        self.n_trials = self.params["optimization"]["n_trials"]
-        self.batch_size_values = self.params["optimization"]["batch_size_values"]
-        self.learning_rate_range = self.params["optimization"]["learning_rate_range"]
-        self.epochs_range = self.params["optimization"]["epochs_range"]
-        self.train_perc = self.params["training"]["train_perc"]
+        self.train = TrainModel(
+            model = model,
+            loss_function = loss_function, 
+            lr_scheduler = lr_scheduler,
+            nan_placeholder = nan_placeholder,
+            optimizer = optimizer)
+        
+        self.train_loader = train_loader
+        self.test_loader = test_loader
 
     def import_and_check_paths(self, paths: Path):
         self.optim_next_path = Path(paths["results"]["optim_next_path"])
@@ -140,21 +182,13 @@ class Objective():
             raise FileNotFoundError(f"Optimization results dir {self.optim_next_path.parent} does not exist.")
         if not self.storage_path.parent.exists():
             raise FileNotFoundError(f"Storage path {self.storage_path} does not exist.")
-    
-    def dataloader_init(self, dataset_specs: dict, dataset_path: Path = None, dataset: dict = None):
-        self.dl = CreateDataloaders(self.train_perc)
+
+        self.weights_path = Path(paths["results"]["weights_path"])
+        self.results_path = Path(paths["results"]["results_path"])
         
-        if dataset is None:
-            if dataset_path is None:
-                raise ValueError("Both dataset and dataset path are not provided.")
-        
-            if not dataset_path.exists():
-                raise FileNotFoundError(f"Dataset path {dataset_path} does not exist.")
-            
-            self.dataset = self.dl.load_dataset(dataset_path)
-        else:
-            self.dataset = dataset
-        self.dataset_specs = dataset_specs
+        for path in [self.weights_path, self.results_path]:
+            if not path.parent.exists():
+                raise FileNotFoundError(f"Directory {path.parent} does not exist")
     
     def create_storage(self, storage_path: Path = None):
         """Create a storage for Optuna."""
@@ -163,34 +197,31 @@ class Objective():
         if not storage_path.parent.exists():
             raise FileNotFoundError(f"Storage path dir {storage_path.parent} does not exist.")
         return JournalStorage(JournalFileBackend(str(storage_path)))
-    
-    def _get_dataloaders(self, batch_size: int):
-        """Get dataloaders with caching."""
-        if batch_size not in self.dataloader_cache:
-            train_loader, test_loader = self.dl.create(self.dataset, batch_size)
-            self.dataloader_cache[batch_size] = (train_loader, test_loader)
-        return self.dataloader_cache[batch_size]
         
     def objective(self, trial: optuna.Trial):
         # Suggest hyperparameters
-        batch_size = trial.suggest_categorical("batch_size", self.batch_size_values)
-        learning_rate = trial.suggest_float("learning_rate", self.learning_rate_range[0], self.learning_rate_range[1], log=True)
-        epochs = trial.suggest_int("epochs", self.epochs_range[0], self.epochs_range[1])
+        step_size = trial.suggest_int("step_size", self.step_size_range[0], self.step_size_range[1])
         
-        train_loader, test_loader = self._get_dataloaders(batch_size)
+        for layer in self.train.model.children():
+            if hasattr(layer, 'reset_parameters'):
+                layer.reset_parameters()
         
-        train = TrainModel(self.params, Path("weights.pt"), Path("results.txt"), self.dataset_specs)
-        
-        train.lr = learning_rate
-        train._initialize_training_components(lr = learning_rate)
-        
-        train.epochs = epochs
-        train.train(train_loader, test_loader, epochs)
-        
-        trial.set_user_attr("train_losses", train.train_losses)
-        trial.set_user_attr("test_losses", train.test_losses)
+        # Reset optimizer state
+        for param_group in self.train.optimizer.param_groups:
+            for param in param_group['params']:
+                param.grad = None
+                
+        lr_lambda = lambda step: 2 ** -(step // step_size)
+        self.train.scheduler = optim.lr_scheduler.LambdaLR(self.train.optimizer, lr_lambda=lr_lambda)
 
-        return train.test_losses[-1]  # Optuna minimizes this
+        self.train.train(self.train_loader, self.test_loader, self.epochs)
+        
+        trial.set_user_attr("train_losses", self.train.train_losses)
+        trial.set_user_attr("test_losses", self.train.test_losses)
+        
+        n_vals = min(5, len(self.train.train_losses))
+
+        return sum(self.train.test_losses[-n_vals:]) / n_vals  # Optuna minimizes this (average of last n test losses)
     
     def save_optim_specs(self, trial, study: optuna.Study, optim_path: Path = None):
         # Save the best hyperparameters
