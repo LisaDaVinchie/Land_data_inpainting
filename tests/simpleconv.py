@@ -5,7 +5,7 @@ import torch as th
 
 # Add the parent directory to the path so that we can import the game module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from src.models import simple_conv, initialize_model_and_dataset_kind
+from src.models import simple_conv, get_model_class
 
 class Test_simpleconv_model(unittest.TestCase):
     
@@ -82,11 +82,10 @@ class Test_simpleconv_model(unittest.TestCase):
                 }
             }
         }
-        model, dataset_kind = initialize_model_and_dataset_kind(self.model_params, "simple_conv", dataset_params)
+        model = get_model_class(self.model_params, "simple_conv")
         
         # Check that the network has the correct attributes
         self.assertIsInstance(model, simple_conv)
-        self.assertEqual(dataset_kind, "extended")
         self.assertEqual(model.n_channels, self.n_channels + 1)
         
         self.assertEqual(self.model.middle_channels, self.middle_channels)
