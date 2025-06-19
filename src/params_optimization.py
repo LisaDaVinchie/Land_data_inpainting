@@ -20,11 +20,9 @@ import os
 import sys
 
 from train import TrainModel
-from models import initialize_model_and_dataset_kind
+from models import get_model_class
 from losses import get_loss_function
 from utils import change_dataset_idx, parse_params
-from CustomDataset import CreateDataloaders
-
 from CustomDataset import CreateDataloaders
 
 terminate_early = False
@@ -93,7 +91,7 @@ def main():
     dataset = dl.load_dataset(dataset_path)
     train_loader, test_loader = dl.create(dataset)
     
-    model, _ = initialize_model_and_dataset_kind(params, model_kind)
+    model = get_model_class(params, model_kind)
     loss_function = get_loss_function(loss_kind, nan_placeholder)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
     
