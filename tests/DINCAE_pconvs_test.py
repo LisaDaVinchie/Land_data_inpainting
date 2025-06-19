@@ -3,7 +3,7 @@ import torch as th
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from models import DINCAE_pconvs, initialize_model_and_dataset_kind
+from models import DINCAE_pconvs, get_model_class
 
 
 class TestDINCAEPconvs(unittest.TestCase):
@@ -117,11 +117,10 @@ class TestDINCAEPconvs(unittest.TestCase):
                 }
             }
         }
-        model, dataset_kind = initialize_model_and_dataset_kind(self.params, "DINCAE_pconvs", dataset_params)
+        model = get_model_class(self.params, "DINCAE_pconvs")
         
         # Check that the network has the correct attributes
         self.assertIsInstance(model, DINCAE_pconvs)
-        self.assertEqual(dataset_kind, "minimal")
         # self.assertEqual(model.n_channels, self.n_channels + 1)
         # self.assertEqual(model.image_nrows, self.nrows + 1)
         # self.assertEqual(model.image_ncols, self.ncols + 1)
