@@ -18,7 +18,7 @@ image_ncols_string = "cutted_ncols"
 model_cathegory_string: str = "models"
 dataset_cathegory_string: str = "dataset"
 
-def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = None) -> tuple[nn.Module, str]:
+def get_model_class(params, model_kind: str) -> tuple[nn.Module, str]:
     """Initialize the model and dataset kind from the json file.
 
     Args:
@@ -34,26 +34,21 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
 
     if model_kind == "simple_conv":
         model = simple_conv(params)
-        dataset_kind = "extended"
     elif model_kind == "DINCAE_like":
         model = DINCAE_like()
-        dataset_kind = "extended"
     elif model_kind == "DINCAE_pconvs":
         model = DINCAE_pconvs()
-        dataset_kind = "minimal"
     elif model_kind == "dummy":
         model = DummyModel()
-        dataset_kind = "minimal"
     elif model_kind == "dummier":
         model = DummierModel()
-        dataset_kind = "minimal"
     else:
         raise ValueError(f"Model kind {model_kind} not recognized")
     
     # if dataset_params is not None:
     #     model.override_load_dataset_configurations(dataset_params)
     
-    return model, dataset_kind
+    return model
 
 def mask_image(images, masks, placeholder):
     return th.where(masks.bool(), images, placeholder * th.ones_like(images))
