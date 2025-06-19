@@ -1,26 +1,34 @@
 {
     "optimization": {
-        "n_trials": 200,
-        "batch_size_values": [32, 64, 128, 256],
-        "learning_rate_range": [0.00000001, 0.001],
-        "epochs_range": [15, 20]
+        "n_trials": 1,
+        "step_size_range": [4, 5]
     },
     "training":{
         "train_perc": 0.8,
-        "loss_kind": "per_pixel",
+        "batch_size": 32,
+        "epochs": 30,
+        "learning_rate": 0.0001,
+        "clip_value": 5.0,
+        "lr_scheduler": "lambda",
+        "_possible_schedulers": ["none", "step", "lambda"],
+        "optimizer_kind": "adam",
+        "loss_kind": "per_pixel_mse",
         "_possible_losses": ["per_pixel", "per_pixel_mse", "tv_loss", "custom1", "dincae1"],
-        "model_kind": "DINCAE_pconvs_1",
-        "_possible_model_kinds": ["simple_conv", "DINCAE_like", "DINCAE_pconvs", "DINCAE_pconvs_1", "dummy"],
-        "placeholder": 0.0,
-        "save_every": 100,
-        "dataset_idx": 3,
-
-        "batch_size": 0,
-        "epochs": 0,
-        "learning_rate": 0,
-        "lr_scheduler": "none",
-        "_possible_schedulers": ["none", "step"],
-        "optimizer_kind": "adam"
+        "model_kind": "DINCAE_pconvs",
+        "_possible_model_kinds": ["simple_conv", "DINCAE_like", "DINCAE_pconvs", "dummy", "dummier"],
+        "placeholder": -300.0,
+        "save_every": 4,
+        "dataset_idx": 3
+    },
+    "lr_schedulers": {
+        "step": {
+            "step_size": 4,
+            "gamma": 0.4
+        },
+        "lambda": {
+            "factor": 2,
+            "step_size": 4
+        }
     },
     "models":{
         "DINCAE_pconvs": {
