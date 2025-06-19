@@ -2,7 +2,7 @@
 #SBATCH --job-name=optim_params
 #SBATCH --output=logs/%j.out
 #SBATCH --error=logs/%j.err
-#SBATCH --time=08:30:00
+#SBATCH --time=08:00:00
 #SBATCH --signal=B:TERM@60  # Send SIGTERM 60 seconds before the job ends
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -29,7 +29,7 @@ fi
 
 ulimit -a
 
-make optim || { echo "Optimization failed"; exit 1; }
+make optim|| { echo "Optimization failed"; exit 1; }
 
 notify_telegram "SUCCESS"
 
