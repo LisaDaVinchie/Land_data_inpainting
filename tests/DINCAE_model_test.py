@@ -5,7 +5,7 @@ import torch as th
 
 # Add the parent directory to the path so that we can import the game module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from src.models import DINCAE_like, initialize_model_and_dataset_kind
+from src.models import DINCAE_like
 
 class Test_DINCAE_model(unittest.TestCase):
     
