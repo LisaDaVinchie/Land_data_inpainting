@@ -50,8 +50,8 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
     else:
         raise ValueError(f"Model kind {model_kind} not recognized")
     
-    if dataset_params is not None:
-        model.override_load_dataset_configurations(dataset_params)
+    # if dataset_params is not None:
+    #     model.override_load_dataset_configurations(dataset_params)
     
     return model, dataset_kind
 
@@ -288,7 +288,8 @@ class DINCAE_like(nn.Module):
         self.output_channels: int = 2
         self.print = False
         
-        self._load_model_configurations(params)
+        if params is not None:
+            self._load_model_configurations(params)
         
         if params is not None:
             self.placeholder = params["training"]["placeholder"]
@@ -313,17 +314,16 @@ class DINCAE_like(nn.Module):
             print(f"{layer_name} shape: {x.shape}", flush=True)
             
     def _load_model_configurations(self, params):
-        if params is not None:
-            model_params = params[model_cathegory_string].get(self.model_name, None)
-            if self.middle_channels is None:
-                self.middle_channels = model_params.get("middle_channels", None)
-            if self.kernel_sizes is None:
-                self.kernel_sizes = model_params.get("kernel_sizes", None)
-            if self.pooling_sizes is None:
-                self.pooling_sizes = model_params.get("pooling_sizes", None)
-            if self.interp_mode is None:
-                self.interp_mode = model_params.get("interp_mode", None)
-            
+        model_params = params[model_cathegory_string].get(self.model_name, None)
+        if self.middle_channels is None:
+            self.middle_channels = model_params.get("middle_channels", None)
+        if self.kernel_sizes is None:
+            self.kernel_sizes = model_params.get("kernel_sizes", None)
+        if self.pooling_sizes is None:
+            self.pooling_sizes = model_params.get("pooling_sizes", None)
+        if self.interp_mode is None:
+            self.interp_mode = model_params.get("interp_mode", None)
+        
         for var in [self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode]:
             if var is None:
                 raise ValueError(f"Variable {var} is None. Please provide a value for it.")
