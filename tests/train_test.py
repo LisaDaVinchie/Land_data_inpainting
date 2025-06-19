@@ -3,7 +3,7 @@ import torch as th
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from train5 import TrainModel
+from train import TrainModel
 from losses import PerPixelMSE
 from models import DummierModel, DINCAE_pconvs
 from CustomDataset_v2 import CreateDataloaders
