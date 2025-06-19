@@ -141,8 +141,6 @@ class TestTrainingScript(unittest.TestCase):
         total_loss = train.train_step(train_loader)
         total_loss1 = train.train_step(train_loader1)
         
-        print(total_loss, total_loss1)
-        
         self.assertIsInstance(total_loss, float, "Total loss should be a float.")
         
 
