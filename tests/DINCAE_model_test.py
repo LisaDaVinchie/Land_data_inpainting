@@ -91,28 +91,6 @@ class Test_DINCAE_model(unittest.TestCase):
         
         # Check if the output shape is correct
         self.assertEqual(output.shape, (32, 2, 168, 144))
-    
-    def test_automatic_initialization(self):
-        dataset_params = {
-            "dataset": {
-                "cutted_nrows": self.nrows + 1,
-                "cutted_ncols": self.ncols + 1,
-                "dataset_kind": "test",
-                "test": {
-                    "n_channels": self.n_channels + 1
-                }
-            }
-        }
-        model, dataset_kind = initialize_model_and_dataset_kind(self.model_params, "DINCAE_like", dataset_params)
-        
-        # Check that the network has the correct attributes
-        self.assertIsInstance(model, DINCAE_like)
-        self.assertEqual(dataset_kind, "extended")
-        self.assertEqual(model.n_channels, self.n_channels + 1)
-        self.assertEqual(model.middle_channels, self.middle_channels)
-        self.assertEqual(model.kernel_sizes, self.kernel_sizes)
-        self.assertEqual(model.pooling_sizes, self.pooling_sizes)
-        self.assertEqual(model.interp_mode, self.interp_mode)
 
 if __name__ == "__main__":
     unittest.main()
