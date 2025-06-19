@@ -78,9 +78,6 @@ NEXT_DATASET_SPECS_PATH = $(DATASET_SPECS_DIR)/$(DATASET_SPECS_BASENAME)_$(NEXT_
 CURRENT_NANS_MASKS_PATH = $(NANS_MASKS_DIR)/$(NANS_MASKS_BASENAME)_$(CURRENT_IDX_DATASET)$(NANS_MASKS_FILE_EXT)
 NEXT_NANS_MASKS_PATH = $(NANS_MASKS_DIR)/$(NANS_MASKS_BASENAME)_$(NEXT_IDX_DATASET)$(NANS_MASKS_FILE_EXT)
 
-CURRENT_MINMAX_PATH = $(MINMAX_DIR)/$(MINMAX_BASENAME)_$(CURRENT_IDX_DATASET)$(MINMAX_FILE_EXT)
-NEXT_MINMAX_PATH = $(MINMAX_DIR)/$(MINMAX_BASENAME)_$(NEXT_IDX_DATASET)$(MINMAX_FILE_EXT)
-
 # Find the next available filename
 CURRENT_RESULT_IDX := $(shell find "$(RESULTS_DIR)" -type f -name "$(RESULT_BASENAME)_*$(RESULT_FILE_EXT)" | \
     sed 's|.*_\([0-9]*\)\$(RESULT_FILE_EXT)|\1|' | \
@@ -126,9 +123,7 @@ config:
 	@echo "        \"current_dataset_specs_path\": \"$(CURRENT_DATASET_SPECS_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"dataset_specs_path\": \"$(NEXT_DATASET_SPECS_PATH)\"," >> $(PATHS_FILE)
 	@echo "        \"current_nans_masks_path\": \"$(CURRENT_NANS_MASKS_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"next_nans_masks_path\": \"$(NEXT_NANS_MASKS_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"current_minmax_path\": \"$(CURRENT_MINMAX_PATH)\"," >> $(PATHS_FILE)
-	@echo "        \"next_minmax_path\": \"$(NEXT_MINMAX_PATH)\"" >> $(PATHS_FILE)
+	@echo "        \"next_nans_masks_path\": \"$(NEXT_NANS_MASKS_PATH)\"" >> $(PATHS_FILE)
 	@echo "    }," >> $(PATHS_FILE)
 	@echo "    \"results\": {" >> $(PATHS_FILE)
 	@echo "        \"results_path\": \"$(NEXT_RESULT_PATH)\", " >> $(PATHS_FILE)
@@ -168,7 +163,7 @@ test:
 
 clean: config
 	@echo "Removing dataset $(CURRENT_MINIMAL_DATASET_PATH)"
-	rm -rf $(CURRENT_MINIMAL_DATASET_PATH) $(CURRENT_NANS_MASKS_PATH) $(CURRENT_DATASET_SPECS_PATH) $(CURRENT_MINMAX_PATH)
+	rm -rf $(CURRENT_MINIMAL_DATASET_PATH) $(CURRENT_NANS_MASKS_PATH) $(CURRENT_DATASET_SPECS_PATH)
 
 help:
 	@echo "Usage: make [target]"
