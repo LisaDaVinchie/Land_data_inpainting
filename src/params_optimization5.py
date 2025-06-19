@@ -19,7 +19,7 @@ import signal
 import os
 import sys
 
-from train5 import TrainModel
+from train import TrainModel
 from models import initialize_model_and_dataset_kind
 from losses import get_loss_function
 from utils import change_dataset_idx, parse_params
