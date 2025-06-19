@@ -4,7 +4,6 @@ import torch as th
 from pathlib import Path
 import tempfile
 import shutil
-import optuna
 import os
 import sys
 
