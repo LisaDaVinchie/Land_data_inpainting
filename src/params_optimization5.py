@@ -23,9 +23,9 @@ from train import TrainModel
 from models import initialize_model_and_dataset_kind
 from losses import get_loss_function
 from utils import change_dataset_idx, parse_params
-from CustomDataset_v2 import CreateDataloaders
+from CustomDataset import CreateDataloaders
 
-from CustomDataset_v2 import CreateDataloaders
+from CustomDataset import CreateDataloaders
 
 terminate_early = False
 study = None

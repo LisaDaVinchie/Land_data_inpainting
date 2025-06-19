@@ -6,7 +6,7 @@ import os
 import sys
 # Add ../src to sys.path to import CreateDataloaders
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-from CustomDataset_v2 import CreateDataloaders, CustomDatasetClass
+from CustomDataset import CreateDataloaders, CustomDatasetClass
 
 class TestCreateDataloaders(unittest.TestCase):
     def setUp(self):

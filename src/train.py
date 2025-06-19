@@ -18,7 +18,7 @@ from models import initialize_model_and_dataset_kind
 from losses import get_loss_function
 from select_lr_scheduler import select_lr_scheduler
 from utils import change_dataset_idx, parse_params
-from CustomDataset_v2 import CreateDataloaders
+from CustomDataset import CreateDataloaders
 
 def main():
     """Main function to train a model on a dataset."""
