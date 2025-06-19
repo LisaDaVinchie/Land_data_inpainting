@@ -3,7 +3,6 @@ from torch import nn
 from typing import List
 import math
 from PartialConv import PartialConv2d
-from preprocessing.mask_data import mask_inversemask_image
 
 def conv_output_size_same_padding(in_size, pool_size):
     return  math.ceil(in_size / pool_size)
@@ -56,6 +55,8 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
     
     return model, dataset_kind
 
+def mask_image(images, masks, placeholder):
+    return th.where(masks.bool(), images, placeholder * th.ones_like(images))
 class DummierModel(nn.Module):
     def __init__(self, params = None, n_channels: int = 13, total_days: int = 9):
         """Dummy model for testing purposes. Returns the mean of the previous and following days.
@@ -133,14 +134,12 @@ class DummyModel(nn.Module):
         pass
 
 class DINCAE_pconvs(nn.Module):
-    def __init__(self, n_channels: int = 13, image_nrows: int = 128, image_ncols: int = 128, middle_channels: List[int] = [16, 30, 58, 110, 209], kernel_sizes: List[int] = [3, 3, 3, 3, 3], pooling_sizes: List[int] = [2, 2, 2, 2, 2], interp_mode: str = "bilinear"):
+    def __init__(self, n_channels: int = 13, middle_channels: List[int] = [16, 30, 58, 110, 209], kernel_sizes: List[int] = [3, 3, 3, 3, 3], pooling_sizes: List[int] = [2, 2, 2, 2, 2], interp_mode: str = "bilinear"):
         super(DINCAE_pconvs, self).__init__()
         
-        self.model_name = "DINCAE_pconvs"
+        self.model_name = "DINCAE"
         
         self.n_channels = n_channels
-        self.image_nrows = image_nrows
-        self.image_ncols = image_ncols
         
         self.middle_channels = middle_channels
         self.kernel_sizes = kernel_sizes
@@ -185,16 +184,6 @@ class DINCAE_pconvs(nn.Module):
         for var in [self.middle_channels, self.kernel_sizes, self.pooling_sizes, self.interp_mode]:
             if var is None:
                 raise ValueError(f"Variable {var} is None. Please provide a value for it.")
-    
-    # def _load_dataset_configurations(self, params):
-    #     if params is not None:
-    #         dataset_params = params[dataset_cathegory_string]
-    #         if self.n_channels is None:
-    #             dataset_kind = dataset_params.get("dataset_kind", None)
-    #             channels_to_keep = dataset_params[dataset_kind].get("channels_to_keep", None)
-    #             self.n_channels = len(channels_to_keep) + 1 + 8
-    #     if self.n_channels is None:
-    #         raise ValueError(f"Variable n_channels is None. Please provide a value for it.")
     
     def override_load_dataset_configurations(self, params):
         if params is not None:
@@ -284,79 +273,45 @@ class DecoderBlock(nn.Module):
         return x, mask.float()
 
 class DINCAE_like(nn.Module):
-    def __init__(self, params, n_channels: int = None, image_nrows: int = None, image_ncols: int = None, middle_channels: List[int] = None, kernel_sizes: List[int] = None, pooling_sizes: List[int] = None, interp_mode: str = None, placeholder: float = None):
+    def __init__(self, params = None, n_channels: int = 13, placeholder: float = -2.0, middle_channels: List[int] = [16, 30, 58, 110, 209], kernel_sizes: List[int] = [3, 3, 3, 3, 3], pooling_sizes: List[int] = [2, 2, 2, 2, 2], interp_mode: str = "bilinear"):
         super(DINCAE_like, self).__init__()
         
-        self.model_name: str = "DINCAE_like"
+        self.model_name: str = "DINCAE"
         
         self.n_channels = n_channels
-        self.image_nrows = image_nrows
-        self.image_ncols = image_ncols
         
         self.middle_channels = middle_channels
         self.kernel_sizes = kernel_sizes
         self.pooling_sizes = pooling_sizes
         self.interp_mode = interp_mode
         self.placeholder = placeholder
+        self.output_channels: int = 2
+        self.print = False
         
         self._load_model_configurations(params)
         
-        self._load_dataset_configurations(params)
+        if params is not None:
+            self.placeholder = params["training"]["placeholder"]
         
-        if self.placeholder is None:
-            self.placeholder = params["training"].get("placeholder", None)
-        
-        if self.placeholder is None:
-            raise ValueError(f"Variable placeholder is None. Please provide a value for it.")
+        self.layers_setup()
 
     def layers_setup(self):
-        w, h = self._calculate_sizes()
+        self.enc1 = EncoderBlockConv(self.n_channels, self.middle_channels[0], self.kernel_sizes[0], padding=self.kernel_sizes[0] // 2, pooling_size=self.pooling_sizes[0])
+        self.enc2 = EncoderBlockConv(self.middle_channels[0], self.middle_channels[1], self.kernel_sizes[1], padding='same', pooling_size=self.pooling_sizes[1])
+        self.enc3 = EncoderBlockConv(self.middle_channels[1], self.middle_channels[2], self.kernel_sizes[2], padding='same', pooling_size=self.pooling_sizes[2])
+        self.enc4 = EncoderBlockConv(self.middle_channels[2], self.middle_channels[3], self.kernel_sizes[3], padding='same', pooling_size=self.pooling_sizes[3])
+        self.enc5 = EncoderBlockConv(self.middle_channels[3], self.middle_channels[4], self.kernel_sizes[4], padding='same', pooling_size=self.pooling_sizes[4])
         
-        self.conv1 = nn.Conv2d(self.n_channels, self.middle_channels[0], self.kernel_sizes[0], padding = self.kernel_sizes[0] // 2)
-        self.pool1 = nn.MaxPool2d(self.pooling_sizes[0], stride=2, ceil_mode=True)
+        self.dec6 = DecoderBlockConv(self.middle_channels[4], self.middle_channels[3], self.interp_mode, kernel_size=self.kernel_sizes[4])
+        self.dec7 = DecoderBlockConv(self.middle_channels[3], self.middle_channels[2], self.interp_mode, kernel_size=self.kernel_sizes[3])
+        self.dec8 = DecoderBlockConv(self.middle_channels[2], self.middle_channels[1], self.interp_mode, kernel_size=self.kernel_sizes[2])
+        self.dec9 = DecoderBlockConv(self.middle_channels[1], self.middle_channels[0], self.interp_mode, kernel_size=self.kernel_sizes[1])
+        self.dec10 = DecoderBlockConv(self.middle_channels[0], self.output_channels, self.interp_mode, kernel_size=self.kernel_sizes[0])
         
-        self.conv2 = nn.Conv2d(self.middle_channels[0], self.middle_channels[1], self.kernel_sizes[1], padding = 'same')
-        self.pool2 = nn.MaxPool2d(self.pooling_sizes[1], stride=2, ceil_mode=True)
-        
-        self.conv3 = nn.Conv2d(self.middle_channels[1], self.middle_channels[2], self.kernel_sizes[2], padding = 'same')
-        self.pool3 = nn.MaxPool2d(self.pooling_sizes[2], stride=2, ceil_mode=True)
-        
-        self.conv4 = nn.Conv2d(self.middle_channels[2], self.middle_channels[3], self.kernel_sizes[3], padding = 'same')
-        self.pool4 = nn.MaxPool2d(self.pooling_sizes[3], stride=2, ceil_mode=True)
-        
-        self.conv5 = nn.Conv2d(self.middle_channels[3], self.middle_channels[4], self.kernel_sizes[4], padding = 'same')
-        self.pool5 = nn.MaxPool2d(self.pooling_sizes[4], stride=2, ceil_mode=True)
-        self.activation = nn.ReLU()
-        
-    
-        self.interp1 = nn.Upsample(size=(w[4], h[4]), mode=self.interp_mode)
-        self.deconv1 = nn.Conv2d(self.middle_channels[4], self.middle_channels[3], self.kernel_sizes[4], padding='same')
-        self.interp2 = nn.Upsample(size=(w[3], h[3]), mode=self.interp_mode)
-        self.deconv2 = nn.Conv2d(self.middle_channels[3], self.middle_channels[2], self.kernel_sizes[3], padding='same')
-        self.interp3 = nn.Upsample(size=(w[2], h[2]), mode=self.interp_mode)
-        self.deconv3 = nn.Conv2d(self.middle_channels[2], self.middle_channels[1], self.kernel_sizes[2], padding='same')
-        self.interp4 = nn.Upsample(size=(w[1], h[1]), mode=self.interp_mode)
-        self.deconv4 = nn.Conv2d(self.middle_channels[1], self.middle_channels[0], self.kernel_sizes[1], padding='same')
-        self.interp5 = nn.Upsample(size=(self.image_nrows, self.image_ncols), mode=self.interp_mode)
-        self.deconv5 = nn.Conv2d(self.middle_channels[0], self.n_channels, self.kernel_sizes[0], padding='same')
-        
-    def _load_dataset_configurations(self, params):
-        if params is not None:
-            if self.image_nrows is None:
-                self.image_nrows = params[dataset_cathegory_string].get(image_nrows_string, None)
-            if self.image_ncols is None:
-                self.image_ncols = params[dataset_cathegory_string].get(image_ncols_string, None)
-            if self.n_channels is None:
-                dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
-                channels_to_keep = params[dataset_cathegory_string][dataset_kind].get("channels_to_keep", None)
-                self.n_channels = len(channels_to_keep) + 1
-        if self.n_channels is None:
-            raise ValueError(f"Variable n_channels is None. Please provide a value for it.")
-        if self.image_nrows is None:
-            raise ValueError(f"Variable image_nrows is None. Please provide a value for it.")
-        if self.image_ncols is None:
-            raise ValueError(f"Variable image_ncols is None. Please provide a value for it.")
-    
+    def print_shapes(self, layer_name, x):
+        if self.print:
+            print(f"{layer_name} shape: {x.shape}", flush=True)
+            
     def _load_model_configurations(self, params):
         if params is not None:
             model_params = params[model_cathegory_string].get(self.model_name, None)
@@ -375,26 +330,10 @@ class DINCAE_like(nn.Module):
     
     def override_load_dataset_configurations(self, params):
         if params is not None:
-            self.image_nrows = params[dataset_cathegory_string].get(image_nrows_string, None)
-            self.image_ncols = params[dataset_cathegory_string].get(image_ncols_string, None)
             dataset_kind = params[dataset_cathegory_string].get("dataset_kind", None)
             self.n_channels = params[dataset_cathegory_string][dataset_kind].get(n_channels_string, None)
         if self.n_channels is None:
             raise ValueError(f"Variable n_channels is None. Please provide a value for it.")
-        if self.image_nrows is None:
-            raise ValueError(f"Variable image_nrows is None. Please provide a value for it.")
-        if self.image_ncols is None:
-            raise ValueError(f"Variable image_ncols is None. Please provide a value for it.")
-
-    def _calculate_sizes(self):
-        w = []
-        h = []
-        w.append(self.image_nrows)
-        h.append(self.image_ncols)
-        for i in range(1, len(self.middle_channels)):
-            w.append(conv_output_size_same_padding(w[i-1], self.pooling_sizes[i-1]))
-            h.append(conv_output_size_same_padding(h[i-1], self.pooling_sizes[i-1]))
-        return w,h
         
     def forward(self, images: th.Tensor, masks: th.Tensor) -> th.Tensor:
         """Forward pass
@@ -407,27 +346,67 @@ class DINCAE_like(nn.Module):
             th.Tensor: output image
         """
         
-        x, _ = mask_inversemask_image(images, masks, self.placeholder)
+        x = mask_image(images, masks, self.placeholder)
+        self.print_shapes("input", x)
+        x1 = self.enc1(x)
+        self.print_shapes("enc1", x1)
+        x2 = self.enc2(x1)
+        self.print_shapes("enc2", x2)
+        x3 = self.enc3(x2)
+        self.print_shapes("enc3", x3)
+        x4 = self.enc4(x3)
+        self.print_shapes("enc4", x4)
+        x5 = self.enc5(x4)
+        self.print_shapes("enc5", x5)
         
-        enc1 = self.pool1(self.activation(self.conv1(x)))
-        enc2 = self.pool2(self.activation(self.conv2(enc1)))
-        enc3 = self.pool3(self.activation(self.conv3(enc2)))
-        enc4 = self.pool4(self.activation(self.conv4(enc3)))
-        enc5 = self.pool5(self.activation(self.conv5(enc4)))
-        dec1 = self.activation(self.deconv1(self.interp1(enc5)))
-        images = dec1 + enc4
-        dec2 = self.activation(self.deconv2(self.interp2(images)))
-        images = dec2 + enc3
-        dec3 = self.activation(self.deconv3(self.interp3(images)))
-        images = dec3 + enc2
-        dec4 = self.activation(self.deconv4(self.interp4(images)))
-        images = dec4 + enc1
-        dec5 = self.activation(self.deconv5(self.interp5(images)))
+        x6 = self.dec6(x5, x4)
+        self.print_shapes("dec6", x6)
+        x7 = self.dec7(x6, x3)
+        self.print_shapes("dec7", x7)
+        x8 = self.dec8(x7, x2)
+        self.print_shapes("dec8", x8)
+        x9 = self.dec9(x8, x1)
+        self.print_shapes("dec9", x9)
+        x10 = self.dec10(x9)
+        self.print_shapes("dec10", x10)
         
-        return dec5
+        return x10
+    
+class EncoderBlockConv(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, padding, pooling_size, stride = 2):
+        super(EncoderBlockConv, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding)
+        self.pool = nn.MaxPool2d(pooling_size, stride=stride, ceil_mode=True)
+        self.activation = nn.ReLU()
+
+    def forward(self, x: th.Tensor) -> th.Tensor:
+        x = self.conv(x)
+        x = self.activation(x)
+        x = self.pool(x)
+        return x
+    
+class DecoderBlockConv(nn.Module):
+    def __init__(self, in_channels, out_channels, interp_mode, kernel_size = 3, padding = 'same'):
+        super(DecoderBlockConv, self).__init__()
+        self.interp_mode = interp_mode
+        self.deconv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding)
+        self.activation = nn.ReLU()
+
+    def forward(self, x: th.Tensor, e_x: th.Tensor = None) -> th.Tensor:
+        if e_x is not None:
+            self.interp = nn.Upsample(size=(e_x.shape[2], e_x.shape[3]), mode=self.interp_mode)
+        else:
+            self.interp = nn.Upsample(scale_factor=2, mode=self.interp_mode)
+        x = self.interp(x)
+        x = self.deconv(x)
+        x = self.activation(x)
+        if e_x is not None:
+            x = x + e_x
+        
+        return x
 
 class simple_conv(nn.Module):
-    def __init__(self, params, n_channels: int = None, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
+    def __init__(self, params = None, n_channels: int = None, placeholder = -300, middle_channels: List[int] = None, kernel_size: List[int] = None, stride: List[int] = None, padding: List[int] = None, output_padding: List[int] = None):
         super(simple_conv, self).__init__()
         
         self.model_name: str = "simple_conv"
@@ -437,10 +416,13 @@ class simple_conv(nn.Module):
         self.stride = stride
         self.padding = padding
         self.output_padding = output_padding
+        self.placeholder = placeholder
         
         self._load_model_configurations(params)
         
         self._load_dataset_configurations(params)
+        
+        self.layers_setup()
         
         self.encoder = None
         self.decoder = None  
@@ -497,7 +479,7 @@ class simple_conv(nn.Module):
             raise ValueError(f"Variable {self.n_channels} is None. Please provide a value for it.")
         
     def forward(self, x: th.Tensor, masks: th.Tensor) -> th.Tensor:
-        images, _ = mask_inversemask_image(x, masks, 0.0)
+        images = mask_image(x, masks, self.placeholder)
         encoded = self.encoder(images)
         decoded = self.decoder(encoded)
         return decoded
