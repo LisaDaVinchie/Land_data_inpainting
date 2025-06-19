@@ -14,7 +14,7 @@ from pathlib import Path
 from time import time
 import json
 
-from models import initialize_model_and_dataset_kind
+from models import get_model_class
 from losses import get_loss_function
 from select_lr_scheduler import select_lr_scheduler
 from utils import change_dataset_idx, parse_params
@@ -59,7 +59,7 @@ def main():
     dataset = dl.load_dataset(dataset_path)
     train_loader, test_loader = dl.create(dataset)
     
-    model, _ = initialize_model_and_dataset_kind(params, model_kind)
+    model = get_model_class(params, model_kind)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
     loss_function = get_loss_function(loss_kind)
     print(f"Using loss function: {loss_function.__class__.__name__}", flush=True)
