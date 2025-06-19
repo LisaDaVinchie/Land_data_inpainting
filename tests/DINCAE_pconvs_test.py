@@ -49,7 +49,7 @@ class TestDINCAEPconvs(unittest.TestCase):
         self.dummy_mask = th.ones_like(self.dummy_input)
         self.dummy_mask[th.isnan(self.dummy_input)] = 0
         
-        self.model = DINCAE_pconvs(n_channels=self.n_channels, image_nrows=self.nrows, image_ncols=self.ncols)
+        self.model = DINCAE_pconvs(n_channels=self.n_channels)
         self.model.layers_setup()
 
     def test_initialization(self):
@@ -57,8 +57,6 @@ class TestDINCAEPconvs(unittest.TestCase):
 
         # Check that the network has the correct attributes
         self.assertEqual(self.model.n_channels, self.n_channels)
-        self.assertEqual(self.model.image_nrows, self.nrows)
-        self.assertEqual(self.model.image_ncols, self.ncols)
         # self.assertEqual(self.model.middle_channels, self.middle_channels)
         # self.assertEqual(self.model.kernel_sizes, self.kernel_sizes)
         # self.assertEqual(self.model.pooling_sizes, self.pooling_sizes)
