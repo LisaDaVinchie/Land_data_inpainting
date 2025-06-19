@@ -14,7 +14,7 @@
         "_possible_model_kinds": ["simple_conv", "DINCAE_like", "DINCAE_pconvs", "dummy", "dummier"],
         "placeholder": -300.0,
         "save_every": 1,
-        "dataset_idx": 4
+        "dataset_idx": 1
     },
     "lr_schedulers": {
         "step": {
