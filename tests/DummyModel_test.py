@@ -3,7 +3,7 @@ import torch as th
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from models import DummyModel, initialize_model_and_dataset_kind
+from models import DummyModel
 
 
 class TestDummyModel(unittest.TestCase):
