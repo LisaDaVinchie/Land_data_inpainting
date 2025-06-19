@@ -36,7 +36,7 @@ def initialize_model_and_dataset_kind(params, model_kind: str, dataset_params = 
         model = simple_conv(params)
         dataset_kind = "extended"
     elif model_kind == "DINCAE_like":
-        model = DINCAE_like(params)
+        model = DINCAE_like()
         dataset_kind = "extended"
     elif model_kind == "DINCAE_pconvs":
         model = DINCAE_pconvs()
