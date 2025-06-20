@@ -38,7 +38,7 @@ def main():
     
     # Initialize variables for accumulating results
     total_loss = 0.0
-    total_valid_pixels = 0
+    n_images = 0
     
     for i in range(0, total_samples, batch_size):
         batch_end = min(i + batch_size, total_samples)
@@ -60,22 +60,19 @@ def main():
         
         # Calculate validation mask and loss for this batch
         batch_val_mask = ~batch_masks[:, c:c+1, :, :] & batch_nan_mask[:, c:c+1, :, :]
-        # batch_loss = loss_func(
-        #     batch_mean_img,
-        #     batch_images[:, c:c+1, :, :],
-        #     batch_val_mask[:, c:c+1, :, :]).item()
         
-        squared_errors = (batch_mean_img - batch_images[:, c:c+1, :, :].float()) ** 2
-        valid_errors = squared_errors[batch_val_mask]  # This flattens automatically
+        loss = loss_func(batch_mean_img, batch_images[:, c:c+1, :, :], batch_val_mask)
         
-        total_loss += valid_errors.sum().item()
-        # total_valid_pixels += batch_val_mask.float().sum().item()
+        total_loss += loss.item()
+        
+        n_images += batch_images.shape[0]
+        
         
         # Clean up batch variables
         del batch_images, batch_masks, batch_nan_mask, batch_known, batch_mean_img, batch_val_mask
         gc.collect()
     
-    total_loss /= total_valid_pixels
+    total_loss /= n_images
         
         # Final calculation
     print(f"Final loss: {total_loss}", flush=True)
