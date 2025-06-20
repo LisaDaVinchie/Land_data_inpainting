@@ -40,27 +40,23 @@ class PerPixelMSE(nn.Module):
             th.Tensor: per-pixel loss calculated only on the masked pixels.
         """
         
-        total_loss = th.tensor(0.0, device=prediction.device, dtype=prediction.dtype)
-        # Calculate the squared difference, for each pixel
-        n_images = prediction.shape[0]
-        for i in range(n_images):
-            diff = (prediction[i] - target[i]) **2
-            masked_diff = diff * (~masks[i]).float()  # Apply the mask to the squared differences
-            diff_sum = masked_diff.sum()
-            n_valid_pixels = (~masks[i]).float().sum()
-            total_loss += diff_sum / (n_valid_pixels + 1e-8)  # Avoid division by zero
-            
-            
-        # diff = (prediction - target)
+        # Calculate squared differences for all images at once
+        squared_diff = (prediction - target) ** 2
         
-        # diff *= diff  # Square the differences
+        # Apply mask (using ~masks to select pixels where mask is 0)
+        masked_diff = squared_diff * (~masks).float()
         
-        # diff *= (~masks).float()  # Apply the mask to the squared differences
+        # Sum over spatial dimensions and channels (keeping batch dimension)
+        diff_sums = masked_diff.sum(dim=(1, 2, 3))
         
-        # diff_sum = diff.sum()
+        # Count valid pixels for each image in batch
+        n_valid_pixels = (~masks).float().sum(dim=(1, 2, 3))
         
-        # if normalize:
-        #     n_valid_pixels = (~masks).float().sum()
+        # Compute normalized loss for each image
+        per_image_losses = diff_sums / (n_valid_pixels + 1e-8)
+        
+        # Sum all individual image losses (matches original logic)
+        total_loss = per_image_losses.sum()
             
         return total_loss
     
