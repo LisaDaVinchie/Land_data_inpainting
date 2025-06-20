@@ -35,17 +35,17 @@ def main():
     c = 4
     known_channels = [0, 1, 2, 3, 5, 6, 7, 8]
     
-    n_samples = [10, 20, 50, 100, 150, 200]
+    n_batches = [5, 10, 20, 32, 64]
+    
     
     mean_loss = []
+    n_images = 0.0
     
-    for n in n_samples:
+    for n in n_batches:
         print(f"Processing {n} samples", flush=True)
         losses = []
-        total_pixels = 0.0
-        total_loss = 0.0
-        for i in range(1, 100):
-            shape = (n, 9, 64, 64)  # Simulated shape for images
+        for i in range(1, 3):
+            shape = (20, 9, 64, 64)  # Simulated shape for images
             if i % 100 == 0:
                 print(f"Iteration {i}", flush=True)
             # random_indexes = th.randperm(n_images)[:n_samples]
@@ -70,19 +70,12 @@ def main():
             
             val_mask = ~(~masks & nan_mask)
 
-            # total_loss = loss_func(
-            #         mean_image[i:i+1, 0], 
-            #         images[i:i+1, c:c+1, :, :], 
-            #         val_mask[i:i+1, c:c+1, :, :]
-            #     ).item()
+            total_loss = loss_func(
+                    mean_image[i:i+1, 0], 
+                    images[i:i+1, c:c+1, :, :], 
+                    val_mask[i:i+1, c:c+1, :, :]
+                ).item()
                 
-                
-            diff = (mean_image - images[:, c:c+1, :, :]) **2
-            masked_diff = diff * (~val_mask[:, c:c+1, :, :]).float()  # Apply the mask to the squared differences
-            diff_sum = masked_diff.sum()
-            n_valid_pixels = (~val_mask[:, c:c+1, :, :]).float().sum()
-            total_pixels += n_valid_pixels.item()
-            total_loss += diff_sum
             
             # total_loss = 0.0
             # for i in range(mean_image.shape[0]):
@@ -96,7 +89,7 @@ def main():
                 
             #     total_loss += loss / (n_pixels + 1e-8)  # Avoid division by zero
             
-            losses.append(total_loss / (total_pixels + 1e-8))
+            losses.append(total_loss)
                 
             # loss = loss_func(mean_image, images[:, c:c+1, :, :], val_mask[:, c:c+1, :, :]).item()
             # n_valid_pixels = (~val_mask[:, c, :, :]).float().sum().item()
@@ -108,7 +101,7 @@ def main():
     
     # th.save(th.tensor(total_loss), dataset_path.parent / f"mean_loss_{dataset_idx}.pt")
     
-    plt.plot(n_samples, mean_loss, marker='o')
+    plt.plot(n_batches, mean_loss, marker='o')
     plt.xlabel('Number of samples')
     plt.ylabel('Mean Loss')
     plt.title('Mean Loss vs Number of Samples')
