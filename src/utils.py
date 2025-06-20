@@ -69,3 +69,24 @@ def find_min_max_values(minmax_path: Path, dataset) -> tuple:
         th.save(th.tensor([min_val, max_val]), minmax_path)
         print(f"Min and max values saved to {minmax_path}", flush=True)
     return min_val, max_val
+
+def read_results(results_path: Path) -> tuple:
+    with open(results_path, 'r') as f:
+        lines = f.readlines()
+    
+    train_losses = None
+    test_losses = None
+
+    for i, line in enumerate(lines):
+        if line.strip() == "Train losses":
+        # Next line contains the values
+            values = lines[i+1].strip().split('\t')
+            train_losses =[float(v) for v in values if v]
+        elif line.strip() == "Test losses":
+        # Next line contains the values
+            values = lines[i+1].strip().split('\t')
+            test_losses = [float(v) for v in values if v]
+        
+    if train_losses is None or test_losses is None:
+        raise ValueError("Could not find train or test losses in the results file.")
+    return train_losses, test_losses
