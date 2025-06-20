@@ -134,6 +134,8 @@ class TrainModel:
         self.params = None
         self.dataset_specs = None
         
+        self.current_day_channel = 4
+        
         self.train_losses = []
         self.test_losses = []
         self.training_lr = []
@@ -171,22 +173,26 @@ class TrainModel:
 
     def train_step(self, dataloader, backpropagate=True):
         epoch_loss: float = 0.0
-        n_valid_pixels: int = 0
+        n_images: int = 0
         for (images, masks, nan_masks) in dataloader:
-            # loss = self._compute_loss(images, masks, nan_masks)
             # Multiply images by masks to exxlude information from masked pixels
             output = self.model(images * masks.float(), (masks & nan_masks).float())
-            loss = self.loss_function(output[:, 0], images[:, 4], self.validation_mask(masks[:, 4], nan_masks[:, 4]))
+            loss = self.loss_function(output[:, 0],
+                                      images[:, self.current_day_channel],
+                                      self.validation_mask(masks[:, self.current_day_channel],
+                                                           nan_masks[:, self.current_day_channel])
+                                      )
             epoch_loss += loss.item()
             if backpropagate:
                 loss.backward()
-                utils.clip_grad_value_(self.model.parameters(), self.clip_value)  # Clip gradients to avoid exploding gradients
+                # Clip gradients to avoid exploding gradients
+                utils.clip_grad_value_(self.model.parameters(), self.clip_value)
                 self.optimizer.step()
                 self.optimizer.zero_grad()
             
-            n_valid_pixels += self.calculate_valid_pixels(masks[:, 4], nan_masks[:, 4])
+            n_images += images.shape[0]
 
-        return epoch_loss / (n_valid_pixels + 1e-8)  # Avoid division by zero
+        return epoch_loss / n_images  # Avoid division by zero
     
     def validation_mask(self, masks: th.Tensor, nan_masks: th.Tensor, loss: bool = True):
         """Calculate the mask used to calculate the loss, i.e. where the pixel is masked but not nan.
@@ -202,16 +208,6 @@ class TrainModel:
     
     def calculate_valid_pixels(self, masks: th.Tensor, nan_masks: th.Tensor):
         return self.validation_mask(masks, nan_masks, loss=False).float().sum().item()
-                
-    def _compute_loss(self, images, masks, nan_masks):
-        images = images.to(self.device)
-        masks = masks.to(self.device)
-        nan_masks = nan_masks.to(self.device)
-        
-        # Multiply images by masks to exxlude information from masked pixels
-        output = self.model(images * masks.float(), (masks & nan_masks).float())
-        loss = self.loss_function(output[:, 0], images[:, 4], self.validation_mask(masks[:, 4], nan_masks[:, 4]))
-        return loss
     
     def save_weights(self):
         """Save the model weights to a file."""

@@ -18,36 +18,6 @@ def get_loss_function(loss_kind: str) -> nn.Module:
         return PerPixelMSE()
     else:
         raise ValueError(f"Loss kind {loss_kind} not recognized")
-    
-    
-def calculate_valid_pixels(masks: th.Tensor, target: th.Tensor, nan_placeholder: float) -> int:
-    
-    # Create a mask that is 1 where the pixel is valid and 0 otherwise
-    masks = calculate_valid_mask(masks, target, nan_placeholder, inv=True)
-    
-    return masks.float().sum().item()
-
-def calculate_valid_mask(masks: th.Tensor, target: th.Tensor, nan_placeholder: float, inv: bool = False) -> th.Tensor:
-    """Get the pixels to be used for inpainting, i.e. the pixels that are masked and not NaN.
-
-    Args:
-        masks (th.Tensor): binary mask with 0 where the pixel is masked, shape (batch_size, channels, height, width).
-        target (th.Tensor): ground truth, shape (batch_size, channels, height, width).
-        nan_placeholder (float): value used to represent NaN pixels in the target tensor.
-        inv (bool, optional): whether to return the inverse mask. Defaults to False.
-
-    Returns:
-        th.Tensor: mask with 0 where the pixel is valid and 1 otherwise if inv is False, or 1 where the pixel is valid and  otherwise if inv is True.
-    """
-    
-    # Create a mask that is 1 where the pixel is masked and 0 otherwise
-    nans_mask = th.where(target == nan_placeholder, th.ones_like(target), th.zeros_like(target)).bool()
-    
-    # Create a mask that is 0 where the pixel is masked and 1 otherwise
-    masks |= nans_mask  # Combine the masks with the NaN mask
-    
-    # If inv, create a mask that is 1 where the pixel is masked and 0 otherwise
-    return ~masks if inv else masks
         
 class PerPixelMSE(nn.Module):
     def __init__(self):
@@ -70,13 +40,30 @@ class PerPixelMSE(nn.Module):
             th.Tensor: per-pixel loss calculated only on the masked pixels.
         """
         
+        total_loss = th.tensor(0.0, device=prediction.device, dtype=prediction.dtype)
         # Calculate the squared difference, for each pixel
-        diff = (prediction - target) ** 2 
+        n_images = prediction.shape[0]
+        for i in range(n_images):
+            diff = (prediction[i] - target[i]) **2
+            masked_diff = diff * (~masks[i]).float()  # Apply the mask to the squared differences
+            diff_sum = masked_diff.sum()
+            n_valid_pixels = (~masks[i]).float().sum()
+            total_loss += diff_sum / (n_valid_pixels + 1e-8)  # Avoid division by zero
+            
+            
+        # diff = (prediction - target)
         
-        # Set the masked pixels to 0 where the mask is 1, i.e. where the pixel is not masked
-        masked_diff = diff.masked_fill(masks, 0.0)
-        return masked_diff.sum() # Return the mean of the squared differences over the number of valid pixels
-
+        # diff *= diff  # Square the differences
+        
+        # diff *= (~masks).float()  # Apply the mask to the squared differences
+        
+        # diff_sum = diff.sum()
+        
+        # if normalize:
+        #     n_valid_pixels = (~masks).float().sum()
+            
+        return total_loss
+    
 class PerPixelL1(nn.Module):
     def __init__(self):
         """Initialize the Per Pixel L1 loss module.
@@ -86,7 +73,7 @@ class PerPixelL1(nn.Module):
         """
         super(PerPixelL1, self).__init__()
     
-    def forward(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) -> th.Tensor:
+    def forward(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor, normalize: bool = True) -> th.Tensor:
         """Calculate the per-pixel loss between the prediction and the target, ignoring masked pixels.
 
         Args:
@@ -100,4 +87,9 @@ class PerPixelL1(nn.Module):
         
         diff = th.abs(prediction - target)
         masked_diff = diff.masked_fill(masks, 0.0)
-        return masked_diff.sum()
+        diff_sum = masked_diff.sum()
+        
+        if normalize:
+            n_valid_pixels = (~masks).float().sum()
+            
+        return diff_sum / (n_valid_pixels + 1e-8) if normalize else diff_sum
