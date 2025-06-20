@@ -104,7 +104,7 @@ PARAMS_FILE := $(SRC_DIR)/params.json
 OPTIM_PARAMS_FILE := $(SRC_DIR)/optim_params.json
 
 
-.PHONY: config train btrain optim loss test plot plothpc clean help
+.PHONY: config train btrain optim loss mean test plot plothpc clean help
 
 config:
 	@echo "Storing paths to json..."
@@ -143,6 +143,10 @@ train1: config
 
 btrain: config
 	@$(PYTHON) -m torch.utils.bottleneck $(SRC_DIR)/train4.py --params $(PARAMS_FILE) --paths $(PATHS_FILE)
+
+mean: config
+	@echo "Calculating mean loss for datasets..."
+	@$(PYTHON) $(SRC_DIR)/calculate_dataset_mean_loss.py --paths $(PATHS_FILE) --params $(PARAMS_FILE)
 
 plot:config
 	@echo "Plotting results..."
