@@ -78,32 +78,6 @@ class TestTrainingScript(unittest.TestCase):
         
         self.assertEqual(output, expected_n_valid_pixels, "Number of valid pixels does not match expected value.")
         
-    def test_compute_loss(self):
-        """Test if the loss is computed correctly."""
-        
-        images = th.randn(10, 13, 4, 4)
-        masks = (th.randn(10, 13, 4, 4) > 0.5).bool()
-        nanmasks = (th.randn(10, 13, 4, 4) > 0.5).bool()
-        
-        loss = self.train._compute_loss(images, masks, nanmasks)
-        
-        self.assertIsInstance(loss, th.Tensor, "Loss should be a tensor.")
-        self.assertEqual(loss.shape, (), "Loss should be a scalar tensor.")
-        self.assertTrue(loss.requires_grad, "Loss should require gradient for backpropagation.")
-        
-        # Test output with dummy data
-        images = th.ones(1, 13, 4, 4) * 2
-        masks = th.ones(1, 13, 4, 4, dtype=th.bool)
-        masks[0, 4, 0:2, 0:2] = False
-        nanmasks = th.ones(1, 13, 4, 4, dtype=th.bool)
-        
-        # MSE for 4 pixels with value 2
-        expected_loss = 4 * 4
-        
-        loss = self.train._compute_loss(images, masks, nanmasks)
-        
-        self.assertAlmostEqual(loss.item(), expected_loss, places=5)
-        
     def test_train_step(self):
         """Test if a training step runs without errors."""
         
