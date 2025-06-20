@@ -10,7 +10,7 @@
         "optimizer_kind": "adam",
         "loss_kind": "per_pixel_mse",
         "_possible_losses": ["per_pixel", "per_pixel_mse", "tv_loss", "custom1", "dincae1"],
-        "model_kind": "dummy",
+        "model_kind": "DINCAE_pconvs",
         "_possible_model_kinds": ["simple_conv", "DINCAE_like", "DINCAE_pconvs", "dummy", "dummier"],
         "placeholder": -300.0,
         "save_every": 1,
