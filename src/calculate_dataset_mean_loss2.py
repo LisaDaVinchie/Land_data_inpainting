@@ -1,0 +1,111 @@
+import torch as th
+from pathlib import Path
+from losses import PerPixelMSE, PerPixelL1
+from utils import parse_params, change_dataset_idx
+import matplotlib.pyplot as plt
+import gc
+
+def main():
+    """Main function to calculate the mean loss of a dataset."""
+    params, paths = parse_params()
+    
+    plot = False
+    
+    dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
+    dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
+    dataset_idx = int(params["training"]["dataset_idx"])
+    
+    if dataset_idx >= 0:
+        dataset_path, dataset_specs_path = change_dataset_idx(dataset_path, dataset_specs_path, dataset_idx)
+    
+    for path in [dataset_path, dataset_specs_path]:
+        if not path.exists():
+            raise FileNotFoundError(f"Dataset file {path} not found")
+        
+    loss_func = PerPixelL1()
+    
+    # Memory mapping for large datasets
+    # dataset = th.load(dataset_path, map_location='cpu')
+    # print(f"Loaded dataset from {dataset_path}", flush=True)
+    
+    # dataset_keys = list(dataset.keys())
+    # n_images = dataset[dataset_keys[0]].shape[0]
+    
+    # Process in batches to reduce memory usage
+    c = 4
+    known_channels = [0, 1, 2, 3, 5, 6, 7, 8]
+    
+    n_samples = [10, 20, 50, 100, 150, 200]
+    
+    losses = []
+    
+    mean_loss = []
+    
+    for n in n_samples:
+        print(f"Processing {n} samples", flush=True)
+        for i in range(1, 1000):
+            shape = (n, 9, 64, 64)  # Simulated shape for images
+            if i % 100 == 0:
+                print(f"Iteration {i}", flush=True)
+            # random_indexes = th.randperm(n_images)[:n_samples]
+            
+            # images = dataset[dataset_keys[0]][random_indexes]
+            # masks = dataset[dataset_keys[1]][random_indexes]
+            # nan_mask = dataset[dataset_keys[2]][random_indexes]
+            
+            images = th.rand(shape)  # Simulated images
+            masks = th.zeros(shape, dtype=th.bool)  # Simulated masks
+            # masks[:, c, 0:32, 0:32] = False  # Simulated mask for channel c
+            nan_mask = th.rand(shape) > 0.3  # Simulated NaN mask
+
+            known_images = images[:, known_channels, :, :]
+            
+            known_images = th.where(nan_mask[:, known_channels, :, :].bool(), known_images, th.nan)
+            
+            # Calculate the mean image for the known channels only on non-NaN values
+            mean_image = th.nanmean(known_images, dim=1, keepdim=True)
+            mean_image = th.nan_to_num(mean_image, nan=-300.0)
+            mean_image = th.where(masks[:, c:c+1, :, :], images[:, c:c+1, :, :], mean_image)
+            
+            val_mask = ~(~masks & nan_mask)
+
+            total_loss = loss_func(
+                    mean_image[i:i+1, 0], 
+                    images[i:i+1, c:c+1, :, :], 
+                    val_mask[i:i+1, c:c+1, :, :]
+                ).item()
+                
+            
+            # total_loss = 0.0
+            # for i in range(mean_image.shape[0]):
+            #     loss = loss_func(
+            #         mean_image[i:i+1, 0], 
+            #         images[i:i+1, c:c+1, :, :], 
+            #         val_mask[i:i+1, c:c+1, :, :]
+            #     ).item()
+                
+            #     n_pixels = (~val_mask[i:i+1, c, :, :]).float().sum().item()
+                
+            #     total_loss += loss / (n_pixels + 1e-8)  # Avoid division by zero
+            
+            losses.append(total_loss)
+                
+            # loss = loss_func(mean_image, images[:, c:c+1, :, :], val_mask[:, c:c+1, :, :]).item()
+            # n_valid_pixels = (~val_mask[:, c, :, :]).float().sum().item()
+            # losses.append(loss / (n_valid_pixels + 1e-8))
+            
+            if i % 100 == 0:
+                print(f"Loss for iteration {i}: {losses[-1]}\n", flush=True)            
+        mean_loss.append(sum(losses)/ len(losses))
+    
+    # th.save(th.tensor(total_loss), dataset_path.parent / f"mean_loss_{dataset_idx}.pt")
+    
+    plt.plot(n_samples, mean_loss, marker='o')
+    plt.xlabel('Number of samples')
+    plt.ylabel('Mean Loss')
+    plt.title('Mean Loss vs Number of Samples')
+    plt.show()
+    # plt.savefig(dataset_path.parent / f"mean_loss_{dataset_idx}.png")
+
+if __name__ == "__main__":
+    main()
