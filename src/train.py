@@ -151,11 +151,6 @@ class TrainModel:
         print(flush=True)
         for epoch in range(epochs):
             print(f"Epoch {epoch + 1}/{epochs}\n", flush=True)
-            with th.no_grad():
-                self.model.eval()
-                total_test_loss = self.train_step(test_loader, backpropagate=False)
-            self.test_losses.append(total_test_loss)
-            
             self.model.train()
             total_train_loss = self.train_step(train_loader)
 
@@ -163,6 +158,11 @@ class TrainModel:
             self.scheduler.step() if self.scheduler is not None else None
             
             self.train_losses.append(total_train_loss)
+            
+            with th.no_grad():
+                self.model.eval()
+                total_test_loss = self.train_step(test_loader, backpropagate=False)
+            self.test_losses.append(total_test_loss)
             
             if (epoch + 1) % self.save_every == 0:
                 self.save_weights()
