@@ -3,7 +3,7 @@
 #   Fix the number of epochs, initial lr with lambda scheduler and
 #   batch size
 #   Optimize step size
-#   Use train5, that does not require the params dictionary
+#   Use train, that does not require the params dictionary
 # 
 ###########################################################################
 
@@ -92,7 +92,7 @@ def main():
     train_loader, test_loader = dl.create(dataset)
     
     model = get_model_class(params, model_kind)
-    loss_function = get_loss_function(loss_kind, nan_placeholder)
+    loss_function = get_loss_function(loss_kind)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
     
         
@@ -111,7 +111,6 @@ def main():
     obj.train.results_path = obj.results_path
     obj.train.weights_path = obj.weights_path
     obj.train.params = params
-    obj.params = params
     obj.train.dataset_specs = dataset_specs
     
     storage = obj.create_storage()
@@ -165,7 +164,6 @@ class Objective():
             model = model,
             loss_function = loss_function, 
             lr_scheduler = lr_scheduler,
-            nan_placeholder = nan_placeholder,
             optimizer = optimizer)
         
         self.train_loader = train_loader
@@ -211,6 +209,8 @@ class Objective():
                 
         lr_lambda = lambda step: 2 ** -(step // step_size)
         self.train.scheduler = optim.lr_scheduler.LambdaLR(self.train.optimizer, lr_lambda=lr_lambda)
+        
+        
 
         self.train.train(self.train_loader, self.test_loader, self.epochs)
         
