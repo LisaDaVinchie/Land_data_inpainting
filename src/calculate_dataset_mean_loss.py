@@ -2,7 +2,6 @@ import torch as th
 from pathlib import Path
 from losses import PerPixelMSE
 from utils import parse_params, change_dataset_idx
-import matplotlib.pyplot as plt
 import gc
 
 def main():
@@ -56,10 +55,10 @@ def main():
         # Calculate batch mean
         batch_mean_img = th.nanmean(batch_known, dim=1, keepdim=True)
         batch_mean_img = th.nan_to_num(batch_mean_img, nan=-300.0)
-        batch_mean_img = th.where(batch_masks[:, c:c+1, :, :], batch_images[:, c:c+1, :, :], batch_mean_img)
+        # batch_mean_img = th.where(batch_masks[:, c:c+1, :, :], batch_images[:, c:c+1, :, :], batch_mean_img)
         
         # Calculate validation mask and loss for this batch
-        batch_val_mask = ~batch_masks[:, c:c+1, :, :] & batch_nan_mask[:, c:c+1, :, :]
+        batch_val_mask = ~(~batch_masks[:, c:c+1, :, :] & batch_nan_mask[:, c:c+1, :, :])
         
         loss = loss_func(batch_mean_img, batch_images[:, c:c+1, :, :], batch_val_mask)
         
