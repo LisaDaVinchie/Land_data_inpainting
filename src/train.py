@@ -177,10 +177,11 @@ class TrainModel:
         for (images, masks, nan_masks) in dataloader:
             # Multiply images by masks to exxlude information from masked pixels
             output = self.model(images * masks.float(), (masks & nan_masks).float())
-            loss = self.loss_function(output[:, 0],
-                                      images[:, self.current_day_channel],
-                                      self.validation_mask(masks[:, self.current_day_channel],
-                                                           nan_masks[:, self.current_day_channel])
+            
+            loss = self.loss_function(output[:, 0:1],
+                                      images[:, self.current_day_channel:self.current_day_channel + 1],
+                                      self.validation_mask(masks[:, self.current_day_channel: self.current_day_channel + 1],
+                                                           nan_masks[:, self.current_day_channel: self.current_day_channel + 1])
                                       )
             epoch_loss += loss.item()
             if backpropagate:
