@@ -119,7 +119,7 @@ def main():
     study = optuna.create_study(direction="minimize",
                                 storage=storage,
                                 study_name=Path(obj.storage_path).stem,
-                                load_if_exists=False)    
+                                load_if_exists=True)    
 
     
     # Register the signal handler
