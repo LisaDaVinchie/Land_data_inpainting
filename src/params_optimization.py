@@ -70,6 +70,8 @@ def main():
     learning_rate = float(training_params["learning_rate"])
     loss_kind = str(training_params["loss_kind"])
     nan_placeholder = float(training_params["placeholder"])
+    continue_previous = bool(training_params.get("continue_previous", False))
+    
     step_size_range = list(params["optimization"]["step_size_range"])
     n_trials = int(params["optimization"]["n_trials"])
     
@@ -154,7 +156,7 @@ class Objective():
         self.epochs = epochs
         self.step_size_range = step_size_range
         
-        self.optim_next_path = None
+        self.optim_path = None
         self.dataset_path = None
         self.dataset_specs = None
         self.train_loader = None
@@ -169,15 +171,24 @@ class Objective():
         self.train_loader = train_loader
         self.test_loader = test_loader
 
-    def import_and_check_paths(self, paths: Path):
-        self.optim_next_path = Path(paths["results"]["optim_next_path"])
-        self.storage_path = Path(paths["results"]["study_next_path"])
-        self.dataset = None
+    def import_and_check_paths(self, paths: Path, continue_previous: bool = False):
+        if continue_previous:
+            self.optim_path = Path(paths["results"]["current_optim_path"])
+            self.storage_path = Path(paths["results"]["current_study_path"])
+            if not self.optim_path.exists():
+                raise FileNotFoundError(f"Optimization results file {self.optim_path} does not exist.")
+            if not self.storage_path.exists():
+                raise FileNotFoundError(f"Storage path {self.storage_path} does not exist.")
+        else:
+            self.optim_path = Path(paths["results"]["optim_next_path"])
+            self.storage_path = Path(paths["results"]["study_next_path"])
         
-        if not self.optim_next_path.parent.exists():
-            raise FileNotFoundError(f"Optimization results dir {self.optim_next_path.parent} does not exist.")
-        if not self.storage_path.parent.exists():
-            raise FileNotFoundError(f"Storage path {self.storage_path} does not exist.")
+            if not self.optim_path.parent.exists():
+                raise FileNotFoundError(f"Optimization results dir {self.optim_path.parent} does not exist.")
+            if not self.storage_path.parent.exists():
+                raise FileNotFoundError(f"Storage dir {self.storage_path.parent} does not exist.")
+        
+        self.dataset = None
 
         self.weights_path = Path(paths["results"]["weights_path"])
         self.results_path = Path(paths["results"]["results_path"])
@@ -225,7 +236,7 @@ class Objective():
         # Save the best hyperparameters
         
         if optim_path is None:
-            optim_path = self.optim_next_path
+            optim_path = self.optim_path
         
         if optim_path is None or not optim_path.parent.exists():
             raise FileNotFoundError(f"Optimization results path {optim_path} is not available.")
@@ -245,7 +256,7 @@ class Objective():
             }
             all_trials.append(trial_info)
         
-        with open(self.optim_next_path, "w") as f:
+        with open(self.optim_path, "w") as f:
             f.write("Best trial parameters:\n")
             f.write(f"{json.dumps(trial.params, indent=4)}\n")
             f.write("\n")
