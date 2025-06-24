@@ -34,6 +34,7 @@ def main():
     learning_rate = float(training_params["learning_rate"])
     loss_kind = str(training_params["loss_kind"])
     scheduler_kind = str(training_params["lr_scheduler"])
+    n_days = int(training_params["n_days"])
     
     weights_path, results_path = configure_file_paths(paths)
     
@@ -59,16 +60,18 @@ def main():
     dataset = dl.load_dataset(dataset_path)
     train_loader, test_loader = dl.create(dataset)
     
-    model = get_model_class(params, model_kind)
+    model = get_model_class(params, model_kind, n_channels=n_days + 4)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
     loss_function = get_loss_function(loss_kind)
     print(f"Using loss function: {loss_function.__class__.__name__}", flush=True)
     lr_scheduler = select_lr_scheduler(params, scheduler_kind, optimizer)
         
-    train = TrainModel(model = model, 
-                      loss_function = loss_function, 
-                      optimizer = optimizer,
-                      lr_scheduler = lr_scheduler)
+    train = TrainModel(
+        model = model, 
+        loss_function = loss_function, 
+        optimizer = optimizer,
+        lr_scheduler = lr_scheduler,
+        n_days = n_days)
     
     train.results_path = results_path
     train.weights_path = weights_path
@@ -110,7 +113,7 @@ def configure_file_paths(paths):
     return weights_path, results_path
     
 class TrainModel:
-    def __init__(self, model, loss_function, optimizer, clip_value = 5.0, lr_scheduler = None, save_every = 1):
+    def __init__(self, model, loss_function, optimizer, n_days: int, clip_value = 5.0, lr_scheduler = None, save_every = 1):
         """Initialize the training class.
 
         Args:
@@ -134,7 +137,7 @@ class TrainModel:
         self.params = None
         self.dataset_specs = None
         
-        self.current_day_channel = 4
+        self.current_day_channel = n_days // 2
         
         self.train_losses = []
         self.test_losses = []
