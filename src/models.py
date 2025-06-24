@@ -18,7 +18,7 @@ image_ncols_string = "cutted_ncols"
 model_cathegory_string: str = "models"
 dataset_cathegory_string: str = "dataset"
 
-def get_model_class(params, model_kind: str) -> tuple[nn.Module, str]:
+def get_model_class(params, model_kind: str, n_channels: int = 13) -> tuple[nn.Module, str]:
     """Initialize the model and dataset kind from the json file.
 
     Args:
@@ -35,13 +35,13 @@ def get_model_class(params, model_kind: str) -> tuple[nn.Module, str]:
     if model_kind == "simple_conv":
         model = simple_conv(params)
     elif model_kind == "DINCAE_like":
-        model = DINCAE_like()
+        model = DINCAE_like(n_channels=n_channels)
     elif model_kind == "DINCAE_pconvs":
-        model = DINCAE_pconvs()
+        model = DINCAE_pconvs(n_channels=n_channels)
     elif model_kind == "dummy":
-        model = DummyModel()
+        model = DummyModel(n_channels=n_channels)
     elif model_kind == "dummier":
-        model = DummierModel()
+        model = DummierModel(n_channels=n_channels)
     else:
         raise ValueError(f"Model kind {model_kind} not recognized")
     
