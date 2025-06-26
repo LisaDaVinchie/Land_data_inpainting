@@ -16,7 +16,7 @@
         "save_every": 1,
         "scale_every": 5,
         "dataset_idx": 1,
-        "n_days": 1
+        "n_days": 9
     },
     "lr_schedulers": {
         "step": {
