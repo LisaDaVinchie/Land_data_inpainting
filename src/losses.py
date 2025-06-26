@@ -21,11 +21,7 @@ def get_loss_function(loss_kind: str) -> nn.Module:
         
 class PerPixelMSE(nn.Module):
     def __init__(self):
-        """Initialize the Per Pixel MSE loss module.
-        
-        Args:
-            nan_placeholder (float, optional): placeholder for nan pixels. Defaults to -2.0.
-        """
+        """Initialize the Per Pixel MSE loss module."""
         super(PerPixelMSE, self).__init__()
     
     def forward(self, prediction: th.Tensor, target: th.Tensor, masks: th.Tensor) -> th.Tensor:
@@ -43,8 +39,7 @@ class PerPixelMSE(nn.Module):
         # Calculate squared differences for all images at once
         squared_diff = (prediction - target) ** 2
         
-        # Apply mask (using ~masks to select pixels where mask is 0)
-        masked_diff = squared_diff * (~masks).float()
+        masked_diff = squared_diff.masked_fill(masks, 0.0)  # Set masked pixels to 0
         
         # Sum over spatial dimensions and channels (keeping batch dimension)
         diff_sums = masked_diff.sum(dim=(1, 2, 3))
