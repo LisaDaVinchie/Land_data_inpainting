@@ -1,7 +1,7 @@
 import torch as th
 from pathlib import Path
 from losses import PerPixelMSE
-from utils import parse_params, change_dataset_idx
+from utils import parse_params, change_dataset_idx, calculate_mean_image
 import gc
 
 def main():
@@ -49,26 +49,16 @@ def main():
         batch_nan_mask = dataset[dataset_keys[2]][i:batch_end]
         
         # Process known channels
-        batch_known = batch_images[:, known_channels, :, :]
-        batch_known = th.where(batch_nan_mask[:, known_channels, :, :].bool(), batch_known, th.nan)
+        batch_mean_img = calculate_mean_image(batch_images, batch_masks, batch_nan_mask, c=c, known_channels=known_channels)
         
-        # Calculate batch mean
-        batch_mean_img = th.nanmean(batch_known, dim=1, keepdim=True)
-        batch_mean_img = th.nan_to_num(batch_mean_img, nan=-300.0)
-        # batch_mean_img = th.where(batch_masks[:, c:c+1, :, :], batch_images[:, c:c+1, :, :], batch_mean_img)
-        
-        # Calculate validation mask and loss for this batch
-        batch_val_mask = ~(~batch_masks[:, c:c+1, :, :] & batch_nan_mask[:, c:c+1, :, :])
-        
-        loss = loss_func(batch_mean_img, batch_images[:, c:c+1, :, :], batch_val_mask)
+        loss = loss_func(batch_mean_img, batch_images[:, c:c+1, :, :], ~(~batch_masks & batch_nan_mask)[:, c:c+1, :, :])
         
         total_loss += loss.item()
         
         n_images += batch_images.shape[0]
-        
-        
+
         # Clean up batch variables
-        del batch_images, batch_masks, batch_nan_mask, batch_known, batch_mean_img, batch_val_mask
+        del batch_images, batch_masks, batch_nan_mask, batch_mean_img
         gc.collect()
     
     total_loss /= n_images
