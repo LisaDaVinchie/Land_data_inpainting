@@ -2,7 +2,7 @@
     "optimization": {
         "n_trials": 200,
         "step_size_range": [2, 30],
-        "continue_previous": true
+        "continue_previous": false
     },
     "training":{
         "train_perc": 0.8,
