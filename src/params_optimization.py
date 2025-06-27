@@ -71,6 +71,7 @@ def main():
     loss_kind = str(training_params["loss_kind"])
     nan_placeholder = float(training_params["placeholder"])
     continue_previous = bool(training_params.get("continue_previous", False))
+    print(f"Continue previous optimization: {continue_previous}", flush=True)
     
     step_size_range = list(params["optimization"]["step_size_range"])
     n_trials = int(params["optimization"]["n_trials"])
@@ -95,33 +96,27 @@ def main():
     
     model = get_model_class(params, model_kind)
     loss_function = get_loss_function(loss_kind)
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
     
         
     obj = Objective(
         model = model,
         epochs = epochs,
+        lr_init = learning_rate,
         loss_function = loss_function,
-        optimizer = optimizer,
-        nan_placeholder= nan_placeholder,
         train_loader=train_loader,
         test_loader=test_loader,
         step_size_range=step_size_range)
     # Import parameters and paths
     obj.import_and_check_paths(paths)
     
-    obj.train.results_path = obj.results_path
-    obj.train.weights_path = obj.weights_path
-    obj.train.params = params
-    obj.train.dataset_specs = dataset_specs
-    
     storage = obj.create_storage()
+    obj.params = params
     
     # Create a study to minimize the objective function
     study = optuna.create_study(direction="minimize",
                                 storage=storage,
                                 study_name=Path(obj.storage_path).stem,
-                                load_if_exists=True)    
+                                load_if_exists=continue_previous)    
 
     
     # Register the signal handler
@@ -147,7 +142,7 @@ def main():
         print(f"\nElapsed time: {time() - start_time:.2f} seconds\n", flush=True)
 
 class Objective():
-    def __init__(self, model, epochs, loss_function, optimizer, nan_placeholder, train_loader, test_loader, step_size_range, lr_scheduler=None):
+    def __init__(self, model, epochs, lr_init, loss_function, train_loader, test_loader, step_size_range, lr_scheduler=None):
         # Load default config
         
         self.dataloader_cache = {}
@@ -162,14 +157,13 @@ class Objective():
         self.train_loader = None
         self.test_loader = None
         
-        self.train = TrainModel(
-            model = model,
-            loss_function = loss_function, 
-            lr_scheduler = lr_scheduler,
-            optimizer = optimizer)
         
         self.train_loader = train_loader
         self.test_loader = test_loader
+        
+        self.model = model
+        self.loss_function = loss_function
+        self.lr_init = lr_init
 
     def import_and_check_paths(self, paths: Path, continue_previous: bool = False):
         if continue_previous:
@@ -209,20 +203,29 @@ class Objective():
         # Suggest hyperparameters
         step_size = trial.suggest_int("step_size", self.step_size_range[0], self.step_size_range[1])
         
-        for layer in self.train.model.children():
-            if hasattr(layer, 'reset_parameters'):
-                layer.reset_parameters()
+        # for layer in self.train.model.children():
+        #     if hasattr(layer, 'reset_parameters'):
+        #         layer.reset_parameters()
         
         # Reset optimizer state
-        for param_group in self.train.optimizer.param_groups:
-            for param in param_group['params']:
-                param.grad = None
+        # for param_group in self.train.optimizer.param_groups:
+        #     for param in param_group['params']:
+        #         param.grad = None
                 
         lr_lambda = lambda step: 2 ** -(step // step_size)
-        self.train.scheduler = optim.lr_scheduler.LambdaLR(self.train.optimizer, lr_lambda=lr_lambda)
+        optimizer = optim.Adam(self.model.parameters(), lr=self.lr_init, betas=(0.9, 0.999), eps=1e-8)
+        self.lr_scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
         
+        self.train = TrainModel(
+            model = self.model,
+            loss_function = self.loss_function, 
+            lr_scheduler = self.lr_scheduler,
+            optimizer = optimizer,
+            optim_path= self.optim_path,
+            n_days=9)
         
-
+        self.train.results_path = self.results_path
+        self.train.weights_path = self.weights_path
         self.train.train(self.train_loader, self.test_loader, self.epochs)
         
         trial.set_user_attr("train_losses", self.train.train_losses)
