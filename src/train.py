@@ -113,7 +113,7 @@ def configure_file_paths(paths):
     return weights_path, results_path
     
 class TrainModel:
-    def __init__(self, model, loss_function, optimizer, n_days: int, clip_value = 5.0, lr_scheduler = None, save_every = 1):
+    def __init__(self, model, loss_function, optimizer, n_days: int, clip_value = 5.0, lr_scheduler = None, save_every = 1, optim_path = None):
         """Initialize the training class.
 
         Args:
@@ -142,6 +142,8 @@ class TrainModel:
         self.train_losses = []
         self.test_losses = []
         self.training_lr = []
+
+        self.optim_path = optim_path
         
     def train(self, train_loader: th.utils.data.DataLoader, test_loader: th.utils.data.DataLoader, epochs: int):
         """Train the model on the dataset.
@@ -231,6 +233,9 @@ class TrainModel:
             if elapsed_time is not None:
                 f.write("Elapsed time [s]:\n")
                 f.write(f"{elapsed_time}\n\n")
+            if self.optim_path is not None:
+                f.write("Optimization path:\n")
+                f.write(f"{self.optim_path}\n\n")
             f.write("Train losses\n")
             for loss in self.train_losses:
                 f.write(f"{loss}\t")
