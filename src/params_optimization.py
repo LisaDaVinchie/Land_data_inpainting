@@ -70,7 +70,7 @@ def main():
     learning_rate = float(training_params["learning_rate"])
     loss_kind = str(training_params["loss_kind"])
     nan_placeholder = float(training_params["placeholder"])
-    continue_previous = bool(training_params.get("continue_previous", False))
+    continue_previous = bool(params["optimization"]["continue_previous"])
     print(f"Continue previous optimization: {continue_previous}", flush=True)
     
     step_size_range = list(params["optimization"]["step_size_range"])
