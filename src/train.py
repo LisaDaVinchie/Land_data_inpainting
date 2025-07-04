@@ -159,6 +159,7 @@ class TrainModel:
         """
         
         print(flush=True)
+        epochs_no_improve = 0
         for epoch in range(epochs):
             print(f"Epoch {epoch + 1}/{epochs}\n", flush=True)
             self.model.train()
@@ -173,6 +174,22 @@ class TrainModel:
                 self.model.eval()
                 total_test_loss = self.train_step(test_loader, backpropagate=False)
             self.test_losses.append(total_test_loss)
+            
+            if epoch >= 1 and total_test_loss > self.test_losses[-2]:
+                epochs_no_improve += 1
+                print(f"Epoch {epoch + 1}: No improvement in test loss. Current no-improvement count: {epochs_no_improve}", flush=True)
+            else:
+                epochs_no_improve = 0
+                
+            if epochs_no_improve >= 5 and epochs_no_improve < 10:
+                for g in self.optimizer.param_groups:
+                    g['lr'] = g['lr'] * 0.5
+                epochs_no_improve = 0
+                print(f"Reduced LR to {self.optimizer.param_groups[0]['lr']} due to plateau")
+                
+            elif epochs_no_improve >= 10:
+                print(f"Early stopping at epoch {epoch + 1} due to no improvement in test loss for 10 epochs", flush=True)
+                break
             
             min_epoch = min(5, epoch + 1)
             test_loss_avg = sum(self.test_losses[-min_epoch:]) / min_epoch
