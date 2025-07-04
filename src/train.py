@@ -20,6 +20,9 @@ from select_lr_scheduler import select_lr_scheduler
 from utils import change_dataset_idx, parse_params
 from CustomDataset import CreateDataloaders
 
+import wandb
+
+
 def main():
     """Main function to train a model on a dataset."""
     start_time = time()
@@ -35,6 +38,8 @@ def main():
     loss_kind = str(training_params["loss_kind"])
     scheduler_kind = str(training_params["lr_scheduler"])
     n_days = int(training_params["n_days"])
+    
+    wandb.init(project="SST_Inpainting", name="Model_Training", config=params)
     
     weights_path, results_path = configure_file_paths(paths)
     
@@ -168,6 +173,15 @@ class TrainModel:
                 self.model.eval()
                 total_test_loss = self.train_step(test_loader, backpropagate=False)
             self.test_losses.append(total_test_loss)
+            
+            wandb.log({
+                "epoch": epoch + 1,
+                "train_loss": total_train_loss,
+                "test_loss": total_test_loss,
+                "learning_rate": self.optimizer.param_groups[0]['lr']
+            })
+            
+            wandb.watch(self.model, log="all")
             
             if (epoch + 1) % self.save_every == 0:
                 self.save_weights()
