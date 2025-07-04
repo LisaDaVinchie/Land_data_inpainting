@@ -23,12 +23,13 @@ def main():
 
     train_losses, test_losses = read_results(results_path)
 
+    i = 1
     print("Plotting results from", results_path, flush=True)
     # Plotting the results
     plt.figure(figsize=(10, 5))
-    plt.plot(train_losses, label='Train Loss', color='blue')
-    plt.plot(test_losses, label='Test Loss', color='orange')
-    plt.xticks(range(len(train_losses)), range(1, len(train_losses) + 1))
+    plt.plot(train_losses[i:], label='Train Loss', color='blue')
+    plt.plot(test_losses[i:], label='Test Loss', color='orange')
+    # plt.xticks(range(len(train_losses)), range(1, len(train_losses) + 1))
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
