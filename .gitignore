@@ -17,6 +17,9 @@ src/params1.json
 # The file containing the Telegram bot token
 **bot_codes.txt
 
+# W&B api code
+wandb_api.txt
+
 # Transfer file
 transfer.sh
 
