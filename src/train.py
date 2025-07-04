@@ -174,11 +174,15 @@ class TrainModel:
                 total_test_loss = self.train_step(test_loader, backpropagate=False)
             self.test_losses.append(total_test_loss)
             
+            min_epoch = min(5, epoch + 1)
+            test_loss_avg = sum(self.test_losses[-min_epoch:]) / min_epoch
+            
             wandb.log({
                 "epoch": epoch + 1,
                 "train_loss": total_train_loss,
                 "test_loss": total_test_loss,
-                "learning_rate": self.optimizer.param_groups[0]['lr']
+                "learning_rate": self.optimizer.param_groups[0]['lr'],
+                "test_loss_avg": test_loss_avg
             })
             
             wandb.watch(self.model, log="all")
