@@ -175,7 +175,7 @@ class TrainModel:
                 total_test_loss = self.train_step(test_loader, backpropagate=False)
             self.test_losses.append(total_test_loss)
             
-            if epoch >= 1 and total_test_loss > self.test_losses[-2]:
+            if len(self.test_losses) >= 2 and self.test_losses[-1] >= self.test_losses[-2]:
                 epochs_no_improve += 1
                 print(f"Epoch {epoch + 1}: No improvement in test loss. Current no-improvement count: {epochs_no_improve}", flush=True)
             else:
