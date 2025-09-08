@@ -121,7 +121,7 @@ if __name__ == "__main__":
             nanmasks = nanmasks.to(device)
             optimizer.zero_grad()
             mask_idx = th.randint(0, N_masks, (1,), device=device).item()
-            input_mask = (nanmasks & cloud_mask[mask_idx]).to(device)
+            input_mask = nanmasks & cloud_mask[mask_idx].to(device)
             outputs = model(images * input_mask.float(), input_mask.float())
             loss_mask = nanmasks & ~input_mask.to(device)
             loss = loss_fn(outputs, images, loss_mask)
