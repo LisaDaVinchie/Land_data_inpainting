@@ -74,8 +74,10 @@ if __name__ == "__main__":
     
     result_list = result_dir.glob('result_*.txt')
     # Find the next available results file name
+    
+    
     max_idx = 0
-    if result_list:
+    if len(list(result_list)) > 0:
         max_idx = max([int(f.stem.split('_')[1]) for f in result_list])
     i = max_idx + 1
     
