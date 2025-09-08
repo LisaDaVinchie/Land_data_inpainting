@@ -50,6 +50,7 @@ if __name__ == "__main__":
     batch_size = 32
     learning_rate = 0.00058
     ntime_win = 3
+    sst_channel = 1
     l2_lambda = 0.0001
     model = DINCAE_pconvs(ntime_win + 4, interp_mode='nearest')
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8, weight_decay=l2_lambda)
@@ -123,8 +124,8 @@ if __name__ == "__main__":
             mask_idx = th.randint(0, N_masks, (1,), device=device).item()
             input_mask = nanmasks & cloud_mask[mask_idx].to(device)
             outputs = model(images * input_mask.float(), input_mask.float())
-            loss_mask = nanmasks & ~input_mask.to(device)
-            loss = loss_fn(outputs, images, loss_mask)
+            loss_mask = nanmasks[sst_channel] & ~input_mask[sst_channel].to(device)
+            loss = loss_fn(outputs[0], images[sst_channel], loss_mask)
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
@@ -139,8 +140,8 @@ if __name__ == "__main__":
                 mask_idx = th.randint(0, N_masks_test, (1,), device=device).item()
                 input_mask = nanmasks & cloud_mask_test[mask_idx].to(device)
                 outputs = model(images * input_mask.float(), input_mask.float())
-                loss_mask = nanmasks & ~input_mask.to(device)
-                loss = loss_fn(outputs, images, loss_mask)
+                loss_mask = nanmasks[sst_channel] & ~input_mask[sst_channel].to(device)
+                loss = loss_fn(outputs[0], images[sst_channel], loss_mask)
                 epoch_test_loss += loss.item()
             test_losses.append(epoch_test_loss / len(test_loader))
         # wandb.log({"epoch": epoch + 1, "loss": train_losses[-1], "test_loss": test_losses[-1]})
