@@ -12,11 +12,10 @@ from torch.utils.data import DataLoader, Dataset
 import torch.optim as optim
 from pathlib import Path
 from time import time
-import wandb
+# import wandb
 
 from models import DINCAE_pconvs
 from losses import PerPixelMSE
-import data
 
 def print(*args, **kwargs):
     kwargs.setdefault('flush', True)
@@ -97,16 +96,16 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
-    wandb.init(project="SST_Inpainting", name="Model_Training", config={
-        "epochs": epochs,
-        "batch_size": batch_size,
-        "learning_rate": learning_rate,
-        "model": model.__class__.__name__,
-        "loss_function": loss_fn.__class__.__name__,
-        "dataset": train_dataset_path.name,
-        "results_path": results_path.name,
-        "weights_path": weights_path.name
-    })
+    # wandb.init(project="SST_Inpainting", name="Model_Training", config={
+    #     "epochs": epochs,
+    #     "batch_size": batch_size,
+    #     "learning_rate": learning_rate,
+    #     "model": model.__class__.__name__,
+    #     "loss_function": loss_fn.__class__.__name__,
+    #     "dataset": train_dataset_path.name,
+    #     "results_path": results_path.name,
+    #     "weights_path": weights_path.name
+    # })
     
     model.to(device)
     train_losses = []
@@ -142,7 +141,7 @@ if __name__ == "__main__":
                 loss = loss_fn(outputs, images, loss_mask)
                 epoch_test_loss += loss.item()
             test_losses.append(epoch_test_loss / len(test_loader))
-        wandb.log({"epoch": epoch + 1, "loss": train_losses[-1], "test_loss": test_losses[-1]})
+        # wandb.log({"epoch": epoch + 1, "loss": train_losses[-1], "test_loss": test_losses[-1]})
         if (epoch + 1) % 5 == 0 or epoch == epochs - 1:
             th.save(model.state_dict(), weights_path)
             save_results(results_path, train_losses, test_losses)
