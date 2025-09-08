@@ -30,8 +30,8 @@ def save_results(path, train_losses, test_losses):
     
 class NetCDFDataset(Dataset):
     def __init__(self, dataset, sst_var = 'sst', nanmask_var = 'nan_mask'):
-        self.sst = dataset[sst_var]   # e.g. shape [N, C, H, W]
-        self.nanmask = dataset[nanmask_var]   # e.g. shape [N]
+        self.sst = dataset[sst_var].values   # e.g. shape [N, C, H, W]
+        self.nanmask = dataset[nanmask_var].values   # e.g. shape [N]
         self.length = self.sst.shape[0]
 
     def __len__(self):
@@ -39,8 +39,8 @@ class NetCDFDataset(Dataset):
 
     def __getitem__(self, idx):
         # Load only the required slice
-        sst = th.from_numpy(self.sst[idx.values]).float()
-        nanmask = th.from_numpy(self.nanmask[idx].values).bool()
+        sst = th.from_numpy(self.sst[idx]).float()
+        nanmask = th.from_numpy(self.nanmask[idx]).bool()
         return sst, nanmask
     
 
