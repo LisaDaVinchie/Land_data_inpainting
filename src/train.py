@@ -39,8 +39,8 @@ class NetCDFDataset(Dataset):
 
     def __getitem__(self, idx):
         # Load only the required slice
-        sst = th.from_numpy(self.sst[idx]).float()
-        nanmask = th.from_numpy(self.nanmask[idx]).bool()
+        sst = th.from_numpy(self.sst[idx.values]).float()
+        nanmask = th.from_numpy(self.nanmask[idx].values).bool()
         return sst, nanmask
     
 
