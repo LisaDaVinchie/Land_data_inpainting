@@ -15,7 +15,7 @@ chat_id=${chat_id}
 # source wandb_api.txt
 # wandb_api=${api_code}
 
-export WANDB_API_KEY=${wandb_api}
+# export WANDB_API_KEY=${wandb_api}
 
 set -e
 
