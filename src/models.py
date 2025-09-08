@@ -48,8 +48,8 @@ class DINCAE_pconvs(nn.Module):
     def print_shapes(self, layer_name, x):
         if self.print:
             print(f"{layer_name} shape: {x.shape}", flush=True)
-    
-    def forward(self, x: th.Tensor) -> tuple[th.Tensor, th.Tensor]:
+
+    def forward(self, x: th.Tensor, mask: th.Tensor) -> tuple[th.Tensor, th.Tensor]:
         """Forward pass
 
         Args:
@@ -59,9 +59,6 @@ class DINCAE_pconvs(nn.Module):
         Returns:
             th.Tensor: output image and mask
         """
-        
-        mask = th.isnan(x)
-        x = th.nan_to_num(x, nan=-2)
 
         self.print_shapes("input", x)
         x1, mask1 = self.enc1(x, mask)
