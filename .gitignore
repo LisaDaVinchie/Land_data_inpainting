@@ -22,6 +22,7 @@ wandb_api.txt
 
 # Transfer file
 transfer.sh
+upload_dataset.sh
 
 # Code not done by me
 **/*nvidia*
