@@ -34,7 +34,7 @@ fi
 
 ulimit -a
 
-make train || { echo "Training failed"; exit 1; }
+srun torchrun src/train.py || { echo "Training failed"; exit 1; }
 
 notify_telegram "SUCCESS"
 
