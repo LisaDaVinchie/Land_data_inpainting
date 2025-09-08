@@ -1,293 +1,307 @@
 ###############################################################################
 ##  
-##  As the original training, but now the dataset is supposed to be normalized
-##  to the range [-1, 1] and the output is assumed to be normalized in the
-##  same range.
+##  Dataset is non normalized, will be normalized later
+##  Masks are inserted in the process
 ##  
 ###############################################################################
 
-
 import torch as th
+import xarray as xr
+import numpy as np
+from torch.utils.data import DataLoader, Dataset
 import torch.optim as optim
-import torch.nn.utils as utils
 from pathlib import Path
 from time import time
-import json
-
-from models import get_model_class
-from losses import get_loss_function
-from select_lr_scheduler import select_lr_scheduler
-from utils import change_dataset_idx, parse_params
-from CustomDataset import CreateDataloaders
-
 import wandb
 
+from models import DINCAE_pconvs
+from losses import PerPixelMSE
+import data
+
+def print(*args, **kwargs):
+    kwargs.setdefault('flush', True)
+    __builtins__.print(*args, **kwargs)
 
 def main():
-    """Main function to train a model on a dataset."""
-    start_time = time()
-    
-    params, paths = parse_params()
-    
-    training_params = params["training"]
-    train_perc = float(training_params["train_perc"])
-    batch_size = int(training_params["batch_size"])
-    epochs = int(training_params["epochs"])
-    model_kind = str(training_params["model_kind"])
-    learning_rate = float(training_params["learning_rate"])
-    loss_kind = str(training_params["loss_kind"])
-    scheduler_kind = str(training_params["lr_scheduler"])
-    n_days = int(training_params["n_days"])
-    
-    wandb.init(project="SST_Inpainting", name="Model_Training", config=params)
-    
-    weights_path, results_path = configure_file_paths(paths)
-    
-    # Ensure the results file exists and is a txt file
-    results_path = results_path.with_suffix('.txt')
-    results_path.parent.mkdir(parents=True, exist_ok=True)
-    results_path.touch(exist_ok=True)
-    
-    dataset_path = Path(paths["data"]["current_minimal_dataset_path"])
-    dataset_specs_path = Path(paths["data"]["current_dataset_specs_path"])
-    dataset_idx = int(params["training"]["dataset_idx"])
-    if dataset_idx >= 0:
-        dataset_path, dataset_specs_path = change_dataset_idx(dataset_path, dataset_specs_path, dataset_idx)
-    
-    for path in [dataset_path, dataset_specs_path]:
-        if not path.exists():
-            raise FileNotFoundError(f"Dataset file {path} not found")
-    
-    with open(dataset_specs_path, 'r') as f:
-        dataset_specs = json.load(f)
-        
-    dl = CreateDataloaders(train_perc, batch_size)
-    dataset = dl.load_dataset(dataset_path)
-    train_loader, test_loader = dl.create(dataset)
-    
-    model = get_model_class(params, model_kind, n_channels=n_days + 4)
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
-    loss_function = get_loss_function(loss_kind)
-    print(f"Using loss function: {loss_function.__class__.__name__}", flush=True)
-    lr_scheduler = select_lr_scheduler(params, scheduler_kind, optimizer)
-        
-    train = TrainModel(
-        model = model, 
-        loss_function = loss_function, 
-        optimizer = optimizer,
-        lr_scheduler = lr_scheduler,
-        n_days = n_days)
-    
-    train.results_path = results_path
-    train.weights_path = weights_path
-    train.params = params
-    train.dataset_specs = dataset_specs
-    
-    train.train(train_loader, test_loader, epochs)
-    
-    elapsed_time = time() - start_time
-    print(flush=True)
-    train.save_weights()
-    print(f"Model weights saved at {weights_path}", flush=True)
-    
-    print(flush=True)
-    train.save_results(elapsed_time)
-    print(f"Results saved at {results_path}", flush=True)
-    
-    print(f"\nTraining completed in {elapsed_time:.2f} seconds", flush=True)
-    
-def configure_file_paths(paths):
-    """Get and check the paths for the weights and results files.
 
-    Args:
-        paths (_type_): _description_
-
-    Raises:
-        FileNotFoundError: _description_
-
-    Returns:
-        _type_: _description_
-    """
-    weights_path = Path(paths["results"]["weights_path"])
-    results_path = Path(paths["results"]["results_path"])
+    # train_loader = create_dataloader(dataset_path, batch_size=batch_size, split='train', shuffle=True)
+    # test_loader = create_dataloader(dataset_path, batch_size=batch_size, split='test', shuffle=False)
+    # print("DataLoader created for single-GPU or CPU training.")
     
-    for path in [weights_path, results_path]:
-        if not path.parent.exists():
-            raise FileNotFoundError(f"Directory {path.parent} does not exist")
     
-    return weights_path, results_path
+    # lr_lambda = lambda step: 2 ** -(step // step_size)
+    # scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
     
-class TrainModel:
-    def __init__(self, model, loss_function, optimizer, n_days: int, clip_value = 5.0, lr_scheduler = None, save_every = 1, optim_path = None):
-        """Initialize the training class.
+    wandb.init(project="SST_Inpainting", name="Model_Training", config={
+        "epochs": epochs,
+        "batch_size": batch_size,
+        "learning_rate": learning_rate,
+        "model": model.__class__.__name__,
+        "loss_function": loss_fn.__class__.__name__,
+        "dataset": dataset_path.name,
+        "results_path": results_path.name,
+        "weights_path": weights_path.name
+    })
+    
+    # train = TrainModel(
+    #     model=model,
+    #     loss_fn=loss_fn,
+    #     optimizer=optimizer,
+    #     model_save_path=weights_path,
+    #     results_path=results_path
+    # )
+    
+    # print("Starting training...")
+    # train.train(train_loader, test_loader, epochs=epochs, scheduler=scheduler)
+    # train.save_results()
+    # print(f"Results saved to {results_path}")
+    # th.save(model.state_dict(), 'model.pth')
+    # print(f"Training completed and model saved in {time() - start_time:.2f} seconds.\n")
 
-        Args:
-            params (_type_): json
-            weights_path (_type_): _description_
-            results_path (_type_): _description_
-            dataset_specs (_type_, optional): _description_. Defaults to None.
-        """
+# def create_dataloader(dataset_path, batch_size, split='train', shuffle=True):
+#     dataset = SSTDataset(dataset_path, split=split)
+#     print(f"Dataset loaded with {len(dataset)} samples.")
+    
+#     # For single-GPU or CPU training:
+#     loader = DataLoader(
+#         dataset,
+#         batch_size= batch_size,
+#         shuffle= shuffle,
+#         num_workers=4,
+#         pin_memory=True
+#     )
+    
+#     return loader
 
-        self.device = th.device("cuda" if th.cuda.is_available() else "cpu")
+# class TrainModel:
+#     def __init__(self, model, loss_fn, optimizer, model_save_path, results_path):
+#         self.device = th.device("cuda" if th.cuda.is_available() else "cpu")
         
-        self.model = model.to(self.device)
-        self.loss_function = loss_function
-        self.optimizer = optimizer
-        self.scheduler = lr_scheduler
-        self.clip_value = clip_value
-        self.save_every = save_every
-        
-        self.results_path = None
-        self.weights_path = None
-        self.params = None
-        self.dataset_specs = None
-        
-        self.current_day_channel = n_days // 2
-        
-        self.train_losses = []
-        self.test_losses = []
-        self.training_lr = []
-
-        self.optim_path = optim_path
-        
-    def train(self, train_loader: th.utils.data.DataLoader, test_loader: th.utils.data.DataLoader, epochs: int):
-        """Train the model on the dataset.
-
-        Args:
-            train_loader (th.utils.data.DataLoader): training dataloader
-            test_loader (th.utils.data.DataLoader): testing dataloader
-        """
-        
-        print(flush=True)
-        epochs_no_improve = 0
-        for epoch in range(epochs):
-            print(f"Epoch {epoch + 1}/{epochs}\n", flush=True)
-            self.model.train()
-            total_train_loss = self.train_step(train_loader)
-
-            self.training_lr.append(self.optimizer.param_groups[0]['lr'])
-            self.scheduler.step() if self.scheduler is not None else None
+#         self.model = model.to(self.device)
+#         self.loss_fn = loss_fn
+#         self.optimizer = optimizer
             
-            self.train_losses.append(total_train_loss)
+#         self.clip_value = 5.0  # Gradient clipping value
+#         self.n_days = 9  # Number of days in the dataset
+#         self.current_day_channel = self.n_days // 2
+#         self.save_every = 1  # Save model every 10 epochs
+        
+#         self.train_losses = []
+#         self.test_losses = []
+#         self.lr = []
+        
+#         self.model_save_path = Path(model_save_path)
+#         self.results_path = Path(results_path)
+
+#     def train(self, train_loader, test_loader, epochs, scheduler=None):
+
+#         for epoch in range(epochs):
+#             print(f"Epoch {epoch+1}/{epochs}")
             
-            with th.no_grad():
-                self.model.eval()
-                total_test_loss = self.train_step(test_loader, backpropagate=False)
-            self.test_losses.append(total_test_loss)
+#             train_loss = self.step(train_loader, backprop=True)
+#             self.train_losses.append(train_loss)
             
-            if len(self.test_losses) >= 2 and self.test_losses[-1] >= self.test_losses[-2]:
-                epochs_no_improve += 1
-                print(f"Epoch {epoch + 1}: No improvement in test loss. Current no-improvement count: {epochs_no_improve}", flush=True)
-            else:
-                epochs_no_improve = 0
+#             if scheduler:
+#                 scheduler.step()
+#                 print(f"Learning rate: {self.optimizer.param_groups[0]['lr']:.6f}")
+            
+#             with th.no_grad():
+#                 test_loss = self.step(test_loader, backprop=False)
+#             self.test_losses.append(test_loss)
+            
+#             self.lr.append(self.optimizer.param_groups[0]['lr'])
+            
+#             min_epoch = min(5, epoch + 1)
+#             test_loss_avg = sum(self.test_losses[-min_epoch:]) / min_epoch
+            
+#             wandb.log({
+#                 "epoch": epoch + 1,
+#                 "train_loss": train_loss,
+#                 "test_loss": test_loss,
+#                 "learning_rate": self.optimizer.param_groups[0]['lr'],
+#                 "test_loss_avg": test_loss_avg
+#             })
+            
+#             wandb.watch(self.model, log="all")
+            
+#             if (epoch + 1) % self.save_every == 0:
+#                 th.save(self.model.state_dict(), self.model_save_path)
+#                 self.save_results()
+
+#             print()
+    
+#     def step(self, loader, backprop=True):
+#         self.model.train() if backprop else self.model.eval()
+        
+#         total_loss = 0.0
+#         for (img, mask, nanmask) in loader:
+#             img, mask, nanmask = img.to(self.device), mask.to(self.device), nanmask.to(self.device)
+
+#             output = self.model(img * mask.float(), (mask & nanmask).float())
+            
+#             loss = self.loss_fn(output[:, 0:1],
+#                                 img[:, self.current_day_channel:self.current_day_channel + 1],
+#                                 self.validation_mask(
+#                                     mask[:, self.current_day_channel: self.current_day_channel + 1],
+#                                     nanmask[:, self.current_day_channel: self.current_day_channel + 1]
+#                                     )
+#                                 )
+#             total_loss += loss.item()
+            
+#             if backprop:
+#                 self.optimizer.zero_grad()
+#                 loss.backward()
+#                 th.nn.utils.clip_grad_value_(self.model.parameters(), self.clip_value)
+#                 self.optimizer.step()
                 
-            if epochs_no_improve >= 5 and epochs_no_improve < 10:
-                for g in self.optimizer.param_groups:
-                    g['lr'] = g['lr'] * 0.5
-                epochs_no_improve = 0
-                print(f"Reduced LR to {self.optimizer.param_groups[0]['lr']} due to plateau")
-                
-            elif epochs_no_improve >= 10:
-                print(f"Early stopping at epoch {epoch + 1} due to no improvement in test loss for 10 epochs", flush=True)
-                break
-            
-            min_epoch = min(5, epoch + 1)
-            test_loss_avg = sum(self.test_losses[-min_epoch:]) / min_epoch
-            
-            wandb.log({
-                "epoch": epoch + 1,
-                "train_loss": total_train_loss,
-                "test_loss": total_test_loss,
-                "learning_rate": self.optimizer.param_groups[0]['lr'],
-                "test_loss_avg": test_loss_avg
-            })
-            
-            wandb.watch(self.model, log="all")
-            
-            if (epoch + 1) % self.save_every == 0:
-                self.save_weights()
-                self.save_results()
-                print(f"\nModel weights and results saved at epoch {epoch + 1} at path {self.weights_path}\n", flush=True)
-                
-        print(flush=True)
-
-    def train_step(self, dataloader, backpropagate=True):
-        epoch_loss: float = 0.0
-        n_images: int = 0
-        for (images, masks, nan_masks) in dataloader:
-            # Multiply images by masks to exxlude information from masked pixels
-            output = self.model(images * masks.float(), (masks & nan_masks).float())
-            
-            loss = self.loss_function(output[:, 0:1],
-                                      images[:, self.current_day_channel:self.current_day_channel + 1],
-                                      self.validation_mask(masks[:, self.current_day_channel: self.current_day_channel + 1],
-                                                           nan_masks[:, self.current_day_channel: self.current_day_channel + 1])
-                                      )
-            epoch_loss += loss.item()
-            if backpropagate:
-                loss.backward()
-                # Clip gradients to avoid exploding gradients
-                utils.clip_grad_value_(self.model.parameters(), self.clip_value)
-                self.optimizer.step()
-                self.optimizer.zero_grad()
-            
-            n_images += images.shape[0]
-
-        return epoch_loss / n_images  # Avoid division by zero
+#         return total_loss / len(loader.dataset)
     
-    def validation_mask(self, masks: th.Tensor, nan_masks: th.Tensor, loss: bool = True):
-        """Calculate the mask used to calculate the loss, i.e. where the pixel is masked but not nan.
+#     def validation_mask(self, masks: th.Tensor, nan_masks: th.Tensor, loss: bool = True):
+#         """Calculate the mask used to calculate the loss, i.e. where the pixel is masked but not nan.
 
-        Args:
-            masks (th.Tensor): masks tensor
-            nan_masks (th.Tensor): nan masks tensor
+#         Args:
+#             masks (th.Tensor): masks tensor
+#             nan_masks (th.Tensor): nan masks tensor
 
-        Returns:
-            th.Tensor: validation mask
-        """
-        return ~(~masks & nan_masks) if loss else (~masks & nan_masks)
+#         Returns:
+#             th.Tensor: validation mask
+#         """
+#         return ~(~masks & nan_masks) if loss else (~masks & nan_masks)
     
-    def calculate_valid_pixels(self, masks: th.Tensor, nan_masks: th.Tensor):
-        return self.validation_mask(masks, nan_masks, loss=False).float().sum().item()
     
-    def save_weights(self):
-        """Save the model weights to a file."""
-        th.save(self.model.state_dict(), self.weights_path)
-        
-    def save_results(self, elapsed_time: float = None):
-        """Save the training results to a file.
+#     def save_results(self, elapsed_time: float = None):
+#         """Save the training results to a file.
 
-        Args:
-            elapsed_time (float): elapsed time of the training
-        """
+#         Args:
+#             elapsed_time (float): elapsed time of the training
+#         """
         
-        json_str = json.dumps(self.params, indent=4)[1: -1]
+#         # Save the train losses to a txt file
+#         with open(self.results_path, 'w') as f:
+#             if elapsed_time is not None:
+#                 f.write("Elapsed time [s]:\n")
+#                 f.write(f"{elapsed_time}\n\n")
+#             f.write("Train losses\n")
+#             for loss in self.train_losses:
+#                 f.write(f"{loss}\t")
+#             f.write("\n\n")
+#             f.write("Test losses\n")
+#             for loss in self.test_losses:
+#                 f.write(f"{loss}\t")
+#             f.write("\n\n")
+#             f.write("Learning rate\n")
+#             for lr in self.lr:
+#                 f.write(f"{lr}\t")
+
+    
+# class SSTDataset(Dataset):
+#     """
+#     Custom PyTorch Dataset for NetCDF SST data with time, lat, lon dimensions.
+#     """
+
+#     def __init__(self, dataset):
+#         self.sst_data = dataset['sst'].values  # Shape: (time, lat, lon)
+#         # Handle NaN values
+#         self.sst_data = np.nan_to_num(self.sst_data, nan=-2)
+#         self.n_samples = self.sst_data.shape[0]
+
+#     def __len__(self) -> int:
+#         return self.n_samples
+    
+#     def __getitem__(self, idx: int) -> th.Tensor:
+#         """
+#         Get a sample from the dataset.
         
-        # Save the train losses to a txt file
-        with open(self.results_path, 'w') as f:
-            if elapsed_time is not None:
-                f.write("Elapsed time [s]:\n")
-                f.write(f"{elapsed_time}\n\n")
-            if self.optim_path is not None:
-                f.write("Optimization path:\n")
-                f.write(f"{self.optim_path}\n\n")
-            f.write("Train losses\n")
-            for loss in self.train_losses:
-                f.write(f"{loss}\t")
-            f.write("\n\n")
-            f.write("Test losses\n")
-            for loss in self.test_losses:
-                f.write(f"{loss}\t")
-            f.write("\n\n")
-            f.write("Learning rate\n")
-            for lr in self.training_lr:
-                f.write(f"{lr}\t")
-            f.write("\n\n")
-            f.write("Parameters\n")
-            f.write(json_str)
-            f.write("\n\n")
-            f.write("\nDataset specifications from original file:\n\n")
-            f.write(json.dumps(self.dataset_specs, indent=4)[1: -1])
+#         Returns:
+#             input_sequence: Tensor of shape (sequence_length, lat, lon)
+#         """
+#         start_idx = idx * self.stride
+#         end_idx = start_idx + self.sequence_length
+        
+#         # Get input sequence
+#         input_seq = self.sst_data[start_idx:end_idx]
+        
+#         # Get target (next time step after sequence)
+#         if end_idx < len(self.sst_data):
+#             target = self.sst_data[end_idx]
+#         else:
+#             # If no next step available, use last step as target
+#             target = self.sst_data[end_idx - 1]
+            
+#         # Convert to tensors
+#         input_tensor = th.FloatTensor(input_seq)
+        
+#         return input_tensor
 
 if __name__ == "__main__":
-    main()
+    start_time = time()
+    step_size = 1
+    epochs = 10
+    batch_size = 32
+    learning_rate = 0.00058
+    ntime_win = 3
+    model = DINCAE_pconvs(ntime_win + 4)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
+    
+    
+    dataset_path = Path('./data/minimal_datasets/dataset.nc')
+    if not dataset_path.exists():
+        raise FileNotFoundError(f"Dataset file not found: {dataset_path}")
+
+    result_dir = Path('./data/results')
+    if not result_dir.exists():
+        result_dir.mkdir(parents=True, exist_ok=True)
+    weights_dir = Path('./data/weights')
+    if not weights_dir.exists():
+        weights_dir.mkdir(parents=True, exist_ok=True)
+    
+    result_list = result_dir.glob('result_*.txt')
+    # Find the next available results file name
+    max_idx = 0
+    if result_list:
+        max_idx = max([int(f.stem.split('_')[1]) for f in result_list])
+    i = max_idx + 1
+    
+    results_path = result_dir / f'result_{i}.txt' 
+    weights_path = Path(f'./data/weights/weights_{i}.pt')
+
+    ds = xr.load_dataset(dataset_path)
+    print(f"Dataset loaded from {dataset_path} with shape {ds['sst'].shape}.\n")
+    
+    
+    sst_varname = 'sst'
+    ds[sst_varname] = ds[sst_varname].where(ds[sst_varname] > 0, np.nan)
+    ds[sst_varname] = ds[sst_varname].where(ds[sst_varname] < 40, np.nan)
+
+
+    data.z_score(ds, varname=sst_varname)
+    data.minmax_scale(ds, varname='lat')
+    data.minmax_scale(ds, varname='lon')
+    print(f"Dataset loaded and normalized in {time() - start_time:.2f} seconds.\n")
+
+    print(f"The number of nans is: {np.sum(np.isnan(ds[sst_varname].values))}")
+
+    data.add_mask(ds)
+    data.add_cv_points(ds)
+    data.add_encoded_time(ds)
+    new_path = dataset_path.parent / "dataset_w_clouds.nc"
+    ds.to_netcdf(new_path)
+    print(f"Dataset saved to {new_path}")
+    print(f"The number of nans is: {np.sum(np.isnan(ds[sst_varname].values))}")
+
+    train_set = data.XarrayDataset(ds, time_w=3)
+    train_loader = DataLoader(train_set, batch_size=batch_size)
+
+    loss_fn = PerPixelMSE()
+
+    for epoch in range(epochs):
+        print(f"Epoch {epoch + 1}/{epochs}")
+        # Training loop here
+
+        for batch in train_loader:
+            optimizer.zero_grad()
+            output = model(batch)
+            mask = 
+            loss = loss_fn(output, mask)
+            loss.backward()
+            optimizer.step()
