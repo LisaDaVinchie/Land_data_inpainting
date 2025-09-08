@@ -72,13 +72,13 @@ if __name__ == "__main__":
     weights_dir = Path('./data/weights')
     if not weights_dir.exists():
         weights_dir.mkdir(parents=True, exist_ok=True)
-    
-    result_list = result_dir.glob('result_*.txt')
+
+    result_list = list(result_dir.glob('result_*.txt'))
     # Find the next available results file name
     
     
     max_idx = 0
-    if len(list(result_list)) > 0:
+    if len(result_list) > 0:
         max_idx = max([int(f.stem.split('_')[1]) for f in result_list])
     i = max_idx + 1
     
@@ -124,8 +124,8 @@ if __name__ == "__main__":
             mask_idx = th.randint(0, N_masks, (1,), device=device).item()
             input_mask = nanmasks & cloud_mask[mask_idx].to(device)
             outputs = model(images * input_mask.float(), input_mask.float())
-            loss_mask = nanmasks[sst_channel] & ~input_mask[sst_channel].to(device)
-            loss = loss_fn(outputs[0], images[sst_channel], loss_mask)
+            loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~input_mask[:, sst_channel:sst_channel+1].to(device)
+            loss = loss_fn(outputs[:, 0:1], images[:, sst_channel:sst_channel+1], loss_mask)
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
@@ -140,8 +140,8 @@ if __name__ == "__main__":
                 mask_idx = th.randint(0, N_masks_test, (1,), device=device).item()
                 input_mask = nanmasks & cloud_mask_test[mask_idx].to(device)
                 outputs = model(images * input_mask.float(), input_mask.float())
-                loss_mask = nanmasks[sst_channel] & ~input_mask[sst_channel].to(device)
-                loss = loss_fn(outputs[0], images[sst_channel], loss_mask)
+                loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~input_mask[:, sst_channel:sst_channel+1].to(device)
+                loss = loss_fn(outputs[:, 0:1], images[:, sst_channel:sst_channel+1], loss_mask)
                 epoch_test_loss += loss.item()
             test_losses.append(epoch_test_loss / len(test_loader))
         # wandb.log({"epoch": epoch + 1, "loss": train_losses[-1], "test_loss": test_losses[-1]})
