@@ -55,6 +55,8 @@ if __name__ == "__main__":
     model = DINCAE_pconvs(ntime_win + 4, interp_mode='nearest')
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-8, weight_decay=l2_lambda)
     loss_fn = PerPixelMSE()
+    device = th.device("cuda" if th.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
     
     
     train_dataset_path = Path('./data/minimal_datasets/dataset_proc_1.nc')
@@ -106,7 +108,7 @@ if __name__ == "__main__":
         "weights_path": weights_path.name
     })
     
-
+    model.to(device)
     train_losses = []
     test_losses = []
     for epoch in range(epochs):
@@ -114,11 +116,13 @@ if __name__ == "__main__":
         model.train()
         epoch_loss = 0.0
         for batch_idx, (images, nanmasks) in enumerate(train_loader):
+            images = images.to(device)
+            nanmasks = nanmasks.to(device)
             optimizer.zero_grad()
-            mask_idx = th.randint(0, N_masks, (1,)).item()
-            input_mask = nanmasks & cloud_mask[mask_idx]
+            mask_idx = th.randint(0, N_masks, (1,), device=device).item()
+            input_mask = nanmasks & cloud_mask[mask_idx].to(device)
             outputs = model(images * input_mask, input_mask)
-            loss_mask = nanmasks & ~input_mask
+            loss_mask = nanmasks & ~input_mask.to(device)
             loss = loss_fn(outputs, images, loss_mask)
             loss.backward()
             optimizer.step()
@@ -129,10 +133,12 @@ if __name__ == "__main__":
             model.eval()
             epoch_test_loss = 0.0
             for batch_idx, (images, nanmasks) in enumerate(test_loader):
-                mask_idx = th.randint(0, N_masks_test, (1,)).item()
-                input_mask = nanmasks & cloud_mask_test[mask_idx]
+                images = images.to(device)
+                nanmasks = nanmasks.to(device)
+                mask_idx = th.randint(0, N_masks_test, (1,), device=device).item()
+                input_mask = nanmasks & cloud_mask_test[mask_idx].to(device)
                 outputs = model(images * input_mask, input_mask)
-                loss_mask = nanmasks & ~input_mask
+                loss_mask = nanmasks & ~input_mask.to(device)
                 loss = loss_fn(outputs, images, loss_mask)
                 epoch_test_loss += loss.item()
             test_losses.append(epoch_test_loss / len(test_loader))
