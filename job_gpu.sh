@@ -2,7 +2,7 @@
 #SBATCH --job-name=train_model
 #SBATCH --output=logs/%j.out
 #SBATCH --error=logs/%j.err
-#SBATCH --time=08:00:00
+#SBATCH --time=00:10:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
@@ -34,7 +34,9 @@ fi
 
 ulimit -a
 
-srun torchrun src/train.py || { echo "Training failed"; exit 1; }
+PYTHON=$(which python3)
+
+$PYTHON src/train.py || { echo "Training failed"; exit 1; }
 
 notify_telegram "SUCCESS"
 
