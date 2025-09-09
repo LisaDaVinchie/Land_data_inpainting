@@ -22,11 +22,12 @@ def print(*args, **kwargs):
 
 def save_results(path, train_losses, test_losses):
     with open(path, "w") as f:
-        f.write("Train losses:")
-        f.write(", ".join([f"{loss:.6f}" for loss in train_losses]) + "\n")
-        f.write("Test losses:")
-        f.write(", ".join([f"{loss:.6f}" for loss in test_losses]) + "\n")
-    
+        f.write("Train losses:\n")
+        f.write("\t".join([f"{loss:.6f}" for loss in train_losses]) + "\n")
+        f.write("\n")
+        f.write("Test losses:\n")
+        f.write("\t".join([f"{loss:.6f}" for loss in test_losses]) + "\n")
+
 class NetCDFDataset(Dataset):
     def __init__(self, dataset, sst_var = 'sst', nanmask_var = 'nan_mask'):
         self.sst = dataset[sst_var].values   # e.g. shape [N, C, H, W]
@@ -93,6 +94,8 @@ if __name__ == "__main__":
     sea_mask_test = th.from_numpy(ds_test['land_sea_mask'].values).to(device)
     N_masks = cloud_mask.shape[0]
     N_masks_test = cloud_mask_test.shape[0]
+    meanval = ds['meanval'].values.item()
+    stdval = ds['stdval'].values.item()
     print(f"Number of masks in dataset: {N_masks}, Number of masks in test dataset: {N_masks_test}")
 
     train_set = NetCDFDataset(ds)
@@ -125,6 +128,7 @@ if __name__ == "__main__":
             mask_idx = th.randint(0, N_masks, (nanmasks.shape[0],), device=device).tolist()
             input_mask = nanmasks & cloud_mask[mask_idx]
             outputs = model(images * input_mask.float(), input_mask.float())
+            images = images * stdval + meanval
             loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~cloud_mask[mask_idx, sst_channel:sst_channel+1] & sea_mask
             loss = loss_fn(outputs[:, 0:1], images[:, sst_channel:sst_channel+1], loss_mask)
             loss.backward()
