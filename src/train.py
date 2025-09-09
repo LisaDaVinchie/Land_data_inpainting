@@ -1,7 +1,7 @@
 ###############################################################################
 ##  
-##  Dataset is non normalized, will be normalized later
-##  Masks are inserted in the process
+##  Dataset is normalized
+##  Masks are inserted randomly in the process
 ##  
 ###############################################################################
 
