@@ -46,7 +46,7 @@ class NetCDFDataset(Dataset):
 
 if __name__ == "__main__":
     start_time = time()
-    epochs = 10
+    epochs = 200
     batch_size = 32
     learning_rate = 0.00058
     ntime_win = 3
