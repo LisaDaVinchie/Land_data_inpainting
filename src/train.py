@@ -129,9 +129,13 @@ if __name__ == "__main__":
             optimizer.zero_grad()
             mask_idx = th.randint(0, N_masks, (nanmasks.shape[0],), device=device).tolist()
             input_mask = nanmasks & cloud_mask[mask_idx]
+            loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~cloud_mask[mask_idx, sst_channel:sst_channel+1] & sea_mask
+            while (~input_mask).sum() == 0 or loss_mask.sum() == 0:
+                mask_idx = th.randint(0, N_masks, (1,), device=device).item()
+                input_mask = nanmasks & cloud_mask[mask_idx]
+                loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~cloud_mask[mask_idx, sst_channel:sst_channel+1] & sea_mask
             outputs = model(images * input_mask.float(), input_mask.float())
             images = images * stdval + meanval
-            loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~cloud_mask[mask_idx, sst_channel:sst_channel+1] & sea_mask
             loss = loss_fn(outputs[:, 0:1], images[:, sst_channel:sst_channel+1], loss_mask)
             loss.backward()
             optimizer.step()
@@ -146,9 +150,13 @@ if __name__ == "__main__":
                 nanmasks = nanmasks.to(device)
                 mask_idx = th.randint(0, N_masks_test, (nanmasks.shape[0],), device=device).tolist()
                 input_mask = nanmasks & cloud_mask_test[mask_idx]
+                loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~cloud_mask_test[mask_idx, sst_channel:sst_channel+1] & sea_mask_test
+                while (~input_mask).sum() == 0 or loss_mask.sum() == 0:
+                    mask_idx = th.randint(0, N_masks_test, (1,), device=device).item()
+                    input_mask = nanmasks & cloud_mask_test[mask_idx]
+                    loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~cloud_mask_test[mask_idx, sst_channel:sst_channel+1] & sea_mask_test
                 outputs = model(images * input_mask.float(), input_mask.float())
                 images = images * stdval_test + meanval_test
-                loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~cloud_mask_test[mask_idx, sst_channel:sst_channel+1] & sea_mask_test
                 loss = loss_fn(outputs[:, 0:1], images[:, sst_channel:sst_channel+1], loss_mask)
                 epoch_test_loss += loss.item()
             test_losses.append(epoch_test_loss / len(test_loader))
