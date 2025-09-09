@@ -96,6 +96,8 @@ if __name__ == "__main__":
     N_masks_test = cloud_mask_test.shape[0]
     meanval = ds['meanval'].values.item()
     stdval = ds['stdval'].values.item()
+    meanval_test = ds_test['meanval'].values.item()
+    stdval_test = ds_test['stdval'].values.item()
     print(f"Number of masks in dataset: {N_masks}, Number of masks in test dataset: {N_masks_test}")
 
     train_set = NetCDFDataset(ds)
@@ -145,6 +147,7 @@ if __name__ == "__main__":
                 mask_idx = th.randint(0, N_masks_test, (nanmasks.shape[0],), device=device).tolist()
                 input_mask = nanmasks & cloud_mask_test[mask_idx]
                 outputs = model(images * input_mask.float(), input_mask.float())
+                images = images * stdval_test + meanval_test
                 loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~cloud_mask_test[mask_idx, sst_channel:sst_channel+1] & sea_mask_test
                 loss = loss_fn(outputs[:, 0:1], images[:, sst_channel:sst_channel+1], loss_mask)
                 epoch_test_loss += loss.item()
