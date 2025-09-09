@@ -38,9 +38,13 @@ def find_cloud_mask(dataset: np.ndarray, land_sea_mask: np.ndarray):
     return cloud_mask[n_cloud > n_land]
     
 PERC = 0.05 # 5%
-
-dataset_path = Path('./data/minimal_datasets/dataset_1_test.nc')
-output_path = Path('./data/minimal_datasets/dataset_proc_1_test.nc')
+test = False
+if test:
+    dataset_path = Path('./data/minimal_datasets/dataset_1_test.nc')
+    output_path = Path('./data/minimal_datasets/dataset_proc_1_test.nc')
+else:
+    dataset_path = Path('./data/minimal_datasets/dataset_1.nc')
+    output_path = Path('./data/minimal_datasets/dataset_proc_1.nc')
 
 time_win = 3  # Not used in this script but may be relevant for context
 n_days = time_win // 2
@@ -57,8 +61,11 @@ stdval = np.nanstd(ds_sst)
 
 nan_mask = ~np.isnan(ds_sst)
 sea_mask = find_land_sea_mask(ds_sst, PERC)
-cloud_mask = find_cloud_mask(ds_sst, sea_mask)
+mask = find_cloud_mask(ds_sst, sea_mask)
+cloud_mask = np.ones((mask.shape[0], time_win + 4, mask.shape[1], mask.shape[2]), dtype=bool)
+cloud_mask[:, 1:2, :, :] = mask[:, np.newaxis, :, :]
 print(f"Data normalized: mean={meanval}, std={stdval}")
+print(f"cloud mask shape: {cloud_mask.shape}\n")
 
 ds = ds.sortby('time') # Ensure time dimension is sorted
 print("Dataset sorted by time.")
@@ -132,7 +139,7 @@ new_ds = xr.Dataset(
     {
         'sst': (['time', 'channels', 'lat', 'lon'], sst_arr),
         'nan_mask': (['time', 'channels', 'lat', 'lon'], nan_mask),
-        'mask': (['n', 'lat', 'lon'], cloud_mask),
+        'mask': (['n_masks', 'channels', 'lat', 'lon'], cloud_mask),
         'meanval': ((), meanval),
         'stdval': ((), stdval),
         'land_sea_mask': (['lat', 'lon'], sea_mask)

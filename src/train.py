@@ -45,7 +45,7 @@ class NetCDFDataset(Dataset):
 
 if __name__ == "__main__":
     start_time = time()
-    epochs = 200
+    epochs = 10
     batch_size = 32
     learning_rate = 0.00058
     ntime_win = 3
@@ -87,8 +87,10 @@ if __name__ == "__main__":
     ds = xr.load_dataset(train_dataset_path)
     ds_test = xr.load_dataset(test_dataset_path)
     print(f"Dataset loaded from {train_dataset_path} with shape {ds['sst'].shape}.\n")
-    cloud_mask = th.from_numpy(ds['mask'].values).bool()
-    cloud_mask_test = th.from_numpy(ds_test['mask'].values).bool()
+    cloud_mask = th.from_numpy(ds['mask'].values).bool().to(device)
+    cloud_mask_test = th.from_numpy(ds_test['mask'].values).bool().to(device)
+    sea_mask = th.from_numpy(ds['land_sea_mask'].values).to(device)
+    sea_mask_test = th.from_numpy(ds_test['land_sea_mask'].values).to(device)
     N_masks = cloud_mask.shape[0]
     N_masks_test = cloud_mask_test.shape[0]
     print(f"Number of masks in dataset: {N_masks}, Number of masks in test dataset: {N_masks_test}")
@@ -120,10 +122,10 @@ if __name__ == "__main__":
             images = images.to(device)
             nanmasks = nanmasks.to(device)
             optimizer.zero_grad()
-            mask_idx = th.randint(0, N_masks, (1,), device=device).item()
-            input_mask = nanmasks & cloud_mask[mask_idx].to(device)
+            mask_idx = th.randint(0, N_masks, (nanmasks.shape[0],), device=device).tolist()
+            input_mask = nanmasks & cloud_mask[mask_idx]
             outputs = model(images * input_mask.float(), input_mask.float())
-            loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~input_mask[:, sst_channel:sst_channel+1].to(device)
+            loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~cloud_mask[mask_idx, sst_channel:sst_channel+1] & sea_mask
             loss = loss_fn(outputs[:, 0:1], images[:, sst_channel:sst_channel+1], loss_mask)
             loss.backward()
             optimizer.step()
@@ -136,10 +138,10 @@ if __name__ == "__main__":
             for batch_idx, (images, nanmasks) in enumerate(test_loader):
                 images = images.to(device)
                 nanmasks = nanmasks.to(device)
-                mask_idx = th.randint(0, N_masks_test, (1,), device=device).item()
-                input_mask = nanmasks & cloud_mask_test[mask_idx].to(device)
+                mask_idx = th.randint(0, N_masks_test, (nanmasks.shape[0],), device=device).tolist()
+                input_mask = nanmasks & cloud_mask_test[mask_idx]
                 outputs = model(images * input_mask.float(), input_mask.float())
-                loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~input_mask[:, sst_channel:sst_channel+1].to(device)
+                loss_mask = nanmasks[:, sst_channel:sst_channel+1] & ~cloud_mask_test[mask_idx, sst_channel:sst_channel+1] & sea_mask_test
                 loss = loss_fn(outputs[:, 0:1], images[:, sst_channel:sst_channel+1], loss_mask)
                 epoch_test_loss += loss.item()
             test_losses.append(epoch_test_loss / len(test_loader))
@@ -148,6 +150,7 @@ if __name__ == "__main__":
             th.save(model.state_dict(), weights_path)
             save_results(results_path, train_losses, test_losses)
             print(f"Model weights saved to {weights_path}")
+        print(f"Train Loss: {train_losses[-1]:.6f}, Test Loss: {test_losses[-1]:.6f}\n")
             
     save_results(results_path, train_losses, test_losses)
     th.save(model.state_dict(), weights_path)
