@@ -1,45 +1,12 @@
 # The data folder, except for the result calculated using the server
-data/
-figs/
-wandb/
+data/*
+figs/*
 
 # Slurm logs
 logs/
 
-# Figures
-figs/reconstructed/
-figs/results/
-
-# The paths json file
-src/paths.json
-src/params1.json
-
-# The file containing the Telegram bot token
-**bot_codes.txt
-
-# W&B api code
-wandb_api.txt
-
-# Transfer file
-transfer.sh
-upload_dataset.sh
-
-# Code not done by me
-**/*nvidia*
-**/*Nvidia*
-**ignite*
-
-# Refactored versions of the code
-src/model
-
 # Jupyter notebooks
 src/*.ipynb
-
-# Exploration file
-src/explore_*
-
-# Not working download file
-src/preprocessing/download_data.py
 
 # The venv folder
 venv_inpainting/
