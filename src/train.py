@@ -15,29 +15,6 @@ from time import time
 from models import DINCAE_pconvs
 from losses import PerPixelMSE
 
-class NetCDFDataset(Dataset):
-    def __init__(self, dataset, sst_var = 'sst', nanmask_var = 'nan_mask'):
-        self.sst = dataset[sst_var].values   # e.g. shape [N, C, H, W]
-        self.nanmask = dataset[nanmask_var].values   # e.g. shape [N]
-        self.length = self.sst.shape[0]
-
-    def __len__(self):
-        return self.length
-
-    def __getitem__(self, idx):
-        # Load only the required slice
-        sst = th.from_numpy(self.sst[idx]).float()
-        nanmask = th.from_numpy(self.nanmask[idx]).bool()
-        return sst, nanmask
-    
-
-def get_next_index(result_list):
-    max_idx = 0
-    if len(result_list) > 0:
-        max_idx = max([int(f.stem.split('_')[1]) for f in result_list])
-    i = max_idx + 1
-    return i
-
 def main():
     start_time = time()
     epochs = 200
@@ -53,8 +30,8 @@ def main():
     print(f"Using device: {device}")
     
     
-    train_dataset_path = Path('./data/minimal_datasets/dataset_proc_1.nc')
-    test_dataset_path = Path('./data/minimal_datasets/dataset_proc_1_test.nc')
+    train_dataset_path = Path('./data/datasets/dataset_proc_1.nc')
+    test_dataset_path = Path('./data/datasets/dataset_proc_1_test.nc')
     if not train_dataset_path.exists():
         raise FileNotFoundError(f"Dataset file not found: {train_dataset_path}")
     if not test_dataset_path.exists():
@@ -103,7 +80,7 @@ def main():
         print(f"Epoch {epoch+1}/{epochs}")
         model.train()
         epoch_loss = 0.0
-        for batch_idx, (images, nanmasks) in enumerate(train_loader):
+        for images, nanmasks in train_loader:
             images = images.to(device)
             nanmasks = nanmasks.to(device)
             optimizer.zero_grad()
@@ -125,7 +102,7 @@ def main():
         with th.no_grad():
             model.eval()
             epoch_test_loss = 0.0
-            for batch_idx, (images, nanmasks) in enumerate(test_loader):
+            for (images, nanmasks) in test_loader:
                 images = images.to(device)
                 nanmasks = nanmasks.to(device)
                 mask_idx = th.randint(0, N_masks_test, (nanmasks.shape[0],), device=device).tolist()
@@ -140,7 +117,7 @@ def main():
                 loss = loss_fn(outputs[:, 0:1], images[:, sst_channel:sst_channel+1], loss_mask)
                 epoch_test_loss += loss.item()
             test_losses.append(epoch_test_loss / len(test_loader))
-        # wandb.log({"epoch": epoch + 1, "loss": train_losses[-1], "test_loss": test_losses[-1]})
+            
         if (epoch + 1) % 5 == 0 or epoch == epochs - 1:
             th.save(model.state_dict(), weights_path)
             save_results(results_path, train_losses, test_losses)
@@ -164,6 +141,29 @@ def save_results(path, train_losses, test_losses):
         f.write("\n")
         f.write("Test losses:\n")
         f.write("\t".join([f"{loss:.6f}" for loss in test_losses]) + "\n")
+        
+class NetCDFDataset(Dataset):
+    def __init__(self, dataset, sst_var = 'sst', nanmask_var = 'nan_mask'):
+        self.sst = dataset[sst_var].values   # e.g. shape [N, C, H, W]
+        self.nanmask = dataset[nanmask_var].values   # e.g. shape [N]
+        self.length = self.sst.shape[0]
+
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, idx):
+        # Load only the required slice
+        sst = th.from_numpy(self.sst[idx]).float()
+        nanmask = th.from_numpy(self.nanmask[idx]).bool()
+        return sst, nanmask
+    
+
+def get_next_index(result_list):
+    max_idx = 0
+    if len(result_list) > 0:
+        max_idx = max([int(f.stem.split('_')[1]) for f in result_list])
+    i = max_idx + 1
+    return i
     
 if __name__ == "__main__":
     main()
