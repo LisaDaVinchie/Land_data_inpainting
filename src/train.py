@@ -11,7 +11,6 @@ from torch.utils.data import DataLoader, Dataset
 import torch.optim as optim
 from pathlib import Path
 from time import time
-# import wandb
 
 from models import DINCAE_pconvs
 from losses import PerPixelMSE
@@ -44,7 +43,14 @@ class NetCDFDataset(Dataset):
         return sst, nanmask
     
 
-if __name__ == "__main__":
+def get_next_index(result_list):
+    max_idx = 0
+    if len(result_list) > 0:
+        max_idx = max([int(f.stem.split('_')[1]) for f in result_list])
+    i = max_idx + 1
+    return i
+
+def main():
     start_time = time()
     epochs = 200
     batch_size = 32
@@ -77,10 +83,7 @@ if __name__ == "__main__":
     # Find the next available results file name
     
     
-    max_idx = 0
-    if len(result_list) > 0:
-        max_idx = max([int(f.stem.split('_')[1]) for f in result_list])
-    i = max_idx + 1
+    i = get_next_index(result_list)
     
     results_path = result_dir / f'result_{i}.txt' 
     weights_path = Path(f'./data/weights/weights_{i}.pt')
@@ -104,17 +107,6 @@ if __name__ == "__main__":
     test_set = NetCDFDataset(ds_test)
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
-
-    # wandb.init(project="SST_Inpainting", name="Model_Training", config={
-    #     "epochs": epochs,
-    #     "batch_size": batch_size,
-    #     "learning_rate": learning_rate,
-    #     "model": model.__class__.__name__,
-    #     "loss_function": loss_fn.__class__.__name__,
-    #     "dataset": train_dataset_path.name,
-    #     "results_path": results_path.name,
-    #     "weights_path": weights_path.name
-    # })
     
     model.to(device)
     train_losses = []
@@ -172,3 +164,6 @@ if __name__ == "__main__":
     print(f"Training complete in {time() - start_time:.2f} seconds.")
     print(f"Final model weights saved to {weights_path}")
     print(f"Results saved to {results_path}")
+    
+if __name__ == "__main__":
+    main()
