@@ -25,7 +25,7 @@ class TestPerPixelLoss(unittest.TestCase):
         """Test case where all pixels are masked (no valid pixels)."""
         prediction = th.tensor([[[[1.0, 2.0], [3.0, 4.0]]]])
         target = th.tensor([[[[0.0, 0.0], [0.0, 0.0]]]])
-        mask = th.tensor([[[[1.0, 1.0], [1.0, 1.0]]]], dtype = th.bool)  # All pixels masked
+        mask = th.tensor([[[[0, 0], [0, 0]]]], dtype = th.bool)  # All pixels masked
         loss = self.loss_function(prediction, target, mask)
         expected_loss = 0.0  # No valid pixels, so loss should be 0
         self.assertEqual(loss, expected_loss)
@@ -34,7 +34,7 @@ class TestPerPixelLoss(unittest.TestCase):
         """Test case where some pixels are masked."""
         prediction = th.tensor([[[[1.0, 2.0], [3.0, 4.0]]]])
         target = th.tensor([[[[1.0, 1.0], [1.0, 1.0]]]])
-        mask = th.tensor([[[[0.0, 1.0], [1.0, 0.0]]]], dtype = th.bool)  # Mask some pixels
+        mask = th.tensor([[[[1, 0], [0, 1]]]], dtype = th.bool)  # Mask some pixels
         loss = self.loss_function(prediction, target, mask)
         # Only unmasked pixels are (0, 0) and (1, 1)
         # Differences: (1.0 - 1.0)**2 = 0.0 and (4.0 - 1.0)**2 = 9.0
@@ -50,9 +50,9 @@ class TestPerPixelLoss(unittest.TestCase):
         target = th.tensor([[[[11, self.nan_placeholder, self.nan_placeholder],
                               [self.nan_placeholder, self.nan_placeholder, 16],
                               [17, 18, 19]]]], dtype=th.float32)
-        mask = th.tensor([[[[0, 1, 1],
-                            [1, 1, 0],
-                            [0, 0, 0]]]], dtype=th.bool)  # Mask some pixels
+        mask = th.tensor([[[[1, 0, 0],
+                            [0, 0, 1],
+                            [1, 1, 1]]]], dtype=th.bool)  # Mask some pixels
         loss = self.loss_function(prediction, target, mask)
         # Differences: (11 - 1.0)**2 = 100, (16 - 6)**2 = 100, (17 - 7)**2 = 100,
         # (18 - 8)**2 = 100, (19 - 9)**2 = 100
