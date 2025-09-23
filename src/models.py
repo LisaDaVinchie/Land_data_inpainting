@@ -123,10 +123,8 @@ class DecoderBlock(nn.Module):
         return x, mask.float()
 
 class DINCAE_like(nn.Module):
-    def __init__(self, params = None, n_channels: int = 13, placeholder: float = -2.0, middle_channels: List[int] = [16, 30, 58, 110, 209], kernel_sizes: List[int] = [3, 3, 3, 3, 3], pooling_sizes: List[int] = [2, 2, 2, 2, 2], interp_mode: str = "bilinear"):
+    def __init__(self, n_channels: int = 13, placeholder: float = -2.0, middle_channels: List[int] = [16, 30, 58, 110, 209], kernel_sizes: List[int] = [3, 3, 3, 3, 3], pooling_sizes: List[int] = [2, 2, 2, 2, 2], interp_mode: str = "bilinear"):
         super(DINCAE_like, self).__init__()
-        
-        self.model_name: str = "DINCAE"
         
         self.n_channels = n_channels
         
@@ -137,12 +135,6 @@ class DINCAE_like(nn.Module):
         self.placeholder = placeholder
         self.output_channels: int = 2
         self.print = False
-        
-        if params is not None:
-            self._load_model_configurations(params)
-        
-        if params is not None:
-            self.placeholder = params["training"]["placeholder"]
         
         self.layers_setup()
 
