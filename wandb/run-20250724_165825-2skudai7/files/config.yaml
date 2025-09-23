@@ -1,0 +1,58 @@
+_wandb:
+    value:
+        cli_version: 0.21.0
+        e:
+            lp4w2ihug511ccfup0ukmjavnbk2zomt:
+                codePath: src/train.py
+                codePathLocal: src/train.py
+                cpu_count: 2
+                cpu_count_logical: 4
+                disk:
+                    /:
+                        total: "250685575168"
+                        used: "203838087168"
+                email: lisadavinchie@gmail.com
+                executable: /Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting/venv_inpainting/bin/python3
+                git:
+                    commit: 37878396168e54c5dfb6be3df96574331be4a602
+                    remote: git@github.com:LisaDaVinchie/Land_data_inpainting.git
+                host: cli-10-110-7-123.WIFIeduroamSTUD.units.it
+                memory:
+                    total: "8589934592"
+                os: macOS-13.7.6-x86_64-i386-64bit
+                program: /Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting/src/train.py
+                python: CPython 3.11.8
+                root: /Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting
+                startedAt: "2025-07-24T14:58:25.642668Z"
+                writerId: lp4w2ihug511ccfup0ukmjavnbk2zomt
+        m: []
+        python_version: 3.11.8
+        t:
+            "1":
+                - 1
+            "2":
+                - 1
+            "3":
+                - 1
+                - 13
+                - 16
+            "4": 3.11.8
+            "5": 0.21.0
+            "12": 0.21.0
+            "13": darwin-x86_64
+batch_size:
+    value: 32
+dataset:
+    value: dataset_1.h5
+epochs:
+    value: 10
+learning_rate:
+    value: 0.0001
+loss_function:
+    value: PerPixelMSE
+model:
+    value: DINCAE_pconvs
+results_path:
+    value: result_392.txt
+weights_path:
+    value: weights_392.pt

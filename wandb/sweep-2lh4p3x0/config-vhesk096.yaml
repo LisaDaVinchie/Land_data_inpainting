@@ -1,0 +1,30 @@
+wandb_version: 1
+
+lr_schedulers:
+  value:
+    lambda:
+      factor: 2
+      step_size: 17
+    step:
+      gamma: 0.43088334063494266
+      step_size: 7
+models:
+  value:
+    DINCAE:
+      interp_mode: nearest
+training:
+  value:
+    batch_size: 32
+    clip_value: 5
+    dataset_idx: 2
+    epochs: 200
+    learning_rate: 0.0001703732221084067
+    loss_kind: per_pixel_mse
+    lr_scheduler: lambda
+    model_kind: DINCAE_pconvs
+    n_days: 9
+    optimizer_kind: adam
+    placeholder: 300
+    save_every: 1
+    scale_every: 3
+    train_perc: 0.8

@@ -1,0 +1,34 @@
+{
+  "os":  "macOS-13.7.6-x86_64-i386-64bit",
+  "python":  "CPython 3.11.8",
+  "startedAt":  "2025-07-04T14:13:09.070777Z",
+  "args":  [
+    "--params",
+    "/Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting/src/params.json",
+    "--paths",
+    "/Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting/src/paths.json"
+  ],
+  "program":  "/Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting/src/train.py",
+  "codePath":  "src/train.py",
+  "codePathLocal":  "src/train.py",
+  "git":  {
+    "remote":  "git@github.com:LisaDaVinchie/Land_data_inpainting.git",
+    "commit":  "9cb7ffb10f94665f0a599f7a78589b1469ee8458"
+  },
+  "email":  "lisadavinchie@gmail.com",
+  "root":  "/Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting",
+  "host":  "cli-10-110-9-37.WIFIeduroamSTUD.units.it",
+  "executable":  "/Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting/venv_inpainting/bin/python3",
+  "cpu_count":  2,
+  "cpu_count_logical":  4,
+  "disk":  {
+    "/":  {
+      "total":  "250685575168",
+      "used":  "219927461888"
+    }
+  },
+  "memory":  {
+    "total":  "8589934592"
+  },
+  "writerId":  "ibsh7n9apsj4rtcg20h8pv0mz8o48qhc"
+}

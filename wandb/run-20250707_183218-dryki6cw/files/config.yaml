@@ -1,0 +1,66 @@
+_wandb:
+    value:
+        cli_version: 0.21.0
+        e:
+            ehr6vbip5xi7cbp7bp3mmj2n6r234btw:
+                args:
+                    - --paths
+                    - src/paths.json
+                    - --params
+                    - src/params.json
+                codePath: src/trainL.py
+                codePathLocal: src/trainL.py
+                cpu_count: 2
+                cpu_count_logical: 4
+                disk:
+                    /:
+                        total: "250685575168"
+                        used: "231320993792"
+                email: lisadavinchie@gmail.com
+                executable: /Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting/venv_inpainting/bin/python3
+                git:
+                    commit: bfe1f6be3a5f5bef00c5b824e8bb761c534a5413
+                    remote: git@github.com:LisaDaVinchie/Land_data_inpainting.git
+                host: cli-10-110-1-152.WIFIeduroamSTUD.units.it
+                memory:
+                    total: "8589934592"
+                os: macOS-13.7.6-x86_64-i386-64bit
+                program: /Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting/src/trainL.py
+                python: CPython 3.11.8
+                root: .
+                startedAt: "2025-07-07T16:32:18.865414Z"
+                writerId: ehr6vbip5xi7cbp7bp3mmj2n6r234btw
+        m:
+            - "1": trainer/global_step
+              "6":
+                - 3
+              "7": []
+            - "2": '*'
+              "5": 1
+              "6":
+                - 1
+              "7": []
+        python_version: 3.11.8
+        t:
+            "1":
+                - 1
+                - 41
+                - 106
+            "2":
+                - 1
+                - 41
+                - 106
+            "3":
+                - 7
+                - 13
+                - 66
+            "4": 3.11.8
+            "5": 0.21.0
+            "12": 0.21.0
+            "13": darwin-x86_64
+loss_fn:
+    value: null
+model:
+    value: null
+n_days:
+    value: 9

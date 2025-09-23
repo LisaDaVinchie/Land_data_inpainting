@@ -1,0 +1,34 @@
+{
+  "os":  "macOS-13.7.6-x86_64-i386-64bit",
+  "python":  "CPython 3.11.8",
+  "startedAt":  "2025-07-07T16:25:55.544005Z",
+  "args":  [
+    "--paths",
+    "src/paths.json",
+    "--params",
+    "src/params.json"
+  ],
+  "program":  "/Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting/src/trainL.py",
+  "codePath":  "src/trainL.py",
+  "codePathLocal":  "src/trainL.py",
+  "git":  {
+    "remote":  "git@github.com:LisaDaVinchie/Land_data_inpainting.git",
+    "commit":  "bfe1f6be3a5f5bef00c5b824e8bb761c534a5413"
+  },
+  "email":  "lisadavinchie@gmail.com",
+  "root":  ".",
+  "host":  "cli-10-110-1-152.WIFIeduroamSTUD.units.it",
+  "executable":  "/Users/lisadavinchie/Documents/University/Thesis/Land_data_inpainting/venv_inpainting/bin/python3",
+  "cpu_count":  2,
+  "cpu_count_logical":  4,
+  "disk":  {
+    "/":  {
+      "total":  "250685575168",
+      "used":  "227554000896"
+    }
+  },
+  "memory":  {
+    "total":  "8589934592"
+  },
+  "writerId":  "apchqb6sxwr234363v59lktof6dom38u"
+}
