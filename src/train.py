@@ -51,7 +51,7 @@ def main():
     i = get_next_index(result_list)
     
     results_path = result_dir / f'result_{i}.txt' 
-    weights_path = Path(f'./data/weights/weights_{i}.pt')
+    weights_path = weights_dir / f'weights_{i}.pt'
 
     ds = xr.load_dataset(train_dataset_path)
     ds_test = xr.load_dataset(test_dataset_path)
