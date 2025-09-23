@@ -9,8 +9,8 @@ from losses import PerPixelMSE
 class TestPerPixelLoss(unittest.TestCase):
     
     def setUp(self):
+        self.loss_function = PerPixelMSE()
         self.nan_placeholder = -2.0
-        self.loss_function = PerPixelMSE(nan_placeholder=self.nan_placeholder)
         
     def test_no_masking(self):
         """Test case where no pixels are masked (all pixels are valid)."""
@@ -38,11 +38,11 @@ class TestPerPixelLoss(unittest.TestCase):
         loss = self.loss_function(prediction, target, mask)
         # Only unmasked pixels are (0, 0) and (1, 1)
         # Differences: (1.0 - 1.0)**2 = 0.0 and (4.0 - 1.0)**2 = 9.0
-        # Mean loss: (0.0 + 9.0) = 9.0
-        expected_loss = th.tensor(9.0)
+        # Mean loss: (0.0 + 9.0) = 9.0 /  2 = 4.5
+        expected_loss = th.tensor(4.5, dtype=th.float32)
         self.assertTrue(th.allclose(loss, expected_loss))
         
-    def test_full_masking_with_nans(self):
+    def test_partial_masking1(self):
         """Test case where some pixels are masked."""
         prediction = th.tensor([[[[1.0, self.nan_placeholder, self.nan_placeholder],
                                   [self.nan_placeholder, self.nan_placeholder, 6],
@@ -50,12 +50,14 @@ class TestPerPixelLoss(unittest.TestCase):
         target = th.tensor([[[[11, self.nan_placeholder, self.nan_placeholder],
                               [self.nan_placeholder, self.nan_placeholder, 16],
                               [17, 18, 19]]]], dtype=th.float32)
-        mask = th.zeros((1, 1, 3, 3), dtype = th.bool)  # All pixels masked
+        mask = th.tensor([[[[0, 1, 1],
+                            [1, 1, 0],
+                            [0, 0, 0]]]], dtype=th.bool)  # Mask some pixels
         loss = self.loss_function(prediction, target, mask)
         # Differences: (11 - 1.0)**2 = 100, (16 - 6)**2 = 100, (17 - 7)**2 = 100,
         # (18 - 8)**2 = 100, (19 - 9)**2 = 100
-        # Mean loss: (100 + 100 + 100 + 100 + 100) = 500
-        expected_loss = th.tensor(500, dtype=th.float32)
+        # Mean loss: (100 + 100 + 100 + 100 + 100) = 500 /  5 = 100
+        expected_loss = th.tensor(100, dtype=th.float32)
         self.assertTrue(th.allclose(loss, expected_loss))
 
     def test_random_inputs(self):

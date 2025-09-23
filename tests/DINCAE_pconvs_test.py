@@ -3,7 +3,7 @@ import torch as th
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from models import DINCAE_pconvs, initialize_model_and_dataset_kind
+from models import DINCAE_pconvs, get_model_class
 
 
 class TestDINCAEPconvs(unittest.TestCase):
@@ -49,7 +49,7 @@ class TestDINCAEPconvs(unittest.TestCase):
         self.dummy_mask = th.ones_like(self.dummy_input)
         self.dummy_mask[th.isnan(self.dummy_input)] = 0
         
-        self.model = DINCAE_pconvs(n_channels=self.n_channels, image_nrows=self.nrows, image_ncols=self.ncols)
+        self.model = DINCAE_pconvs(n_channels=self.n_channels)
         self.model.layers_setup()
 
     def test_initialization(self):
@@ -57,8 +57,6 @@ class TestDINCAEPconvs(unittest.TestCase):
 
         # Check that the network has the correct attributes
         self.assertEqual(self.model.n_channels, self.n_channels)
-        self.assertEqual(self.model.image_nrows, self.nrows)
-        self.assertEqual(self.model.image_ncols, self.ncols)
         # self.assertEqual(self.model.middle_channels, self.middle_channels)
         # self.assertEqual(self.model.kernel_sizes, self.kernel_sizes)
         # self.assertEqual(self.model.pooling_sizes, self.pooling_sizes)
@@ -119,11 +117,10 @@ class TestDINCAEPconvs(unittest.TestCase):
                 }
             }
         }
-        model, dataset_kind = initialize_model_and_dataset_kind(self.params, "DINCAE_pconvs", dataset_params)
+        model = get_model_class(self.params, "DINCAE_pconvs")
         
         # Check that the network has the correct attributes
         self.assertIsInstance(model, DINCAE_pconvs)
-        self.assertEqual(dataset_kind, "minimal")
         # self.assertEqual(model.n_channels, self.n_channels + 1)
         # self.assertEqual(model.image_nrows, self.nrows + 1)
         # self.assertEqual(model.image_ncols, self.ncols + 1)
