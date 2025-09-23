@@ -15,18 +15,6 @@ from time import time
 from models import DINCAE_pconvs
 from losses import PerPixelMSE
 
-def print(*args, **kwargs):
-    kwargs.setdefault('flush', True)
-    __builtins__.print(*args, **kwargs)
-
-def save_results(path, train_losses, test_losses):
-    with open(path, "w") as f:
-        f.write("Train losses:\n")
-        f.write("\t".join([f"{loss:.6f}" for loss in train_losses]) + "\n")
-        f.write("\n")
-        f.write("Test losses:\n")
-        f.write("\t".join([f"{loss:.6f}" for loss in test_losses]) + "\n")
-
 class NetCDFDataset(Dataset):
     def __init__(self, dataset, sst_var = 'sst', nanmask_var = 'nan_mask'):
         self.sst = dataset[sst_var].values   # e.g. shape [N, C, H, W]
@@ -164,6 +152,18 @@ def main():
     print(f"Training complete in {time() - start_time:.2f} seconds.")
     print(f"Final model weights saved to {weights_path}")
     print(f"Results saved to {results_path}")
+    
+def print(*args, **kwargs):
+    kwargs.setdefault('flush', True)
+    __builtins__.print(*args, **kwargs)
+
+def save_results(path, train_losses, test_losses):
+    with open(path, "w") as f:
+        f.write("Train losses:\n")
+        f.write("\t".join([f"{loss:.6f}" for loss in train_losses]) + "\n")
+        f.write("\n")
+        f.write("Test losses:\n")
+        f.write("\t".join([f"{loss:.6f}" for loss in test_losses]) + "\n")
     
 if __name__ == "__main__":
     main()
